@@ -1,0 +1,38 @@
+- Oclang: OS X cross toolchain for linux -
+
+Oclang is a tool which helps you to cross compile source code easily with clang on linux for OS X.
+
+After the installation you will have "o32-clang", "o32-clang++", "o64-clang" and "o64-clang++" available as compiler.
+
+Make sure you have the following installed on your linux-system:
+
+ Clang 3.2+, llvm-devel, automake, autogen, libtool,
+ libxml2-devel, libuuid-devel, openssl-devel and the bash shell
+
+Then edit TARGET and so on in build.sh, so it fits your requirements.
+
+Then run
+
+./build.sh
+
+to build the OS X cross toolchain (it will guide you through the installation).
+
+
+SDK Download:
+
+ * Links:
+
+ * Installation:
+  -> Download the SDK to the tarballs/ directory and do not forget to adjust
+  -> the SDK_VERSION in build.sh!
+
+
+LICENSE:
+ bash scripts: GPLv2
+ cctools: APSL 2.0
+ xar: New BSD
+
+
+CREDITS:
+ cjacker for the CCTOOLS linux port, checkout his ios-toolchain-based-on-clang-for-linux project:
+ https://code.google.com/p/ios-toolchain-based-on-clang-for-linux

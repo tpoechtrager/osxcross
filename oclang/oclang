@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+eval `oclang-conf`
+type=`basename $0`
+
+if [ "$type" != "${type/o64/}" ] || [ "$type" != "${type/x86_64/}" ]; then
+    ARCH1="x86_64"
+    ARCH2=$ARCH1
+else
+    if [ "$type" != "${type/o32/}" ] || [ "$type" != "${type/i386/}" ]; then
+        ARCH1="i386"
+        ARCH2="i686"
+    else
+        echo "unknown arch"
+        exit 1
+    fi
+fi
+
+if [ "$type" != "${type/++/}" ]; then
+    COMPILER="clang++"
+else
+    COMPILER="clang"
+fi
+
+if [ "$OCLANG_OSX_VERSION_MIN" != "default" ]; then
+    OSX_VERSION_MIN_OPT="-mmacosx-version-min=$OCLANG_OSX_VERSION_MIN"
+else
+    OSX_VERSION_MIN_OPT=""
+fi
+
+export COMPILER_PATH="$OCLANG_CCTOOLS_PATH:${COMPILER_PATH}"
+
+STDINC=$OCLANG_SDK/usr/include
+CPLUSINC1=$OCLANG_SDK/usr/lib/gcc/i686-apple-$OCLANG_TARGET/4.2.1/include
+CPLUSINC2=$OCLANG_SDK/usr/include/c++/4.0.0
+CPLUSINC3=$OCLANG_SDK/usr/include/c++/4.0.0/$ARCH2-apple-darwin9
+TARGET=$ARCH1-apple-$OCLANG_TARGET
+
+$COMPILER $OCLANG_TARGET_OPTION $TARGET -isysroot $OCLANG_SDK \
+-isystem $STDINC -isystem $CPLUSINC1 -isystem $CPLUSINC2 -isystem $CPLUSINC3 \
+$OSX_VERSION_MIN_OPT -mlinker-version=$OCLANG_LINKER_VERSION $OCLANG_OPT_ARGS \
+${1+"$@"}
+
+exit $?
