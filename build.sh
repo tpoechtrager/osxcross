@@ -7,7 +7,7 @@ export CXX=clang++
 # How many concurrent jobs should be used for compiling?
 JOBS=`grep -c ^processor /proc/cpuinfo`
 
-# SDK version to use (don't forget to change TARGET too)
+# SDK version to use
 SDK_VERSION=10.8
 
 # Minimum targeted OS X version
