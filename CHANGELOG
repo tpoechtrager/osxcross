@@ -1,0 +1,13 @@
+0.3:
+- added: SDK download links to README
+- added: support 10.9 (Mavericks) SDK
+- added: *-apple-darwin*-clang* symlinks (same as invoking o32-clang or o64-clang++)
+- changed: no need to build extra cctools binaries for targeting i386, symlinking the x86_64 builds works as well
+
+0.2:
+- changed: update cctools to 839 with ld64-134.9
+- added: check for broken unistd.h
+- fixed: check if MacOSX package is present in tarballs
+- added: comments in build.sh
+
+0.1: -
