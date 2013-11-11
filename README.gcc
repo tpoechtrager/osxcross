@@ -1,0 +1,17 @@
+- OSXCross: OS X cross toolchain for linux -
+
+After finishing ./build.sh you can optionally build gcc as well.
+
+Don't forget to run "source ~/.profile" after adding the target to your .bashrc or .profile,
+or simply start a new shell session.
+
+Then make sure you have got the build dependencies for gcc installed on your system,
+see: http://gcc.gnu.org/install/prerequisites.html
+
+On debian like systems you can run 'apt-get build-dep gcc' to install them.
+
+After this edit GCC_VERSION and so on build_gcc.sh, so it fits your requirements, then finally
+run ./build_gcc.sh to start building gcc.
+
+If everything went well, then you'll have "x86_64-apple-darwinXX-gcc, i386-apple-darwinXX-g++" and so on
+available as compiler.

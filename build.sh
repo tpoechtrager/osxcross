@@ -13,14 +13,14 @@ SDK_VERSION=10.8
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
 # You can comment this variable out,
-# if you want to use clangs default value
+# if you want to use the compilers default value
 OSX_VERSION_MIN=10.5
 
 # ld version
 LINKER_VERSION=134.9
 
 # Don't change this
-OCLANG_VERSION=0.3
+OSXCROSS_VERSION=0.4
 
 function require
 {
@@ -60,7 +60,7 @@ case $SDK_VERSION in
 esac
 
 echo ""
-echo "Building oclang, Version: $OCLANG_VERSION"
+echo "Building OSXCross toolchain, Version: $OSXCROSS_VERSION"
 echo ""
 echo "OS X SDK Version: $SDK_VERSION, Target: $TARGET"
 echo "Minimum targeted OS X Version: $OSX_VERSION_MIN"
@@ -121,6 +121,7 @@ tar xzfv $TARBALL_DIR/xar*.tar.gz || exit 1
 pushd cctools*
 patch -p0 < $PATCH_DIR/ld64-1.patch || exit 1
 patch -p0 < $PATCH_DIR/ld64-2.patch || exit 1
+patch -p0 < $PATCH_DIR/ld64-3.patch || exit 1
 patch -p0 < $PATCH_DIR/llvm-3.4.patch || exit 1
 ./autogen.sh
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET || exit 1
@@ -214,18 +215,24 @@ ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/i386-apple-$TARGET-clang++
 ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/x86_64-apple-$TARGET-clang
 ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/x86_64-apple-$TARGET-clang++
 
-rm $TARGET_DIR/bin/oclang-conf 2>/dev/null
+OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
 
-echo "#!/usr/bin/env bash" > $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_VERSION=$OCLANG_VERSION\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_OSX_VERSION_MIN=$OSX_VERSION_MIN\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_TARGET=$TARGET\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_SDK_VERSION=$SDK_VERSION\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_SDK=$SDK_DIR/MacOSX$SDK_VERSION.sdk\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_CCTOOLS_PATH=$TARGET_DIR/bin\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_TARGET_OPTION=$CLANG_TARGET_OPTION\"" >> $TARGET_DIR/bin/oclang-conf
-echo "echo \"export OCLANG_LINKER_VERSION=$LINKER_VERSION\"" >> $TARGET_DIR/bin/oclang-conf
-chmod +x $TARGET_DIR/bin/oclang-conf
+rm $OSXCROSS_CONF 2>/dev/null
+
+echo "#!/usr/bin/env bash" > $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_VERSION=$OSXCROSS_VERSION\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARGET=$TARGET\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_SDK_VERSION=$SDK_VERSION\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_SDK=$SDK_DIR/MacOSX$SDK_VERSION.sdk\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARBALL_DIR=$TARBALL_DIR\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_PATCH_DIR=$PATCH_DIR\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARGET_DIR=$TARGET_DIR\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_BUILD_DIR=$BUILD_DIR\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_CCTOOLS_PATH=$TARGET_DIR\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARGET_OPTION=$CLANG_TARGET_OPTION\"" >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_LINKER_VERSION=$LINKER_VERSION\"" >> $OSXCROSS_CONF
+chmod +x $OSXCROSS_CONF
 
 function test_compiler
 {

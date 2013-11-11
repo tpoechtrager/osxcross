@@ -10,6 +10,6 @@ rm -rf tarballs/*MacOSX*
 find . -name "*~" -exec rm {} \;
 find . -name "*.save" -exec rm {} \;
 rm -rf *.tar.xz
-tar -cf - * | xz -9 -c - > $BASEDIR/oclang.tar.xz || exit 1
+tar -cf - * | xz -9 -c - > $BASEDIR/osxcross.tar.xz || exit 1
 popd
 rm -rf $TMPDIR

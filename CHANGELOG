@@ -1,3 +1,6 @@
+0.4:
+- added: gcc support
+
 0.3:
 - added: SDK download links to README
 - added: support 10.9 (Mavericks) SDK
