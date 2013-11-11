@@ -1,0 +1,45 @@
+diff -urN build/gcc-4.8.2/gcc/collect2.c /home/thomas/tmp/gcc-4.8.2/gcc/collect2.c
+--- gcc/collect2.c	2013-06-20 19:12:17.000000000 +0200
++++ gcc/collect2.c	2013-11-11 20:08:35.355672907 +0100
+@@ -3046,6 +3046,7 @@
+ }
+ #endif /* COLLECT_EXPORT_LIST */
+ 
++#undef COLLECT_RUN_DSYMUTIL
+ #ifdef COLLECT_RUN_DSYMUTIL
+ static int flag_dsym = false;
+ static int flag_idsym = false;
+diff -urN build/gcc-4.8.2/gcc/config/darwin.h /home/thomas/tmp/gcc-4.8.2/gcc/config/darwin.h
+--- gcc/config/darwin.h	2013-02-12 00:30:10.000000000 +0100
++++ gcc/config/darwin.h	2013-11-11 20:17:15.387653343 +0100
+@@ -195,10 +195,13 @@
+     %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm: \
+     %{gdwarf-2:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}"
+ 
++#undef DSYMUTIL_SPEC
++#define DSYMUTIL_SPEC ""
++
+ #define LINK_COMMAND_SPEC LINK_COMMAND_SPEC_A DSYMUTIL_SPEC
+ 
+ /* Tell collect2 to run dsymutil for us as necessary.  */
+-#define COLLECT_RUN_DSYMUTIL 1
++#define COLLECT_RUN_DSYMUTIL 0
+ 
+ /* We only want one instance of %G, since libSystem (Darwin's -lc) does not depend
+    on libgcc.  */
+diff -urN build/gcc-4.8.2/gcc/config/darwin9.h /home/thomas/tmp/gcc-4.8.2/gcc/config/darwin9.h
+--- gcc/config/darwin9.h	2013-01-10 21:38:27.000000000 +0100
++++ gcc/config/darwin9.h	2013-11-11 20:23:12.619639903 +0100
+@@ -32,8 +32,11 @@
+     %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm|.s|.f|.f90|.f95|.f03|.f77|.for|.F|.F90|.F95|.F03: \
+     %{g*:%{!gstabs*:%{!g0: -dsym}}}}}}}}}}}"
+ 
++#undef DSYMUTIL_SPEC
++#define DSYMUTIL_SPEC ""
++
+ /* Tell collect2 to run dsymutil for us as necessary.  */
+-#define COLLECT_RUN_DSYMUTIL 1
++#define COLLECT_RUN_DSYMUTIL 0
+ 
+ #undef PIE_SPEC
+ #define PIE_SPEC \

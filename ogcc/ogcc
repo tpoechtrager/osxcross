@@ -17,9 +17,11 @@ else
 fi
 
 if [ "$type" != "${type/++/}" ]; then
-    COMPILER="clang++"
+    COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH1-apple-$OSXCROSS_TARGET-base-g++"
+    OSXCROSS_OPT_ARGS+=" -static-libgcc -static-libstdc++ -arch $ARCH1"
 else
-    COMPILER="clang"
+    COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH1-apple-$OSXCROSS_TARGET-base-gcc"
+    OSXCROSS_OPT_ARGS+=" -static-libgcc -arch $ARCH1"
 fi
 
 if [ "$OSXCROSS_OSX_VERSION_MIN" != "default" ]; then
@@ -30,15 +32,6 @@ fi
 
 export COMPILER_PATH="$OSXCROSS_CCTOOLS_PATH:${COMPILER_PATH}"
 
-STDINC=$OSXCROSS_SDK/usr/include
-CPLUSINC1=$OSXCROSS_SDK/usr/lib/gcc/i686-apple-$OSXCROSS_TARGET/4.2.1/include
-CPLUSINC2=$OSXCROSS_SDK/usr/include/c++/4.0.0
-CPLUSINC3=$OSXCROSS_SDK/usr/include/c++/4.0.0/$ARCH2-apple-darwin9
-TARGET=$ARCH1-apple-$OSXCROSS_TARGET
-
-$COMPILER $OSXCROSS_TARGET_OPTION $TARGET -isysroot $OSXCROSS_SDK \
--isystem $STDINC -isystem $CPLUSINC1 -isystem $CPLUSINC2 -isystem $CPLUSINC3 \
-$OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION $OSXCROSS_OPT_ARGS \
-${1+"$@"}
+$COMPILER $OSX_VERSION_MIN_OPT $OSXCROSS_OPT_ARGS ${1+"$@"}
 
 exit $?

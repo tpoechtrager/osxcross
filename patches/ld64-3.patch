@@ -1,0 +1,10 @@
+--- ld64/src/ld/parsers/macho_relocatable_file.cpp	2013-11-11 20:31:31.178808527 +0100
++++ ld64/src/ld/parsers/macho_relocatable_file.cpp	2013-11-11 20:31:39.126808228 +0100
+@@ -3709,6 +3709,7 @@
+ template <typename A>
+ void CFISection<A>::warnFunc(void* ref, uint64_t funcAddr, const char* msg)
+ {
++    return;
+ 	Parser<A>* parser = (Parser<A>*)ref;
+ 	if ( ! parser->convertUnwindInfo() ) 
+ 		return;
