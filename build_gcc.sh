@@ -3,6 +3,9 @@
 export LC_ALL="C"
 export LIBRARY_PATH=""
 
+export CC=clang
+export CXX=clang++
+
 which osxcross-conf || {
     echo "you need to complete ./build.sh first, before you can start building gcc"
     exit 1
@@ -13,7 +16,7 @@ eval `osxcross-conf`
 set -e
 
 # How many concurrent jobs should be used for compiling?
-JOBS=`grep -c ^processor /proc/cpuinfo`
+JOBS=4 #`grep -c ^processor /proc/cpuinfo`
 
 # GCC version to build
 GCC_VERSION=4.8.2
