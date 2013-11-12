@@ -16,7 +16,7 @@ eval `osxcross-conf`
 set -e
 
 # How many concurrent jobs should be used for compiling?
-JOBS=4 #`grep -c ^processor /proc/cpuinfo`
+JOBS=`grep -c ^processor /proc/cpuinfo`
 
 # GCC version to build
 GCC_VERSION=4.8.2
