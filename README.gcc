@@ -10,8 +10,8 @@ see: http://gcc.gnu.org/install/prerequisites.html
 
 On debian like systems you can run 'apt-get build-dep gcc' to install them.
 
-After this edit GCC_VERSION and so on build_gcc.sh, so it fits your requirements, then finally
+After that edit GCC_VERSION in build_gcc.sh, so it fits your requirements, then finally
 run ./build_gcc.sh to start building gcc.
 
-If everything went well, then you'll have "x86_64-apple-darwinXX-gcc, i386-apple-darwinXX-g++" and so on
-available as compiler.
+If everything went well, then you'll have "x86_64-apple-darwinXX-gcc, i386-apple-darwinXX-g++"
+(or o32-gcc, o64-g++, ... as shortcuts) available as compiler.
