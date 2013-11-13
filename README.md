@@ -2,7 +2,7 @@
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to deliever you a high quality cross toolchain targeting OS X on Linux.
+The goal of OSXCross is to deliver you a high quality cross toolchain targeting OS X on Linux.
 
 ### HOW DOES IT WORK? ###
 
@@ -91,12 +91,9 @@ You can use the shorting `o32-...` or `i386-apple-darwin...` what ever you like 
 
 ##### Building a universal binary: #####
 
-clang:
-
-  `o64-clang++ test.cpp -O3 -arch i386 -arch x86_64 -o test`
-
-GCC:
-
+* clang:
+  * `o64-clang++ test.cpp -O3 -arch i386 -arch x86_64 -o test`
+* GCC:
   * build the 32 bit binary: `o32-g++ test.cpp -O3 -o test.i386`
   * build the 64 bit binary: `o64-g++ test.cpp -O3 -o test.x86_64`
   * use lipo to generate the universal binary: `x86_64-apple darwinXX-lipo -create test.i386 test.x86_64 -output test`
