@@ -59,7 +59,7 @@ on debian like systems you can run `apt-get build-dep gcc` to install them.
   * [10.5 (Leopard)](http://www.mediafire.com/?y5gqvy02jr6g8t0)
   * 10.6 (Snow Leopard)
   * [10.7 (Lion)](http://www.mediafire.com/?jrprt27obohlrwe)
-  * [10.8 (Mountain Lion)](http://www.mediafire.com/?pf99jk7u18e3kk8) **\*\*recommended\*\***
+  * [10.8 (Mountain Lion)](http://www.mediafire.com/?pf99jk7u18e3kk8) **\*\*recommended****
   * [10.9 (Mavericks)](http://www.mediafire.com/?pf99jk7u18e3kk8)
 
 ### Usage Examples: ###
@@ -76,7 +76,7 @@ on debian like systems you can run `apt-get build-dep gcc` to install them.
   * 32 bit:  `o32-gcc test.cpp -O3 -o test`  OR   `i386-apple-darwinXX-gcc test.cpp -O3 -o test`
   * 64 bit:  `o64-gcc test.cpp -O3 -o test`   OR   `x86_64-apple-darwinXX-gcc test.cpp -O3 -o test`
 
-XX= the target version, you can find it out by running  `osxcross-conf`  and then see TARGET.
+XX= the target version, you can find it out by running  `osxcross-conf`  and then see `TARGET`.
 
 You can use the shorting `o32-...` or `i386-apple-darwin...` what ever you like more.
 
@@ -84,11 +84,11 @@ You can use the shorting `o32-...` or `i386-apple-darwin...` what ever you like 
 
 ##### Building Makefile based projects: #####
 
-  `make CC=o32-clang CXX=o32-clang++`
+  * `make CC=o32-clang CXX=o32-clang++`
 
 ##### Building automake based projects: #####
 
-  `CC=o32-clang CXX=o32-clang++ ./configure --host=i386-apple-darwinXX`
+  * `CC=o32-clang CXX=o32-clang++ ./configure --host=i386-apple-darwinXX`
 
 ##### Building test1.cpp and test2.cpp with LTO (Link Time Optimization): #####
 
