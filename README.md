@@ -1,4 +1,4 @@
-# OSXCross: OS X cross toolchain for Linux #
+## OSXCross: OS X cross toolchain for Linux ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
