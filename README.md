@@ -62,25 +62,25 @@ on debian like systems you can run `apt-get build-dep gcc` to install them.
   * [10.8 (Mountain Lion)](http://www.mediafire.com/?pf99jk7u18e3kk8) **\*\*recommended****
   * [10.9 (Mavericks)](http://www.mediafire.com/?pf99jk7u18e3kk8)
 
-### Usage Examples: ###
+### USAGE EXAMPLES: ###
 
 ##### Let's say you want to compile a file called test.cpp, then you can do this by running: #####
 
 * Clang:
 
-  * 32 bit:  `o32-clang test.cpp -O3 -o test`   OR   `i386-apple-darwinXX-clang test.cpp -O3 -o test`
-  * 64 bit:  `o64-clang test.cpp -O3 -o test`   OR   `x86_64-apple-darwinXX-clang test.cpp -O3 -o test`
+  * 32 bit:  `o32-clang++ test.cpp -O3 -o test`   OR   `i386-apple-darwinXX-clang++ test.cpp -O3 -o test`
+  * 64 bit:  `o64-clang++ test.cpp -O3 -o test`   OR   `x86_64-apple-darwinXX-clang++ test.cpp -O3 -o test`
 
 * GCC:
 
-  * 32 bit:  `o32-gcc test.cpp -O3 -o test`  OR   `i386-apple-darwinXX-gcc test.cpp -O3 -o test`
-  * 64 bit:  `o64-gcc test.cpp -O3 -o test`   OR   `x86_64-apple-darwinXX-gcc test.cpp -O3 -o test`
+  * 32 bit:  `o32-g++ test.cpp -O3 -o test`  OR   `i386-apple-darwinXX-g++ test.cpp -O3 -o test`
+  * 64 bit:  `o64-g++ test.cpp -O3 -o test`   OR   `x86_64-apple-darwinXX-g++ test.cpp -O3 -o test`
 
 XX= the target version, you can find it out by running  `osxcross-conf`  and then see `TARGET`.
 
 You can use the shorting `o32-...` or `i386-apple-darwin...` what ever you like more.
 
-*I'll continue from now on with `o32-clang`, but remember you can simply replace it with `o32-gcc` or `i386-apple-darwin...`*
+*I'll continue from now on with `o32-clang`, but remember you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
 
 ##### Building Makefile based projects: #####
 
