@@ -108,11 +108,13 @@ patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
 patch -p0 < $PATCH_DIR/cctools-llvm-3.4.patch
 patch -p0 < $PATCH_DIR/cctools-conf-1.patch
+set +e
 grep -n "__block," /usr/include/unistd.h &>/dev/null
 if [ $? -eq 0 ]; then
     echo "applying workaround for buggy unistd.h"
     $PATCH_DIR/fix-unistd-issue.sh
 fi
+set -e
 ./autogen.sh
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
 make -j$JOBS
