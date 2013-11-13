@@ -6,7 +6,7 @@ The goal of OSXCross is to deliver you a high quality cross toolchain targeting 
 
 ### HOW DOES IT WORK? ###
 
-[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html) and is now available on nearly every Linux distrubtion.  
+[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html) and is now available on nearly every Linux distribution.  
 Therefore we "just" need a proper
 [port](https://code.google.com/p/ios-toolchain-based-on-clang-for-linux/source/browse/#svn%2Ftrunk%2Fcctools-porting%2Fpatches)
 of the [cctools](http://www.opensource.apple.com/tarballs/cctools) (ld, lipo, ...) for Linux, and the OS X SDK.
@@ -71,7 +71,7 @@ on debian like systems you can run `apt-get build-dep gcc` to install them.
 
 XX= the target version, you can find it out by running  `osxcross-conf`  and then see `TARGET`.
 
-You can use the shorting `o32-...` or `i386-apple-darwin...` what ever you like more.
+You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like more.
 
 *I'll continue from now on with `o32-clang`, but remember you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
 
