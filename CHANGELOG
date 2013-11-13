@@ -1,5 +1,6 @@
 0.4:
 - added: gcc support
+- added: a workaround for buggish unistd.h headers, no more need to edit /usr/include/unistd.h
 
 0.3:
 - added: SDK download links to README
