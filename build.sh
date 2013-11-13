@@ -59,6 +59,8 @@ case $SDK_VERSION in
     *) echo "Invalid SDK Version"; exit 1 ;;
 esac
 
+set -e
+
 echo ""
 echo "Building OSXCross toolchain, Version: $OSXCROSS_VERSION"
 echo ""
@@ -75,9 +77,9 @@ echo ""
 
 export PATH=$TARGET_DIR/bin:$PATH
 
-mkdir -p $BUILD_DIR || exit 1
-mkdir -p $TARGET_DIR || exit 1
-mkdir -p $SDK_DIR || exit 1
+mkdir -p $BUILD_DIR
+mkdir -p $TARGET_DIR
+mkdir -p $SDK_DIR
 
 require $CC
 require $CXX
@@ -92,57 +94,45 @@ require automake
 require libtool
 
 CLANG_TARGET_OPTION=`./oclang/check_clang_target_option.sh`
-test $? -eq 0 || exit 1
 
-pushd $BUILD_DIR || exit 1
+pushd $BUILD_DIR
 
 if [ ! -f "have_cctools_$TARGET" ]; then
 
-BLOCK_LINE=`grep -n "__block," /usr/include/unistd.h`
-while [ $? -eq 0 ]
-do
-    BLOCK_LINE_NUM=`echo "$BLOCK_LINE" | cut -d ':' -f 1`
-    BLOCK_LINE_BAD=`echo "$BLOCK_LINE" | cut -d ':' -f 2`
-    BLOCK_LINE_GOOD=`echo "$BLOCK_LINE_BAD" | sed 's/__block,/__libc_block,/g'`
-    echo ""
-    echo "Your /usr/include/unistd.h header file appears to be broken."
-    echo "Replace __block with __libc_block on line $BLOCK_LINE_NUM, otherwise compiling cctools will fail!"
-    echo ""
-    echo "Bad:  $BLOCK_LINE_BAD"
-    echo "Good: $BLOCK_LINE_GOOD"
-    echo ""
-    read -p "Press enter to continue when you have fixed the header file"
-    BLOCK_LINE=`grep -n "__block," /usr/include/unistd.h`
-done
-
-tar xzfv $TARBALL_DIR/cctools-*.tar.gz || exit 1
-tar xzfv $TARBALL_DIR/xar*.tar.gz || exit 1
+tar xzfv $TARBALL_DIR/cctools-*.tar.gz
+tar xzfv $TARBALL_DIR/xar*.tar.gz
 
 pushd cctools*
-patch -p0 < $PATCH_DIR/ld64-1.patch || exit 1
-patch -p0 < $PATCH_DIR/ld64-2.patch || exit 1
-patch -p0 < $PATCH_DIR/ld64-3.patch || exit 1
-patch -p0 < $PATCH_DIR/llvm-3.4.patch || exit 1
+patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
+patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
+patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
+patch -p0 < $PATCH_DIR/cctools-llvm-3.4.patch
+patch -p0 < $PATCH_DIR/cctools-conf-1.patch
+grep -n "__block," /usr/include/unistd.h &>/dev/null
+if [ $? -eq 0 ]; then
+    echo "applying workaround for buggy unistd.h"
+    $PATCH_DIR/fix-unistd-issue.sh
+fi
 ./autogen.sh
-./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET || exit 1
-make -j$JOBS || exit 1
-make install || exit 1
+./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
+make -j$JOBS
+make install -j$JOBS
 
 pushd $TARGET_DIR/bin
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
 CCTOOLS=($CCTOOLS)
 for CCTOOL in ${CCTOOLS[@]}; do
     CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
-    ln -sf $CCTOOL $CCTOOL_I386 || exit 1
+    ln -sf $CCTOOL $CCTOOL_I386
 done
 popd
 
 popd
 
 pushd xar*
-./configure --prefix=$TARGET_DIR || exit 1
-make -j$JOBS || exit
-make install || exit 1
+./configure --prefix=$TARGET_DIR
+make -j$JOBS
+make install -j$JOBS
 popd
 
 function check
@@ -183,8 +173,8 @@ echo "extracting $SDK_FILENAME ..."
 
 case $SDK in
     *.pkg)
-        xar -xf $SDK || exit 1
-        (cat Payload | gunzip -dc | cpio -i 2>/dev/null) || exit 1
+        xar -xf $SDK
+        cat Payload | gunzip -dc | cpio -i 2>/dev/null
         ;;
     *.tar.xz)
         tar xJf $SDK
@@ -195,20 +185,22 @@ case $SDK in
 esac
 
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
-mv -f SDKs/*$SDK_VERSION* $SDK_DIR || exit 1
+mv -f SDKs/*$SDK_VERSION* $SDK_DIR
 
-pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk || exit 1
+pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk
+set +e
 ln -s $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h usr/include 2>/dev/null
+set -e
 popd
 
 popd
 
-cp oclang/oclang $TARGET_DIR/bin || exit 1
+cp -f oclang/oclang $TARGET_DIR/bin
 
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o32-clang || exit 1
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o32-clang++ || exit 1
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o64-clang || exit 1
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o64-clang++ || exit 1
+ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o32-clang
+ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o32-clang++
+ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o64-clang
+ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o64-clang++
 
 ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/i386-apple-$TARGET-clang
 ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/i386-apple-$TARGET-clang++
@@ -217,7 +209,7 @@ ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/x86_64-apple-$TARGET-clang++
 
 OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
 
-rm $OSXCROSS_CONF 2>/dev/null
+rm -f $OSXCROSS_CONF 2>/dev/null
 
 echo "#!/usr/bin/env bash" > $OSXCROSS_CONF
 echo "echo \"export OSXCROSS_VERSION=$OSXCROSS_VERSION\"" >> $OSXCROSS_CONF
@@ -237,7 +229,7 @@ chmod +x $OSXCROSS_CONF
 function test_compiler
 {
     echo -ne "testing $1 ... "
-    ($1 $2 -O2 -Wall -o test && rm test) || exit 1
+    $1 $2 -O2 -Wall -o test && rm test
     echo "works"
 }
 

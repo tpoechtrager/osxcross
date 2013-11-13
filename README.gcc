@@ -2,7 +2,7 @@
 
 After finishing ./build.sh you can optionally build gcc as well.
 
-Don't forget to run "source ~/.profile" after adding the target to your .bashrc or .profile,
+Don't forget to run "source ~/.profile" after adding the PATH exports to your .bashrc or .profile,
 or simply start a new shell session.
 
 Then make sure you have got the build dependencies for gcc installed on your system,
