@@ -6,14 +6,14 @@ export LIBRARY_PATH=""
 export CC=clang
 export CXX=clang++
 
-which osxcross-conf || {
+which osxcross-conf &>/dev/null || {
     echo "you need to complete ./build.sh first, before you can start building gcc"
     exit 1
 }
 
-eval `osxcross-conf`
-
 set -e
+
+eval `osxcross-conf`
 
 # How many concurrent jobs should be used for compiling?
 JOBS=`grep -c ^processor /proc/cpuinfo`
@@ -35,7 +35,9 @@ function require
     done
 }
 
+set +e
 require wget
+set -e
 
 BASE_DIR=`pwd`
 

@@ -81,6 +81,7 @@ mkdir -p $BUILD_DIR
 mkdir -p $TARGET_DIR
 mkdir -p $SDK_DIR
 
+set +e
 require $CC
 require $CXX
 require clang
@@ -92,6 +93,7 @@ require cpio
 require autogen
 require automake
 require libtool
+set -e
 
 CLANG_TARGET_OPTION=`./oclang/check_clang_target_option.sh`
 
