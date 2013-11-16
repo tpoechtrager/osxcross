@@ -18,10 +18,26 @@ fi
 
 if [ "$type" != "${type/++/}" ]; then
     COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH1-apple-$OSXCROSS_TARGET-base-g++"
-    OSXCROSS_OPT_ARGS+=" -static-libgcc -static-libstdc++ -arch $ARCH1"
+    OSXCROSS_OPT_ARGS+=" -static-libgcc -static-libstdc++"
 else
     COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH1-apple-$OSXCROSS_TARGET-base-gcc"
-    OSXCROSS_OPT_ARGS+=" -static-libgcc -arch $ARCH1"
+    OSXCROSS_OPT_ARGS+=" -static-libgcc"
+fi
+
+if [ $# -gt 0 ]; then
+    ARCHGIVEN=0
+
+    for p in "$@"
+    do
+        if [ "$p" == "-arch" ]; then
+            ARCHGIVEN=1
+            break
+        fi 
+    done
+
+    if [ $ARCHGIVEN -eq 0 ]; then
+        OSXCROSS_OPT_ARGS+=" -arch $ARCH1"
+    fi
 fi
 
 if [ "$OSXCROSS_OSX_VERSION_MIN" != "default" ]; then

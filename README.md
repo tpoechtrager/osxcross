@@ -31,7 +31,7 @@ Basically everything you can build on OS X with clang/gcc should build with this
 
 ### INSTALLATION: ###
 
-Download the SDK version you want to the tarball/ (important!) directory.
+Download the SDK version (links below) you want to the tarball/ (important!) directory.
 
 Then assure you have the following installed on your Linux box:
 

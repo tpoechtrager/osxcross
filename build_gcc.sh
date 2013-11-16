@@ -43,7 +43,7 @@ BASE_DIR=`pwd`
 
 pushd $OSXCROSS_BUILD_DIR
 
-if [ ! -f "have_gcc_${GCC_VERSION}" ]; then
+if [ ! -f "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR
 wget -c "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
@@ -55,6 +55,9 @@ echo "extracting gcc ..."
 tar xf "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2"
 
 pushd gcc*$GCC_VERSION*
+
+rm -f $OSXCROSS_TARGET_DIR/bin/*-gcc*
+rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 
 patch -p0 < $OSXCROSS_PATCH_DIR/gcc-dsymutil.patch
 
@@ -79,7 +82,7 @@ make install -j$JOBS
 popd #build
 popd #gcc
 
-touch "have_gcc_${GCC_VERSION}"
+touch "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}"
 
 fi #have gcc
 
