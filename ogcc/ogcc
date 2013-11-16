@@ -29,7 +29,7 @@ if [ $# -gt 0 ]; then
 
     for p in "$@"
     do
-        if [ "$p" == "-arch" ]; then
+        if [ "$p" == "-arch" ] || [ "$p" == "-m32" ] || [ "$p" == "-m64" ]; then
             ARCHGIVEN=1
             break
         fi 
