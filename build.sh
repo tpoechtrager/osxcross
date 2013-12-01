@@ -159,6 +159,7 @@ touch "have_cctools_$TARGET"
 
 fi # HAVE_CCTOOLS
 
+set +e
 ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
 while [ $? -ne 0 ]
 do
@@ -172,6 +173,7 @@ do
     read -p "Press enter to continue"
     ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
 done
+set -e
 
 SDK=`ls $TARBALL_DIR/MacOSX$SDK_VERSION*`
 SDK_FILENAME=`basename $SDK`
