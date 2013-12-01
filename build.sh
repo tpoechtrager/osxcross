@@ -108,8 +108,10 @@ pushd cctools*
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
-patch -p0 < $PATCH_DIR/cctools-llvm-3.4.patch
 patch -p0 < $PATCH_DIR/cctools-conf-1.patch
+patch -p0 < $PATCH_DIR/cctools-llvm-lto.patch
+CF=$CFLAGS CXXF=$CXXFLAGS LF=$LDFLAGS
+eval `$BASE_DIR/oclang/find_lto_header.sh`
 set +e
 grep -n "__block," /usr/include/unistd.h &>/dev/null
 if [ $? -eq 0 ]; then
@@ -121,6 +123,7 @@ set -e
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
 make -j$JOBS
 make install -j$JOBS
+export CFLAGS=$CF CXXFLAGS=$CXXF LDFLAGS=$LF
 
 pushd $TARGET_DIR/bin
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
