@@ -36,6 +36,12 @@ CPLUSINC2=$OSXCROSS_SDK/usr/include/c++/4.0.0
 CPLUSINC3=$OSXCROSS_SDK/usr/include/c++/4.0.0/$ARCH2-apple-darwin9
 TARGET=$ARCH1-apple-$OSXCROSS_TARGET
 
+XMMINTRIN=`readlink "$STDINC/xmmintrin.h"`
+if [ $? -eq 0 ] && [ ! -f "$XMMINTRIN" ]; then
+    echo "oclang error: dead intrinsic link found - please re-run ./build.sh" 1>&2
+    exit 1
+fi
+
 $COMPILER $OSXCROSS_TARGET_OPTION $TARGET -isysroot $OSXCROSS_SDK \
 -isystem $STDINC -isystem $CPLUSINC1 -isystem $CPLUSINC2 -isystem $CPLUSINC3 \
 $OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION $OSXCROSS_OPT_ARGS \

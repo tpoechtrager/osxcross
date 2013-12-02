@@ -1,3 +1,6 @@
+0.5:
+- fixed: help clang to find its own intrinsic headers (this issue appears to be fixed in clang 3.4+)
+
 0.4:
 - added: gcc support
 - added: a workaround for buggish unistd.h headers, no more need to edit /usr/include/unistd.h
