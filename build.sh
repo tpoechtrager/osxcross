@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+pushd "${0%/*}" &>/dev/null
+
 export LC_ALL="C"
 export CC=clang
 export CXX=clang++
@@ -20,7 +22,7 @@ OSX_VERSION_MIN=10.5
 LINKER_VERSION=134.9
 
 # Don't change this
-OSXCROSS_VERSION=0.4
+OSXCROSS_VERSION=0.5
 
 function require
 {
@@ -199,6 +201,7 @@ mv -f SDKs/*$SDK_VERSION* $SDK_DIR
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk
 set +e
 ln -s $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h usr/include 2>/dev/null
+$BASE_DIR/oclang/find_intrinsic_headers.sh $SDK_DIR/MacOSX$SDK_VERSION.sdk
 set -e
 popd
 
