@@ -22,6 +22,16 @@ else
     COMPILER="clang"
 fi
 
+if [ $# -gt 0 ]; then
+    for p in "$@"
+    do
+        if [[ "$p" == -mmacosx-version-min=* ]]; then
+            OSXCROSS_OSX_VERSION_MIN="default"
+            break
+        fi
+    done
+fi
+
 if [ "$OSXCROSS_OSX_VERSION_MIN" != "default" ]; then
     OSX_VERSION_MIN_OPT="-mmacosx-version-min=$OSXCROSS_OSX_VERSION_MIN"
 else

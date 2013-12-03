@@ -31,8 +31,10 @@ if [ $# -gt 0 ]; then
     do
         if [ "$p" == "-arch" ] || [ "$p" == "-m32" ] || [ "$p" == "-m64" ]; then
             ARCHGIVEN=1
-            break
-        fi 
+        fi
+        if [[ "$p" == -mmacosx-version-min=* ]]; then
+            OSXCROSS_OSX_VERSION_MIN="default"
+        fi
     done
 
     if [ $ARCHGIVEN -eq 0 ]; then
