@@ -24,6 +24,7 @@ test -f "$CLANG_INTRIN_DIR/xmmintrin.h" || { echo "xmmintrin.h does not exist in
 echo "found clang intrinsic headers: $CLANG_INTRIN_DIR"
 
 ln -sf $CLANG_INTRIN_DIR/float.h $SDK_DIR/usr/include
+ln -sf $CLANG_INTRIN_DIR/stdarg.h $SDK_DIR/usr/include
 ln -sf $CLANG_INTRIN_DIR/*intrin*.h $SDK_DIR/usr/include
 ln -sf $CLANG_INTRIN_DIR/mm*.h $SDK_DIR/usr/include
 ln -sf $CLANG_INTRIN_DIR/*va*.h $SDK_DIR/usr/include
