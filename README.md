@@ -36,7 +36,7 @@ Download the SDK version (links below) you want to the tarball/ (important!) dir
 Then assure you have the following installed on your Linux box:
 
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
-`libxml2-devel`, `libuuid-devel`, `openssl-devel` and the `bash shell`.
+`libxml2-devel`, `uuid-devel`, `openssl-devel` and the `bash shell`.
 
 Now edit the `SDK_VERSION` in `build.sh`, so it matches the version you have downloaded before.
 
