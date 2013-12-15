@@ -17,14 +17,17 @@ CLANG_DIR=`dirname \`which clang\``
 CLANG_INTRIN_DIR="$CLANG_DIR/../include/clang/$CLANG_VERSION/include"
 
 test ! -e "$CLANG_INTRIN_DIR" && CLANG_INTRIN_DIR="$CLANG_DIR/../lib/clang/$CLANG_VERSION/include"
+test ! -e "$CLANG_INTRIN_DIR" && CLANG_INTRIN_DIR="$CLANG_DIR/../include/clang/$CLANG_VERSION/include"
+test ! -e "$CLANG_INTRIN_DIR" && CLANG_INTRIN_DIR="$CLANG_DIR/../include/clang/$CLANG_VERSION"
 
 test -e "$CLANG_INTRIN_DIR" || { echo "can not find clang intrinsics directory" && exit 1; }
 test -f "$CLANG_INTRIN_DIR/xmmintrin.h" || { echo "xmmintrin.h does not exist in $CLANG_INTRIN_DIR" && exit 1; }
 
 echo "found clang intrinsic headers: $CLANG_INTRIN_DIR"
 
-ln -sf $CLANG_INTRIN_DIR/float.h $SDK_DIR/usr/include
-ln -sf $CLANG_INTRIN_DIR/stdarg.h $SDK_DIR/usr/include
+test -f $CLANG_INTRIN_DIR/float.h && ln -sf $CLANG_INTRIN_DIR/float.h $SDK_DIR/usr/include
+test -f $CLANG_INTRIN_DIR/stdarg.h && ln -sf $CLANG_INTRIN_DIR/stdarg.h $SDK_DIR/usr/include
+
 ln -sf $CLANG_INTRIN_DIR/*intrin*.h $SDK_DIR/usr/include
 ln -sf $CLANG_INTRIN_DIR/mm*.h $SDK_DIR/usr/include
 ln -sf $CLANG_INTRIN_DIR/*va*.h $SDK_DIR/usr/include

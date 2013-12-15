@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
 
+pushd "${0%/*}" &>/dev/null
+
 export LC_ALL="C"
 export LIBRARY_PATH=""
 
 export CC=clang
 export CXX=clang++
 
-which osxcross-conf &>/dev/null || {
+`tools/osxcross_conf.sh`
+
+if [ $? -ne 0 ]; then
     echo "you need to complete ./build.sh first, before you can start building gcc"
     exit 1
-}
+fi
 
 set -e
 
-eval `osxcross-conf`
-
 # How many concurrent jobs should be used for compiling?
-JOBS=`grep -c ^processor /proc/cpuinfo`
+JOBS=`tools/get_cpu_count.sh`
 
 # GCC version to build
+# (<4.7 will not work properly with libc++)
 GCC_VERSION=4.8.2
 
 # GCC mirror
@@ -43,12 +46,15 @@ BASE_DIR=`pwd`
 
 pushd $OSXCROSS_BUILD_DIR
 
+trap 'test $? -eq 0 || rm -f $OSXCROSS_BUILD_DIR/have_gcc*' EXIT
+
 if [ ! -f "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR
 wget -c "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
 popd
 
+echo "cleaning up ..."
 rm -rf gcc* 2>/dev/null
 
 echo "extracting gcc ..."
@@ -64,6 +70,18 @@ patch -p0 < $OSXCROSS_PATCH_DIR/gcc-dsymutil.patch
 mkdir -p build
 pushd build
 
+if [ "`uname -s`" == "FreeBSD" ]; then
+    export CPATH="/usr/local/include"
+    export LIBRARY_PATH="/usr/local/lib"
+    MAKE=gmake
+    IS_FREEBSD=1
+else
+    MAKE=make
+    IS_FREEBSD=0
+fi
+
+require $MAKE
+
 ../configure \
     --target=x86_64-apple-$OSXCROSS_TARGET \
     --with-ld=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-ld \
@@ -76,8 +94,12 @@ pushd build
     --enable-lto \
     --prefix=$OSXCROSS_TARGET_DIR
 
-make -j$JOBS
-make install -j$JOBS
+if [ $IS_FREEBSD -eq 1 ]; then
+    export LIBRARY_PATH=""
+fi
+
+$MAKE -j$JOBS
+$MAKE install -j$JOBS
 
 popd #build
 popd #gcc
@@ -88,11 +110,15 @@ fi #have gcc
 
 popd #build dir
 
-cp ogcc/ogcc $OSXCROSS_TARGET_DIR/bin
+WRAPPER=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-${OSXCROSS_TARGET}-ogcc
+cp ogcc/ogcc $WRAPPER
 
-pushd $OSXCROSS_TARGET_DIR/bin
+WRAPPER_SCRIPT=`basename $WRAPPER`
+WRAPPER_DIR=`dirname $WRAPPER`
 
-if [ ! -f $OSXCROSS_TARGET_DIR/bin/i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
+pushd $WRAPPER_DIR
+
+if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
     mv x86_64-apple-$OSXCROSS_TARGET-gcc x86_64-apple-$OSXCROSS_TARGET-base-gcc
     mv x86_64-apple-$OSXCROSS_TARGET-g++ x86_64-apple-$OSXCROSS_TARGET-base-g++
 
@@ -100,22 +126,29 @@ if [ ! -f $OSXCROSS_TARGET_DIR/bin/i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
     ln -sf x86_64-apple-$OSXCROSS_TARGET-base-g++ i386-apple-$OSXCROSS_TARGET-base-g++
 fi
 
-ln -sf ogcc o32-gcc
-ln -sf ogcc o32-g++
-ln -sf ogcc o64-gcc
-ln -sf ogcc o64-g++
+ln -sf $WRAPPER_SCRIPT o32-gcc
+ln -sf $WRAPPER_SCRIPT o32-g++
+ln -sf $WRAPPER_SCRIPT o32-g++-libc++
 
-ln -sf ogcc i386-apple-$OSXCROSS_TARGET-gcc
-ln -sf ogcc i386-apple-$OSXCROSS_TARGET-g++
-ln -sf ogcc x86_64-apple-$OSXCROSS_TARGET-gcc
-ln -sf ogcc x86_64-apple-$OSXCROSS_TARGET-g++
+ln -sf $WRAPPER_SCRIPT o64-gcc
+ln -sf $WRAPPER_SCRIPT o64-g++
+ln -sf $WRAPPER_SCRIPT o64-g++-libc++
 
-popd #target dir / bin
+ln -sf $WRAPPER_SCRIPT i386-apple-$OSXCROSS_TARGET-gcc
+ln -sf $WRAPPER_SCRIPT i386-apple-$OSXCROSS_TARGET-g++
+ln -sf $WRAPPER_SCRIPT i386-apple-$OSXCROSS_TARGET-g++-libc++
+
+ln -sf $WRAPPER_SCRIPT x86_64-apple-$OSXCROSS_TARGET-gcc
+ln -sf $WRAPPER_SCRIPT x86_64-apple-$OSXCROSS_TARGET-g++
+ln -sf $WRAPPER_SCRIPT x86_64-apple-$OSXCROSS_TARGET-g++-libc++
+
+popd #wrapper dir
 
 function test_compiler
 {
     echo -ne "testing $1 ... "
-    $1 $2 -O2 -Wall -o test && rm test
+    $1 $2 -O2 -Wall -o test
+    rm test
     echo "works"
 }
 
