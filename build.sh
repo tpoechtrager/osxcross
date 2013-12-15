@@ -281,8 +281,8 @@ echo ""                                                                         
 echo "popd &>/dev/null"                                                                  >> $OSXCROSS_CONF
 echo ""                                                                                  >> $OSXCROSS_CONF
 
-if [ -f "$BUILD_DIR/cctools*/cctools/tmp/ldpath" ]; then
-    LIB_PATH="`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`"
+if [ -f $BUILD_DIR/cctools*/cctools/tmp/ldpath ]; then
+    LIB_PATH=:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`
 else
     LIB_PATH=""
 fi

@@ -11,10 +11,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-
 set -e
-
-eval `osxcross-conf`
 
 if [ `echo "${OSXCROSS_SDK_VERSION}<10.7" | bc -l` -eq 1 ]; then
     echo "you must use the SDK from 10.7 or newer to get libc++ compiled"
