@@ -1,5 +1,10 @@
 0.5:
 - fixed: help clang to find its own intrinsic headers (this issue appears to be fixed in clang 3.4+)
+- changed: attempt to make the toolchain less path dependent
+- fixed: building the toolchain on 32 bit systems
+- added: libc++ support (for both, clang and gcc)
+- changed: update cctools to 845
+- added: FreeBSD support
 
 0.4:
 - added: gcc support

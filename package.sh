@@ -1,15 +1,81 @@
 #!/usr/bin/env bash
+
+set -ex
+
+test -z "$COMPRESSLEVEL" && COMPRESSLEVEL=9
+
+if [ -n "$BINARYPACKAGE" ]; then
+    SUFFIX=""
+else
+    SUFFIX="_src"
+    BINARYPACKAGE="0"
+fi
+
 TMPDIR=`mktemp -d`
-test $? -eq 0 || exit 1
+
 BASEDIR=`pwd`
-cp -r . $TMPDIR
-pushd $TMPDIR || exit 1
-rm -rf build
-rm -rf target
-rm -rf tarballs/*MacOSX*
-find . -name "*~" -exec rm {} \;
-find . -name "*.save" -exec rm {} \;
-rm -rf *.tar.xz
-tar -cf - * | xz -9 -c - > $BASEDIR/osxcross.tar.xz || exit 1
+
+REVHASH=`git rev-parse --short HEAD`
+OSXCROSSVER=`cat build.sh | grep "OSXCROSS_VERSION" | head -n1 | tr '=' ' ' | awk '{print $2}'`
+
+pushd $TMPDIR
+
+mkdir osxcross
+pushd osxcross
+
+if [ $BINARYPACKAGE != "1" ]; then
+    cp -r $BASEDIR/tarballs .
+    cp -r $BASEDIR/patches .
+    cp -r $BASEDIR/tools .
+    cp -r $BASEDIR/oclang .
+    cp -r $BASEDIR/ogcc .
+else
+    ldd `ls $BASEDIR/target/bin/x86_64-apple-darwin*-ld | head -n1` | grep "libLTO.so" &>/dev/null && \
+        echo "-->> WARNING: ld is linked dynamically against libLTO.so! Consider recompiling with DISABLE_LTO_SUPPORT=1 <<--" && \
+        sleep 5
+
+    cp -r $BASEDIR/target/* .
+    cp $BASEDIR/build/cctools*/cctools/APPLE_LICENSE CCTOOLS.LICENSE
+    cp $BASEDIR/oclang/find_intrinsic_headers.sh bin/osxcross-fix-intrinsic-headers
+
+    READMEINSTALL="README_INSTALL"
+
+    echo "- BINARY INSTALLATION INSTRUCTIONS -"     > $READMEINSTALL
+    echo ""                                        >> $READMEINSTALL
+    echo "Add "                                    >> $READMEINSTALL
+    echo ""                                        >> $READMEINSTALL
+    echo "  \`<absolute path>/bin/osxcross-env\`"  >> $READMEINSTALL
+    echo ""                                        >> $READMEINSTALL
+    echo "To your ~/.profile or ~/.bashrc,"        >> $READMEINSTALL
+    echo "then restart your shell session."        >> $READMEINSTALL
+    echo ""                                        >> $READMEINSTALL
+    echo "That's it."                              >> $READMEINSTALL
+    echo ""                                        >> $READMEINSTALL
+fi
+
+find $BASEDIR -maxdepth 1 -type f -print0 | xargs -0 -i cp {} .
+
+if [ $BINARYPACKAGE == "1" ]; then
+    rm -f *.sh
+    rm -f TODO
+fi
+
+rm -rf tarballs/gcc*
+rm -rf tarballs/MacOSX*
+rm -rf tarballs/libcxx*
+
+rm -f tools/cpucount
+
+rm -f osxcross*.tar.*
+
+find . \( -name "*.save" -o -name "*~" -o -name "*.kate-swp" \) -exec rm {} \;
+
+rm -rf osxcross*.tar.*
+
 popd
+
+tar -cf - * | xz -$COMPRESSLEVEL -c - > $BASEDIR/osxcross-v${OSXCROSSVER}_${REVHASH}${SUFFIX}.tar.xz
+
+popd
+
 rm -rf $TMPDIR

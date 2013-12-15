@@ -1,27 +1,47 @@
 #!/usr/bin/env bash
 
-eval `osxcross-conf`
+pushd "${0%/*}" &>/dev/null
+eval `./osxcross-env`
+eval `./osxcross-conf`
+popd &>/dev/null
+
 type=`basename $0`
 
-if [ "$type" != "${type/o64/}" ] || [ "$type" != "${type/x86_64/}" ]; then
-    ARCH1="x86_64"
-    ARCH2=$ARCH1
+if [ $type != "${type/o64/}" ] || [ $type != "${type/x86_64/}" ]; then
+    ARCH="x86_64"
+    ARCHFLAG="-m64"
 else
-    if [ "$type" != "${type/o32/}" ] || [ "$type" != "${type/i386/}" ]; then
-        ARCH1="i386"
-        ARCH2="i686"
+    if [ $type != "${type/o32/}" ] || [ $type != "${type/i386/}" ]; then
+        ARCH="i386"
+        ARCHFLAG="-m32"
     else
         echo "unknown arch"
         exit 1
     fi
 fi
 
-if [ "$type" != "${type/++/}" ]; then
-    COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH1-apple-$OSXCROSS_TARGET-base-g++"
-    OSXCROSS_OPT_ARGS+=" -static-libgcc -static-libstdc++"
+if [ $type != "${type/++/}" ]; then
+    COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH-apple-$OSXCROSS_TARGET-base-g++"
 else
-    COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH1-apple-$OSXCROSS_TARGET-base-gcc"
-    OSXCROSS_OPT_ARGS+=" -static-libgcc"
+    COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH-apple-$OSXCROSS_TARGET-base-gcc"
+fi
+
+if [[ $COMPILER == *g++ ]] && [ "$type" != "${type/libc++/}" ]; then
+    if [ ! -f "$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib/libc++.a" ]; then
+        echo -e "\e[1mosxcross \e[31merror:\e[0m\e[1m you must build libc++ before you can use it (./build_libcxx.sh)\e[0m" 1>&2
+        exit 1
+    fi
+
+    OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -std=c++0x -nostdinc++ -nodefaultlibs"
+    OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -lc -isystem $OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/include/c++/v1"
+    OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib -lc++ -lc++abi"
+    OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -L$OSXCROSS_SDK/usr/lib -lgcc_s.10.5"
+else
+    if [[ $COMPILER == *g++ ]]; then
+        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -static-libgcc -static-libstdc++"
+    else
+        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -static-libgcc"
+    fi
 fi
 
 if [ $# -gt 0 ]; then
@@ -38,17 +58,17 @@ if [ $# -gt 0 ]; then
     done
 
     if [ $ARCHGIVEN -eq 0 ]; then
-        OSXCROSS_OPT_ARGS+=" -arch $ARCH1"
+        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS $ARCHFLAG"
     fi
 fi
 
-if [ "$OSXCROSS_OSX_VERSION_MIN" != "default" ]; then
+if [ $OSXCROSS_OSX_VERSION_MIN != "default" ]; then
     OSX_VERSION_MIN_OPT="-mmacosx-version-min=$OSXCROSS_OSX_VERSION_MIN"
 else
     OSX_VERSION_MIN_OPT=""
 fi
 
-export COMPILER_PATH="$OSXCROSS_CCTOOLS_PATH:${COMPILER_PATH}"
+export COMPILER_PATH="$OSXCROSS_CCTOOLS_PATH:$COMPILER_PATH"
 
 $COMPILER $OSX_VERSION_MIN_OPT $OSXCROSS_OPT_ARGS ${1+"$@"}
 

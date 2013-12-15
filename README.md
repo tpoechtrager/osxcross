@@ -1,27 +1,24 @@
-## OSXCross: OS X cross toolchain for Linux ##
+## OS X Cross toolchain for Linux and FreeBSD ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to deliver you a high quality cross toolchain targeting OS X on Linux.
+The goal of OSXCross is to provide a well working OS X cross toolchain for Linux and FreeBSD.
 
 ### HOW DOES IT WORK? ###
 
 [Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html) and is now available on nearly every Linux distribution.  
 Therefore we "just" need a proper
-[port](https://code.google.com/p/ios-toolchain-based-on-clang-for-linux/source/browse/#svn%2Ftrunk%2Fcctools-porting%2Fpatches)
+[port](https://github.com/tpoechtrager/cctools-port)
 of the [cctools](http://www.opensource.apple.com/tarballs/cctools) (ld, lipo, ...) for Linux, and the OS X SDK.
 
 If you want, then you can build an up-to-date vanilla GCC as well.
 
 ### WHAT IS NOT WORKING (YET)? ###
 
-* Clang:
-    * using [libc++](http://libcxx.llvm.org/) (`-stdlib=libc++`) doesn't work yet (missing headers, besides that it should work)
-* GCC:
-    * debug info is weak, because of the [missing](https://github.com/tpoechtrager/osxcross/blob/master/patches/gcc-dsymutil.patch)
+* Debug info is weak, because of the [missing](https://github.com/tpoechtrager/osxcross/blob/master/patches/gcc-dsymutil.patch)
       [`dsymutil`](http://www.manpagez.com/man/1/dsymutil) (shows only function names, no line numbers)
-    * GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/12f5dcdde4bc1000180d25ffda229f0a13cf723d),
-but builds fine when clang is used to build GCC
+* GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/12f5dcdde4bc1000180d25ffda229f0a13cf723d),
+      but builds fine when clang is used to build GCC
 
 Everything else besides that should work.
 
@@ -36,22 +33,32 @@ Download the SDK version (links below) you want to the tarball/ (important!) dir
 Then assure you have the following installed on your Linux box:
 
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
-`libxml2-devel`, `uuid-devel`, `openssl-devel` and the `bash shell`.
+`libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
+
+Hint: On Ubuntu 12.04 LTS you can use [llvm.org/apt](http://llvm.org/apt) to get a newer version of clang.
 
 Now edit the `SDK_VERSION` in `build.sh`, so it matches the version you have downloaded before.
 
 Then run `./build.sh` to build the cross toolchain (It will build in it's own directory).
 
-**Don't forget** to add the printed `export PATH=...` to your `~/.profile` or `~/.bashrc`.  
+**Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile` or `~/.bashrc`.  
 Then either run `source ~/.profile` or restart your shell session.
 
-That's it. See Usage Examples below.
+That's it. See usage examples below.
+
+##### Building libc++: #####
+
+If you want to build libc++ for modern C++11 with clang, then you can do this by running `./build_libcxx.sh`.  
+The resulting library will be linked statically into the applications, to avoid troubles with different  
+libc++.dylib versions on OS X.
+
+See below in how to use libc++ as the standard library.
 
 ##### Building GCC: #####
 
 If you want to build GCC as well, then you can do this by running `./build_gcc.sh`.  
 But before you do this, make sure you have got the gcc build depedencies installed on your system,  
-on debian like systems you can run `apt-get build-dep gcc` to install them.
+on debian like systems you can run `apt-get install mpc-dev mpfr-dev gmp-dev` to install them.
 
 ### SDK DOWNLOAD LINKS: ###
 
@@ -83,6 +90,25 @@ You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like 
 
   * `CC=o32-clang CXX=o32-clang++ ./configure --host=i386-apple-darwinXX`
 
+##### Building test.cpp with libc++: #####
+
+* Clang:
+
+  * C++98: `o32-clang++ -stdlib=libc++ test.cpp -o test`
+  * C++11: `o32-clang++ -stdlib=libc++ -std=c++11 tes1.cpp -o test`
+  * C++1y: `o32-clang++ -stdlib=libc++ -std=c++1y test1.cpp -o test`  
+
+* Clang (shortcut):
+
+  * C++98: `o32-clang++-libc++ test.cpp -o test`
+  * C++11: `o32-clang++-libc++ -std=c++11 test.cpp -o test`
+  * C++1y: `o32-clang++-libc++ -std=c++1y test.cpp  -o test`
+
+* GCC (defaults to C++11 with libc++)
+
+  * C++11: `o32-g++-libc++ test.cpp`
+  * C++1y: `o32-g++-libc++ -std=c++1y test.cpp -o test`
+
 ##### Building test1.cpp and test2.cpp with LTO (Link Time Optimization): #####
 
   * build the first object file: `o32-clang++ test1.cpp -O3 -flto -c`
@@ -91,7 +117,7 @@ You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like 
 
 ##### Building a universal binary: #####
 
-* clang:
+* Clang:
   * `o64-clang++ test.cpp -O3 -arch i386 -arch x86_64 -o test`
 * GCC:
   * build the 32 bit binary: `o32-g++ test.cpp -O3 -o test.i386`

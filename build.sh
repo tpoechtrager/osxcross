@@ -7,7 +7,7 @@ export CC=clang
 export CXX=clang++
 
 # How many concurrent jobs should be used for compiling?
-JOBS=`grep -c ^processor /proc/cpuinfo`
+JOBS=`tools/get_cpu_count.sh` || exit 1
 
 # SDK version to use
 SDK_VERSION=10.8
@@ -47,7 +47,7 @@ if [ $JOBS -eq 1 ]; then
     JOBSSTR="job"
 fi
 
-if [ "$OSX_VERSION_MIN" == "" ]; then
+if [ -z "$OSX_VERSION_MIN" ]; then
     OSX_VERSION_MIN="default"
 fi
 
@@ -72,7 +72,6 @@ echo "Tarball Directory: $TARBALL_DIR"
 echo "Build Directory: $BUILD_DIR"
 echo "Install Directory: $TARGET_DIR"
 echo "SDK Install Directory: $SDK_DIR"
-echo "Compile with $JOBS concurrent $JOBSSTR"
 echo ""
 read -p "Press enter to start building"
 echo ""
@@ -97,35 +96,44 @@ require automake
 require libtool
 set -e
 
-CLANG_TARGET_OPTION=`./oclang/check_clang_target_option.sh`
+CLANG_TARGET_OPTION=`./oclang/check_target_option.sh`
 
 pushd $BUILD_DIR
 
-if [ ! -f "have_cctools_$TARGET" ]; then
+trap 'test $? -eq 0 || rm -f $BUILD_DIR/have_cctools*' EXIT
 
-tar xzfv $TARBALL_DIR/cctools-*.tar.gz
+if [ "`ls $TARBALL_DIR/cctools*.tar.* | wc -l | tr -d ' '`" != "1" ]; then
+    echo ""
+    echo "There should only be one cctools*.tar.* archive in the tarballs directory"
+    echo ""
+    exit 1
+fi
+
+CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | \
+                 tr '_' ' ' | tr '.' ' ' | \
+                 awk '{print $3}'`
+
+if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
+
+rm -rf cctools*
+rm -rf xar*
+
+tar xJfv $TARBALL_DIR/cctools*.tar.xz
 tar xzfv $TARBALL_DIR/xar*.tar.gz
 
-pushd cctools*
+pushd cctools*/cctools
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
-patch -p0 < $PATCH_DIR/cctools-conf-1.patch
-patch -p0 < $PATCH_DIR/cctools-llvm-lto.patch
-CF=$CFLAGS CXXF=$CXXFLAGS LF=$LDFLAGS
-eval `$BASE_DIR/oclang/find_lto_header.sh`
-set +e
-grep -n "__block," /usr/include/unistd.h &>/dev/null
-if [ $? -eq 0 ]; then
-    echo "applying workaround for buggy unistd.h"
-    $PATCH_DIR/fix-unistd-issue.sh
-fi
-set -e
 ./autogen.sh
+echo ""
+echo "if you see automake warnings, ignore them"
+echo "automake 1.14+ is supposed to print a lot of warnings"
+echo ""
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
 make -j$JOBS
 make install -j$JOBS
-export CFLAGS=$CF CXXFLAGS=$CXXF LDFLAGS=$LF
+popd
 
 pushd $TARGET_DIR/bin
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
@@ -136,13 +144,24 @@ for CCTOOL in ${CCTOOLS[@]}; do
 done
 popd
 
-popd
+fi # have cctools
+
+if [ ! -f "have_xar_$TARGET" ]; then
+if [ -n "$FORCE_XAR_BUILD" ] || [ `echo "$SDK_VERSION<=10.5" | bc -l` -eq 1 ]; then
 
 pushd xar*
+set +e
+sed -i 's/-Wall/-w/g' configure
+set -e
 ./configure --prefix=$TARGET_DIR
 make -j$JOBS
 make install -j$JOBS
 popd
+
+fi # SDK <= 10.5
+fi # have xar
+
+if [ ! -f "have_cctools_$TARGET" ]; then
 
 function check
 {
@@ -157,7 +176,7 @@ function check
 check i386
 check x86_64
 
-touch "have_cctools_$TARGET"
+touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET"
 
 fi # HAVE_CCTOOLS
 
@@ -184,6 +203,7 @@ echo "extracting $SDK_FILENAME ..."
 
 case $SDK in
     *.pkg)
+        which xar &>/dev/null || { echo "please build with: FORCE_XAR_BUILD=1 ./build.sh" && exit 1; }
         xar -xf $SDK
         cat Payload | gunzip -dc | cpio -i 2>/dev/null
         ;;
@@ -207,43 +227,85 @@ popd
 
 popd
 
-cp -f oclang/oclang $TARGET_DIR/bin
+WRAPPER=$TARGET_DIR/bin/x86_64-apple-$TARGET-oclang
+cp -f oclang/oclang $WRAPPER
 
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o32-clang
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o32-clang++
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o64-clang
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/o64-clang++
+WRAPPER_SCRIPT=`basename $WRAPPER`
+WRAPPER_DIR=`dirname $WRAPPER`
 
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/i386-apple-$TARGET-clang
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/i386-apple-$TARGET-clang++
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/x86_64-apple-$TARGET-clang
-ln -sf $TARGET_DIR/bin/oclang $TARGET_DIR/bin/x86_64-apple-$TARGET-clang++
+pushd $WRAPPER_DIR
+
+ln -sf $WRAPPER_SCRIPT o32-clang
+ln -sf $WRAPPER_SCRIPT o32-clang++
+ln -sf $WRAPPER_SCRIPT o32-clang++-libc++
+
+ln -sf $WRAPPER_SCRIPT o64-clang
+ln -sf $WRAPPER_SCRIPT o64-clang++
+ln -sf $WRAPPER_SCRIPT o64-clang++-libc++
+
+ln -sf $WRAPPER_SCRIPT i386-apple-$TARGET-clang
+ln -sf $WRAPPER_SCRIPT i386-apple-$TARGET-clang++
+ln -sf $WRAPPER_SCRIPT i386-apple-$TARGET-clang++-libc++
+
+ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang
+ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang++
+ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang++-libc++
+
+popd
 
 OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
+OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
 
-rm -f $OSXCROSS_CONF 2>/dev/null
+rm -f $OSXCROSS_CONF $ENV_CONF
 
-echo "#!/usr/bin/env bash" > $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_VERSION=$OSXCROSS_VERSION\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARGET=$TARGET\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_SDK_VERSION=$SDK_VERSION\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_SDK=$SDK_DIR/MacOSX$SDK_VERSION.sdk\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARBALL_DIR=$TARBALL_DIR\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_PATCH_DIR=$PATCH_DIR\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARGET_DIR=$TARGET_DIR\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_BUILD_DIR=$BUILD_DIR\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_CCTOOLS_PATH=$TARGET_DIR/bin\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARGET_OPTION=$CLANG_TARGET_OPTION\"" >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_LINKER_VERSION=$LINKER_VERSION\"" >> $OSXCROSS_CONF
-chmod +x $OSXCROSS_CONF
+echo "#!/usr/bin/env bash"                                                                > $OSXCROSS_CONF
+echo ""                                                                                  >> $OSXCROSS_CONF
+echo "pushd \"\${0%/*}\" &>/dev/null"                                                    >> $OSXCROSS_CONF
+echo ""                                                                                  >> $OSXCROSS_CONF
+echo "DIR=\`pwd\`"                                                                       >> $OSXCROSS_CONF
+echo "OSXCROSS_ROOT=\$DIR/../.."                                                         >> $OSXCROSS_CONF
+echo ""                                                                                  >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_VERSION=$OSXCROSS_VERSION\""                                >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN\""                         >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARGET=$TARGET\""                                           >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_SDK_VERSION=$SDK_VERSION\""                                 >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_SDK=\$DIR/../`basename $SDK_DIR`/MacOSX$SDK_VERSION.sdk\""  >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARBALL_DIR=\$OSXCROSS_ROOT/`basename $TARBALL_DIR`\""      >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_PATCH_DIR=\$OSXCROSS_ROOT/`basename $PATCH_DIR`\""          >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARGET_DIR=\$OSXCROSS_ROOT/`basename $TARGET_DIR`\""        >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_BUILD_DIR=\$OSXCROSS_ROOT/`basename $BUILD_DIR`\""          >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_CCTOOLS_PATH=\$DIR\""                                       >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_TARGET_OPTION=$CLANG_TARGET_OPTION\""                       >> $OSXCROSS_CONF
+echo "echo \"export OSXCROSS_LINKER_VERSION=$LINKER_VERSION\""                           >> $OSXCROSS_CONF
+echo ""                                                                                  >> $OSXCROSS_CONF
+echo "popd &>/dev/null"                                                                  >> $OSXCROSS_CONF
+echo ""                                                                                  >> $OSXCROSS_CONF
+
+if [ -f "$BUILD_DIR/cctools*/cctools/tmp/ldpath" ]; then
+    LIB_PATH="`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`"
+else
+    LIB_PATH=""
+fi
+
+echo "#!/bin/sh"                                                                    > $OSXCROSS_ENV
+echo ""                                                                            >> $OSXCROSS_ENV
+echo "BDIR=\`readlink -f \\\`dirname \$0\\\`\`"                                    >> $OSXCROSS_ENV
+echo ""                                                                            >> $OSXCROSS_ENV
+echo "echo \"export PATH=\$PATH:\$BDIR\""                                          >> $OSXCROSS_ENV
+echo "echo \"export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$BDIR/../lib${LIB_PATH}"\"  >> $OSXCROSS_ENV
+
+chmod +x $OSXCROSS_CONF $OSXCROSS_ENV
+
 
 function test_compiler
 {
     echo -ne "testing $1 ... "
-    $1 $2 -O2 -Wall -o test && rm test
+    $1 $2 -O2 -Wall -o test
+    rm test
     echo "works"
 }
+
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`" # libLTO.so
 
 echo ""
 
@@ -254,11 +316,11 @@ test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
 test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
 
 echo ""
-echo "Now add"
+echo "Now add the following line"
 echo ""
-echo "export PATH=\$PATH:$TARGET_DIR/bin"
+echo "\`$OSXCROSS_ENV\`"
 echo ""
-echo "to your ~/.bashrc or ~/.profile"
+echo "to your ~/.bashrc or ~/.profile (including the '\`')"
 echo ""
 
 echo "Done! Now you can use o32-clang(++) and o64-clang(++) like a normal compiler"
