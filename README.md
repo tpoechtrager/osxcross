@@ -30,7 +30,7 @@ Basically everything you can build on OS X with clang/gcc should build with this
 
 Download the SDK version (links below) you want to the tarball/ (important!) directory.
 
-Then assure you have the following installed on your Linux box:
+Then ensure you have the following installed on your Linux box:
 
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
