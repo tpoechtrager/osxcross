@@ -2,12 +2,7 @@
 
 pushd "${0%/*}" &>/dev/null
 
-export LC_ALL="C"
-export CC=clang
-export CXX=clang++
-
-# How many concurrent jobs should be used for compiling?
-JOBS=`tools/get_cpu_count.sh` || exit 1
+source tools/tools.sh
 
 # SDK version to use
 SDK_VERSION=10.8
@@ -24,28 +19,11 @@ LINKER_VERSION=134.9
 # Don't change this
 OSXCROSS_VERSION=0.5
 
-function require
-{
-    which $1 &>/dev/null
-    while [ $? -ne 0 ]
-    do
-        echo ""
-        read -p "Install $1 then press enter"
-        which $1 &>/dev/null
-    done
-}
-
-BASE_DIR=`pwd`
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build
 TARGET_DIR=$BASE_DIR/target
 PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
-
-JOBSSTR="jobs"
-if [ $JOBS -eq 1 ]; then
-    JOBSSTR="job"
-fi
 
 if [ -z "$OSX_VERSION_MIN" ]; then
     OSX_VERSION_MIN="default"
@@ -58,10 +36,8 @@ case $SDK_VERSION in
     10.7*) TARGET=darwin11 ;;
     10.8*) TARGET=darwin12 ;;
     10.9*) TARGET=darwin13 ;;
-    *) echo "Invalid SDK Version"; exit 1 ;;
+    *) echo "Invalid SDK Version" && exit 1 ;;
 esac
-
-set -e
 
 echo ""
 echo "Building OSXCross toolchain, Version: $OSXCROSS_VERSION"
@@ -98,9 +74,14 @@ set -e
 
 CLANG_TARGET_OPTION=`./oclang/check_target_option.sh`
 
-pushd $BUILD_DIR
+pushd $BUILD_DIR &>/dev/null
 
-trap 'test $? -eq 0 || rm -f $BUILD_DIR/have_cctools*' EXIT
+function remove_locks()
+{
+    rm -rf $BUILD_DIR/have_cctools*
+}
+
+source $BASE_DIR/tools/trap_exit.sh
 
 if [ "`ls $TARBALL_DIR/cctools*.tar.* | wc -l | tr -d ' '`" != "1" ]; then
     echo ""
@@ -121,7 +102,7 @@ rm -rf xar*
 tar xJfv $TARBALL_DIR/cctools*.tar.xz
 tar xzfv $TARBALL_DIR/xar*.tar.gz
 
-pushd cctools*/cctools
+pushd cctools*/cctools &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
@@ -133,37 +114,37 @@ echo ""
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
 make -j$JOBS
 make install -j$JOBS
-popd
+popd &>/dev/null
 
-pushd $TARGET_DIR/bin
+pushd $TARGET_DIR/bin &>/dev/null
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
 CCTOOLS=($CCTOOLS)
 for CCTOOL in ${CCTOOLS[@]}; do
     CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
     ln -sf $CCTOOL $CCTOOL_I386
 done
-popd
+popd &>/dev/null
 
 fi # have cctools
 
 if [ ! -f "have_xar_$TARGET" ]; then
 if [ -n "$FORCE_XAR_BUILD" ] || [ `echo "$SDK_VERSION<=10.5" | bc -l` -eq 1 ]; then
 
-pushd xar*
+pushd xar* &>/dev/null
 set +e
 sed -i 's/-Wall/-w/g' configure
 set -e
 ./configure --prefix=$TARGET_DIR
 make -j$JOBS
 make install -j$JOBS
-popd
+popd &>/dev/null
 
 fi # SDK <= 10.5
 fi # have xar
 
 if [ ! -f "have_cctools_$TARGET" ]; then
 
-function check
+function check_cctools
 {
     [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-lipo" ] || exit 1
     [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ld" ] || exit 1
@@ -173,8 +154,8 @@ function check
     [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-strip" ] || exit 1
 }
 
-check i386
-check x86_64
+check_cctools i386
+check_cctools x86_64
 
 touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET"
 
@@ -218,14 +199,14 @@ esac
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
 mv -f SDKs/*$SDK_VERSION* $SDK_DIR
 
-pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk
+pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
 ln -s $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h usr/include 2>/dev/null
 $BASE_DIR/oclang/find_intrinsic_headers.sh $SDK_DIR/MacOSX$SDK_VERSION.sdk
 set -e
-popd
+popd &>/dev/null
 
-popd
+popd &>/dev/null
 
 WRAPPER=$TARGET_DIR/bin/x86_64-apple-$TARGET-oclang
 cp -f oclang/oclang $WRAPPER
@@ -233,7 +214,7 @@ cp -f oclang/oclang $WRAPPER
 WRAPPER_SCRIPT=`basename $WRAPPER`
 WRAPPER_DIR=`dirname $WRAPPER`
 
-pushd $WRAPPER_DIR
+pushd $WRAPPER_DIR &>/dev/null
 
 ln -sf $WRAPPER_SCRIPT o32-clang
 ln -sf $WRAPPER_SCRIPT o32-clang++
@@ -251,7 +232,7 @@ ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang
 ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang++
 ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang++-libc++
 
-popd
+popd &>/dev/null
 
 OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
 OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
@@ -296,15 +277,6 @@ echo "echo \"export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$BDIR/../lib${LIB_PATH}"\
 
 chmod +x $OSXCROSS_CONF $OSXCROSS_ENV
 
-
-function test_compiler
-{
-    echo -ne "testing $1 ... "
-    $1 $2 -O2 -Wall -o test
-    rm test
-    echo "works"
-}
-
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`" # libLTO.so
 
 echo ""
@@ -316,9 +288,9 @@ test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
 test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
 
 echo ""
-echo "Now add the following line"
+echo "Now add"
 echo ""
-echo "\`$OSXCROSS_ENV\`"
+echo -e "\e[32m\`$OSXCROSS_ENV\`\e[0m"
 echo ""
 echo "to your ~/.bashrc or ~/.profile (including the '\`')"
 echo ""
