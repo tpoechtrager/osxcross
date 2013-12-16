@@ -2,6 +2,8 @@
 
 set -e
 
+which cc &>/dev/null || { echo "1" && exit 0; }
+
 prog="cpucount"
 
 pushd "${0%/*}" >/dev/null 2>&1
@@ -11,6 +13,6 @@ case "$(uname -s)" in
     prog="${prog}.exe" ;;
 esac
 
-test ! -f $prog && cc cpucount.c -o cpucount
+test ! -f $prog && cc cpucount.c -o cpucount &>/dev/null
 
 eval "./${prog}"

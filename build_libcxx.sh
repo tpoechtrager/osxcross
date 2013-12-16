@@ -2,19 +2,11 @@
 
 pushd "${0%/*}" &>/dev/null
 
-export LC_ALL="C"
-
-`tools/osxcross_conf.sh`
-
-if [ $? -ne 0 ]; then
-    echo "you need to complete ./build.sh first, before you can start building libc++"
-    exit 1
-fi
-
-set -e
+DESC=libc++
+source tools/tools.sh
 
 if [ `echo "${OSXCROSS_SDK_VERSION}<10.7" | bc -l` -eq 1 ]; then
-    echo "you must use the SDK from 10.7 or newer to get libc++ compiled"
+    echo "you must use the SDK from 10.7 or newer to get $DESC compiled"
     exit 1
 fi
 
@@ -24,47 +16,39 @@ JOBS=`tools/get_cpu_count.sh`
 # libc++ version to build
 LIBCXX_VERSION=3.3
 
-function require
-{
-    which $1 &>/dev/null
-    while [ $? -ne 0 ]
-    do
-        echo ""
-        read -p "Install $1 then press enter"
-        which $1 &>/dev/null
-    done
-}
-
-BASE_DIR=`pwd`
-
 set +e
 require wget
 require cmake
 set -e
 
-pushd $OSXCROSS_BUILD_DIR
+pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
-trap 'test $? -eq 0 || rm -f $OSXCROSS_BUILD_DIR/have_libcxx*' EXIT
+function remove_locks()
+{
+    rm -f $OSXCROSS_BUILD_DIR/have_libcxx*
+}
+
+source $BASE_DIR/tools/trap_exit.sh
 
 if [ ! -f "have_libcxx_${LIBCXX_VERSION}_${OSXCROSS_TARGET}" ]; then
 
-pushd $OSXCROSS_TARBALL_DIR
+pushd $OSXCROSS_TARBALL_DIR &>/dev/null
 wget -c "http://llvm.org/releases/3.3/libcxx-${LIBCXX_VERSION}.src.tar.gz"
-popd
+popd &>/dev/null
 
 tar xzfv "$OSXCROSS_TARBALL_DIR/libcxx-${LIBCXX_VERSION}.src.tar.gz"
-pushd libcxx-${LIBCXX_VERSION}*
+pushd libcxx-${LIBCXX_VERSION}* &>/dev/null
 rm -rf build
 mkdir build
 
-pushd build
+pushd build &>/dev/null
 
 # remove conflicting versions
 rm -rf $OSXCROSS_SDK/usr/include/c++/v1
 rm -rf $OSXCROSS_SDK/usr/lib/libc++.dylib
 rm -rf $OSXCROSS_SDK/usr/lib/libc++.*.dylib
 
-function cmakeerror()
+function cmake_error()
 {
     echo -e "\e[1m"
     echo "It looks like CMake failed."
@@ -91,19 +75,19 @@ cmake .. \
     -DCMAKE_INSTALL_PREFIX=$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION \
     -DCMAKE_AR=$OSXCROSS_CCTOOLS_PATH/x86_64-apple-$OSXCROSS_TARGET-ar \
     -DCMAKE_RANLIB=$OSXCROSS_CCTOOLS_PATH/x86_64-apple-$OSXCROSS_TARGET-ranlib \
-    -DCMAKE_CXX_FLAGS="-arch i386 -arch x86_64" || cmakeerror
+    -DCMAKE_CXX_FLAGS="-arch i386 -arch x86_64" || cmake_error
 
 make -j$JOBS
 make install -j$JOBS
 
-popd #build
-popd #libcxx
+popd &>/dev/null # build
+popd &>/dev/null # libcxx
 
 touch "have_libcxx_${LIBCXX_VERSION}_${OSXCROSS_TARGET}"
 
-fi #have libcxx
+fi # have libcxx
 
-popd #build dir
+popd &>/dev/null # build dir
 
 function test_compiler_clang
 {

@@ -15,12 +15,14 @@ If you want, then you can build an up-to-date vanilla GCC as well.
 
 ### WHAT IS NOT WORKING (YET)? ###
 
-* Debug info is weak, because of the [missing](https://github.com/tpoechtrager/osxcross/blob/master/patches/gcc-dsymutil.patch)
-      [`dsymutil`](http://www.manpagez.com/man/1/dsymutil) (shows only function names, no line numbers)
-* GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/12f5dcdde4bc1000180d25ffda229f0a13cf723d),
-      but builds fine when clang is used to build GCC
+* Debug info is weak because of the [missing](https://github.com/tpoechtrager/osxcross/blob/master/patches/gcc-dsymutil.patch)
+      [`dsymutil`](http://www.manpagez.com/man/1/dsymutil) (debugger shows only function names).  
+  The source code of dsymutil is not publicly available, so it can't be ported to other systems.  
+  But you probably don't want debug symbols anyway if you build on a non OS X system.
 
-Everything else besides that should work.
+* GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/12f5dcdde4bc1000180d25ffda229f0a13cf723d),
+      but builds fine when clang is used to build GCC.
+
 
 ### WHAT CAN I BUILD WITH IT? ###
 
