@@ -79,7 +79,7 @@ if [ $USE_LIBCXX -ne 0 ]; then
     fi
 
     CPLUSINC="$CPLUSINC -Qunused-arguments -lc++abi"
-    export LIBRARY_PATH="$LIBRARY_PATH:$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
+    CPLUSINC="$CPLUSINC -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
 else
     CPLUSINC="-isystem $OSXCROSS_SDK/usr/lib/gcc/i686-apple-$OSXCROSS_TARGET/4.2.1/include"
     CPLUSINC="$CPLUSINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0 "
