@@ -6,10 +6,10 @@ The goal of OSXCross is to provide a well working OS X cross toolchain for Linux
 
 ### HOW DOES IT WORK? ###
 
-[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html) and is now available on nearly every Linux distribution.  
-Therefore we "just" need a proper
+[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html) and is now available on nearly every Linux distribution,  
+so we just need a proper
 [port](https://github.com/tpoechtrager/cctools-port)
-of the [cctools](http://www.opensource.apple.com/tarballs/cctools) (ld, lipo, ...) for Linux, and the OS X SDK.
+of the [cctools](http://www.opensource.apple.com/tarballs/cctools) (ld, lipo, ...) and the OS X SDK.
 
 If you want, then you can build an up-to-date vanilla GCC as well.
 
@@ -23,7 +23,6 @@ If you want, then you can build an up-to-date vanilla GCC as well.
 * GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/12f5dcdde4bc1000180d25ffda229f0a13cf723d),
       but builds fine when clang is used to build GCC.
 
-
 ### WHAT CAN I BUILD WITH IT? ###
 
 Basically everything you can build on OS X with clang/gcc should build with this cross toolchain as well.
@@ -32,7 +31,7 @@ Basically everything you can build on OS X with clang/gcc should build with this
 
 Download the SDK version (links below) you want to the tarball/ (important!) directory.
 
-Then ensure you have the following installed on your Linux box:
+Then ensure you have the following installed on your Linux/FreeBSD box:
 
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
