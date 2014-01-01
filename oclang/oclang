@@ -50,9 +50,6 @@ if [ $# -gt 0 ]; then
         if [ "$p" == "-stdlib=libc++" ]; then
             USE_LIBCXX=2
         fi
-#       if [[ "$p" == -g* ]] && [ "$p" != "-g0" ] && [ "$p" != "-ggdb0" ]; then
-#           echo -e "\e[1mosxcross \e[35mwarning:\e[0m\e[1m replacing '$p' with '-g0'\e[0m" 1>&2
-#       fi
     done
 fi
 
@@ -101,9 +98,9 @@ if [ $? -eq 0 ] && [ ! -f "$XMMINTRIN" ]; then
     fi
 fi
 
-$COMPILER $OSXCROSS_TARGET_OPTION $TARGET -isysroot $OSXCROSS_SDK \
-$CPLUSINC \
-$OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION $OSXCROSS_OPT_ARGS \
-${1+"$@"} -g0
+$COMPILER \
+    $OSXCROSS_TARGET_OPTION $TARGET -isysroot $OSXCROSS_SDK \
+    $CPLUSINC $OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION \
+    $OSXCROSS_OPT_ARGS ${1+"$@"}
 
 exit $?

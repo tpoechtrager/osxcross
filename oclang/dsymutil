@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# No-op script to bypass dsymutil invocation errors
+#
+# Please see:
+#  https://github.com/tpoechtrager/osxcross/issues/1
+#  https://github.com/tpoechtrager/osxcross/pull/2
+#
+
+if [ $# -eq 0 ] || [ -n "$OSXCROSS_SHOW_DSYMUTIL_INVOCATION" ]; then
+    NAME_OF_PARENT_PROCESS=`basename \`ps -ocommand= -p $PPID 2>/dev/null | awk '{print $1}'\``
+
+    echo -en "\e[1mosxcross \e[35mwarning:\e[0m\e[1m dsymutil invocation is a no-op (dsymutil $@) "
+
+    if [ -n "$NAME_OF_PARENT_PROCESS" ]; then
+        echo -e "(invoked by $NAME_OF_PARENT_PROCESS)\e[0m" 1>&2
+    else
+        echo -e "\e[0m" 1>&2
+    fi
+fi

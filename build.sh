@@ -208,6 +208,8 @@ popd &>/dev/null
 
 popd &>/dev/null
 
+cp -f oclang/dsymutil $TARGET_DIR/bin
+
 WRAPPER=$TARGET_DIR/bin/x86_64-apple-$TARGET-oclang
 cp -f oclang/oclang $WRAPPER
 

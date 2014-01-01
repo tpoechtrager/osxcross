@@ -46,8 +46,6 @@ pushd gcc*$GCC_VERSION* &>/dev/null
 rm -f $OSXCROSS_TARGET_DIR/bin/*-gcc*
 rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 
-patch -p0 < $OSXCROSS_PATCH_DIR/gcc-dsymutil.patch
-
 mkdir -p build
 pushd build &>/dev/null
 
