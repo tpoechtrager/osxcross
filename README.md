@@ -40,7 +40,7 @@ Hint: On Ubuntu 12.04 LTS you can use [llvm.org/apt](http://llvm.org/apt) to get
 
 Now edit the `SDK_VERSION` in `build.sh`, so it matches the version you have downloaded before.
 
-Then run `./build.sh` to build the cross toolchain (It will build in it's own directory).
+Then run `./build.sh` to build the cross toolchain (it will build in its own directory).
 
 **Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile` or `~/.bashrc`.  
 Then either run `source ~/.profile` or restart your shell session.
@@ -50,7 +50,7 @@ That's it. See usage examples below.
 ##### Building libc++: #####
 
 If you want to build libc++ for modern C++11 with clang, then you can do this by running `./build_libcxx.sh`.  
-The resulting library will be linked statically into the applications, to avoid troubles with different  
+The resulting library will be linked statically into the applications to avoid troubles with different  
 libc++.dylib versions on OS X.
 
 See below in how to use libc++ as the standard library.
@@ -58,7 +58,7 @@ See below in how to use libc++ as the standard library.
 ##### Building GCC: #####
 
 If you want to build GCC as well, then you can do this by running `./build_gcc.sh`.  
-But before you do this, make sure you have got the gcc build depedencies installed on your system,  
+But before you do this, make sure you have got the GCC build depedencies installed on your system,  
 on debian like systems you can run `apt-get install mpc-dev mpfr-dev gmp-dev` to install them.
 
 ### SDK DOWNLOAD LINKS: ###
@@ -81,7 +81,7 @@ XX= the target version, you can find it out by running  `osxcross-conf`  and the
 
 You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like more.
 
-*I'll continue from now on with `o32-clang`, but remember you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
+*I'll continue from now on with `o32-clang`, but remember, you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
 
 ##### Building Makefile based projects: #####
 

@@ -10,9 +10,6 @@ if [ `echo "${OSXCROSS_SDK_VERSION}<10.7" | bc -l` -eq 1 ]; then
     exit 1
 fi
 
-# How many concurrent jobs should be used for compiling?
-JOBS=`tools/get_cpu_count.sh`
-
 # libc++ version to build
 LIBCXX_VERSION=3.3
 
@@ -115,7 +112,7 @@ test_compiler_clang i386-apple-$OSXCROSS_TARGET-clang++ o32-clang++ $BASE_DIR/oc
 test_compiler_clang x86_64-apple-$OSXCROSS_TARGET-clang++ o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
 
 which i386-apple-$OSXCROSS_TARGET-g++-libc++ &>/dev/null && \
-    HAVE_GCC=1 \
+    HAVE_GCC=1 && \
     test_compiler_gcc i386-apple-$OSXCROSS_TARGET-g++-libc++ o32-g++-libc++ $BASE_DIR/oclang/test_libcxx.cpp
 
 which x86_64-apple-$OSXCROSS_TARGET-g++-libc++ &>/dev/null && \

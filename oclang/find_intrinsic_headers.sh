@@ -20,7 +20,7 @@ test ! -e "$CLANG_INTRIN_DIR" && CLANG_INTRIN_DIR="$CLANG_DIR/../lib/clang/$CLAN
 test ! -e "$CLANG_INTRIN_DIR" && CLANG_INTRIN_DIR="$CLANG_DIR/../include/clang/$CLANG_VERSION/include"
 test ! -e "$CLANG_INTRIN_DIR" && CLANG_INTRIN_DIR="$CLANG_DIR/../include/clang/$CLANG_VERSION"
 
-test -e "$CLANG_INTRIN_DIR" || { echo "can not find clang intrinsics directory" && exit 1; }
+test -e "$CLANG_INTRIN_DIR" || { echo "cannot find clang intrinsics directory" && exit 1; }
 test -f "$CLANG_INTRIN_DIR/xmmintrin.h" || { echo "xmmintrin.h does not exist in $CLANG_INTRIN_DIR" && exit 1; }
 
 echo "found clang intrinsic headers: $CLANG_INTRIN_DIR"
