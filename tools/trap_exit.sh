@@ -4,7 +4,7 @@ function _exit()
 {
     EC=$?
     if [ $EC -ne 0 ]; then
-        SCRIPT=`basename $0`
+        test -z "$SCRIPT" && SCRIPT=`basename $0`
         echo ""
         echo "exiting with abnormal exit code ($EC)"
         test -n "$OCDEBUG" || echo "run 'OCDEBUG=1 ./$SCRIPT' to enable debug messages"

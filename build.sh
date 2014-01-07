@@ -283,6 +283,13 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ld
 
 echo ""
 
+if [ `echo "$SDK_VERSION>=10.9" | bc -l` -eq 1 ] && ( [ $OSX_VERSION_MIN == "default" ] ||
+   [ `echo "$OSX_VERSION_MIN>=10.9" | bc -l` -eq 1 ] );
+then
+    export SCRIPT=`basename $0`
+    ./build_libcxx.sh || exit 0
+fi
+
 test_compiler o32-clang $BASE_DIR/oclang/test.c
 test_compiler o64-clang $BASE_DIR/oclang/test.c
 

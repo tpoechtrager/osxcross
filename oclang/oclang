@@ -7,11 +7,11 @@ popd &>/dev/null
 
 type=`basename $0`
 
-if [ $type != "${type/o64/}" ] || [ $type != "${type/x86_64/}" ]; then
+if [[ $type == *o64* ]] || [[ $type == *x86_64* ]]; then
     ARCH1="x86_64"
     ARCH2=$ARCH1
 else
-    if [ $type != "${type/o32/}" ] || [ $type != "${type/i386/}" ]; then
+    if [[ $type == *o32* ]] || [[ $type == *i386* ]]; then
         ARCH1="i386"
         ARCH2="i686"
     else
@@ -20,37 +20,43 @@ else
     fi
 fi
 
-if [ $type != "${type/++/}" ]; then
+if [[ $type == *++* ]]; then
     COMPILER="clang++"
 else
     COMPILER="clang"
 fi
 
-if [ $COMPILER == "clang++" ] && [ "$type" != "${type/libc++/}" ]; then
+if [ $COMPILER == "clang++" ] && [[ $type == *libc++* ]]; then
     USE_LIBCXX=1
 else
     USE_LIBCXX=0
 fi
+
+TARGET=$ARCH1-apple-$OSXCROSS_TARGET
+OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
 
 if [ $# -gt 0 ]; then
     for p in "$@"
     do
         if [[ "$p" == -mmacosx-version-min=* ]]; then
             OSXCROSS_OSX_VERSION_MIN="default"
-
-            MIN_TARGET_VERSION=`echo "$p" | tr '=' ' ' | tr '.' ' ' | awk '{printf "%d %d", $2, $3}'`
-            MIN_TARGET_VERSION_MAJOR=`echo $MIN_TARGET_VERSION | awk '{print $1}'`
-            MIN_TARGET_VERSION_MINOR=`echo $MIN_TARGET_VERSION | awk '{print $2}'`
-
-            if [ $MIN_TARGET_VERSION_MAJOR -ge 10 ] && [ $MIN_TARGET_VERSION_MINOR -ge 9 ]; then
-                # default to libc++ on >= 10.9
-                USE_LIBCXX=1
-            fi            
+            OSX_VERSION_MIN=`echo "$p" | tr '=' ' ' | awk '{print $2}'`
+            continue
         fi
         if [ "$p" == "-stdlib=libc++" ]; then
             USE_LIBCXX=2
+            continue
+        fi
+        if [ "$p" == "-v" ] || [ "$p" == "--version" ]; then
+            if [ $# -eq 1 ]; then
+                $COMPILER $OSXCROSS_TARGET_OPTION $TARGET $p
+                exit $?
+            fi
         fi
     done
+else
+    $COMPILER $OSXCROSS_TARGET_OPTION $TARGET
+    exit $?
 fi
 
 if [ $OSXCROSS_OSX_VERSION_MIN != "default" ]; then
@@ -63,27 +69,50 @@ export COMPILER_PATH="$OSXCROSS_CCTOOLS_PATH:$COMPILER_PATH"
 
 STDINC=$OSXCROSS_SDK/usr/include
 
+if [ -n "$BUILD_LIBCXX" ]; then
+    if [ $BUILD_LIBCXX -eq 1 ]; then
+        # TODO: Write a fake libc++ library (without any symbols)
+        # once libstdc++ disappears from the SDK.
+        # Newer versions of clang default to libc++ for >= 10.9,
+        # so configuring libc++ fails because of the hardcoded
+        # -lc++ ... (at least with cmake).
+
+        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -stdlib=libstdc++"
+    fi
+
+    USE_LIBCXX=0
+else
+    if [ $USE_LIBCXX -eq 0 ]; then
+        MIN_TARGET_VERSION=`echo "$OSX_VERSION_MIN" | tr '=' ' ' | tr '.' ' ' | awk '{printf "%d %d", $1, $2}'`
+        MIN_TARGET_VERSION_MAJOR=`echo $MIN_TARGET_VERSION | awk '{print $1}'`
+        MIN_TARGET_VERSION_MINOR=`echo $MIN_TARGET_VERSION | awk '{print $2}'`
+
+        if [ $MIN_TARGET_VERSION_MAJOR -ge 10 ] && [ $MIN_TARGET_VERSION_MINOR -ge 9 ]; then
+            # default to libc++ on >= 10.9
+            USE_LIBCXX=1
+        fi
+    fi
+fi
+
 if [ $USE_LIBCXX -ne 0 ]; then
     if [ ! -f "$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib/libc++.a" ]; then
         echo -e "\e[1mosxcross \e[31merror:\e[0m\e[1m you must build libc++ before you can use it (./build_libcxx.sh)\e[0m" 1>&2
         exit 1
     fi
 
-    CPLUSINC="-nostdinc++ -cxx-isystem $OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/include/c++/v1"
+    CXXINC="-nostdinc++ -cxx-isystem $OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/include/c++/v1"
 
     if [ $USE_LIBCXX -eq 1 ]; then
-        CPLUSINC="$CPLUSINC -stdlib=libc++"
+        CXXINC="$CXXINC -stdlib=libc++"
     fi
 
-    CPLUSINC="$CPLUSINC -Qunused-arguments -lc++abi"
-    CPLUSINC="$CPLUSINC -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
+    CXXINC="$CXXINC -Qunused-arguments -lc++abi"
+    CXXINC="$CXXINC -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
 else
-    CPLUSINC="-isystem $OSXCROSS_SDK/usr/lib/gcc/i686-apple-$OSXCROSS_TARGET/4.2.1/include"
-    CPLUSINC="$CPLUSINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0 "
-    CPLUSINC="$CPLUSINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0/$ARCH2-apple-darwin9 "
+    CXXINC="-cxx-isystem $OSXCROSS_SDK/usr/lib/gcc/i686-apple-$OSXCROSS_TARGET/4.2.1/include"
+    CXXINC="$CXXINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0 "
+    CXXINC="$CXXINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0/$ARCH2-apple-darwin9 "
 fi
-
-TARGET=$ARCH1-apple-$OSXCROSS_TARGET
 
 XMMINTRIN=`readlink "$STDINC/xmmintrin.h"`
 if [ $? -eq 0 ] && [ ! -f "$XMMINTRIN" ]; then
@@ -100,7 +129,7 @@ fi
 
 $COMPILER \
     $OSXCROSS_TARGET_OPTION $TARGET -isysroot $OSXCROSS_SDK \
-    $CPLUSINC $OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION \
+    $CXXINC $OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION \
     $OSXCROSS_OPT_ARGS ${1+"$@"}
 
 exit $?
