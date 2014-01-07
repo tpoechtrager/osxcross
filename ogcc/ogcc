@@ -7,11 +7,11 @@ popd &>/dev/null
 
 type=`basename $0`
 
-if [ $type != "${type/o64/}" ] || [ $type != "${type/x86_64/}" ]; then
+if [[ $type == *o64* ]] || [[ $type == *x86_64* ]]; then
     ARCH="x86_64"
     ARCHFLAG="-m64"
 else
-    if [ $type != "${type/o32/}" ] || [ $type != "${type/i386/}" ]; then
+    if [[ $type == *o32* ]] || [[ $type == *i386* ]]; then
         ARCH="i386"
         ARCHFLAG="-m32"
     else
@@ -20,13 +20,13 @@ else
     fi
 fi
 
-if [ $type != "${type/++/}" ]; then
+if [[ $type == *++* ]]; then
     COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH-apple-$OSXCROSS_TARGET-base-g++"
 else
     COMPILER="$OSXCROSS_TARGET_DIR/bin/$ARCH-apple-$OSXCROSS_TARGET-base-gcc"
 fi
 
-if [[ $COMPILER == *g++ ]] && [ "$type" != "${type/libc++/}" ]; then
+if [[ $COMPILER == *g++ ]] && [[ $type == *libc++* ]]; then
     if [ ! -f "$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib/libc++.a" ]; then
         echo -e "\e[1mosxcross \e[31merror:\e[0m\e[1m you must build libc++ before you can use it (./build_libcxx.sh)\e[0m" 1>&2
         exit 1
@@ -51,9 +51,17 @@ if [ $# -gt 0 ]; then
     do
         if [ "$p" == "-arch" ] || [ "$p" == "-m32" ] || [ "$p" == "-m64" ]; then
             ARCHGIVEN=1
+            continue
         fi
         if [[ "$p" == -mmacosx-version-min=* ]]; then
             OSXCROSS_OSX_VERSION_MIN="default"
+            continue
+        fi
+        if [ "$p" == "-v" ] || [ "$p" == "--version" ]; then
+            if [ $# -eq 1 ]; then
+                $COMPILER $p
+                exit $?
+            fi
         fi
     done
 

@@ -11,7 +11,7 @@ if [ `echo "${OSXCROSS_SDK_VERSION}<10.7" | bc -l` -eq 1 ]; then
 fi
 
 # libc++ version to build
-LIBCXX_VERSION=3.3
+LIBCXX_VERSION=3.4
 
 set +e
 require wget
@@ -30,7 +30,7 @@ source $BASE_DIR/tools/trap_exit.sh
 if [ ! -f "have_libcxx_${LIBCXX_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR &>/dev/null
-wget -c "http://llvm.org/releases/3.3/libcxx-${LIBCXX_VERSION}.src.tar.gz"
+wget -c "http://llvm.org/releases/${LIBCXX_VERSION}/libcxx-${LIBCXX_VERSION}.src.tar.gz"
 popd &>/dev/null
 
 tar xzfv "$OSXCROSS_TARBALL_DIR/libcxx-${LIBCXX_VERSION}.src.tar.gz"
@@ -45,6 +45,8 @@ rm -rf $OSXCROSS_SDK/usr/include/c++/v1
 rm -rf $OSXCROSS_SDK/usr/lib/libc++.dylib
 rm -rf $OSXCROSS_SDK/usr/lib/libc++.*.dylib
 
+rm -rf $OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION
+
 function cmake_error()
 {
     echo -e "\e[1m"
@@ -54,13 +56,15 @@ function cmake_error()
     echo "CMake Error at /usr/share/cmake-2.8/Modules/Platform/Darwin.cmake:<LINE NUMBER> (list):"
     echo "  list sub-command REMOVE_DUPLICATES requires list to be present."
     echo -e "\e[0m\e[1m"
-    echo "Then either remove this line (look for the LINE NUMBER) or comment it out (with #) in /usr/share/cmake-.../Modules/Platform/Darwin.cmake"
+    echo "Then either remove that line (look for the LINE NUMBER) or comment it out (with #) in /usr/share/cmake-.../Modules/Platform/Darwin.cmake"
     echo "It appears to be a bug in CMake."
     echo ""
     echo "Then re-run this script."
     echo -e "\e[0m"
     exit 1
 }
+
+export BUILD_LIBCXX=1
 
 cmake .. \
     -DCMAKE_CXX_COMPILER=x86_64-apple-$OSXCROSS_TARGET-clang++ \
@@ -74,8 +78,12 @@ cmake .. \
     -DCMAKE_RANLIB=$OSXCROSS_CCTOOLS_PATH/x86_64-apple-$OSXCROSS_TARGET-ranlib \
     -DCMAKE_CXX_FLAGS="-arch i386 -arch x86_64" || cmake_error
 
+export BUILD_LIBCXX=2
+
 make -j$JOBS
 make install -j$JOBS
+
+unset BUILD_LIBCXX
 
 popd &>/dev/null # build
 popd &>/dev/null # libcxx
