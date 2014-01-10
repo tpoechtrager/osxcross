@@ -71,6 +71,7 @@ require $MAKE
     --without-headers \
     --enable-multilib \
     --enable-lto \
+    --enable-checking=release \
     --prefix=$OSXCROSS_TARGET_DIR
 
 if [ $IS_FREEBSD -eq 1 ]; then
