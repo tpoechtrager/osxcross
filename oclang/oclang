@@ -83,7 +83,7 @@ if [ -n "$BUILD_LIBCXX" ]; then
     USE_LIBCXX=0
 else
     if [ $USE_LIBCXX -eq 0 ]; then
-        MIN_TARGET_VERSION=`echo "$OSX_VERSION_MIN" | tr '=' ' ' | tr '.' ' ' | awk '{printf "%d %d", $1, $2}'`
+        MIN_TARGET_VERSION=`echo "$OSX_VERSION_MIN" | tr '.' ' ' | awk '{printf "%d %d", $1, $2}'`
         MIN_TARGET_VERSION_MAJOR=`echo $MIN_TARGET_VERSION | awk '{print $1}'`
         MIN_TARGET_VERSION_MINOR=`echo $MIN_TARGET_VERSION | awk '{print $2}'`
 
@@ -106,8 +106,13 @@ if [ $USE_LIBCXX -ne 0 ]; then
         CXXINC="$CXXINC -stdlib=libc++"
     fi
 
-    CXXINC="$CXXINC -Qunused-arguments -lc++abi"
-    CXXINC="$CXXINC -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
+    REGEX="\-o\s*[^ ]+\.gch"
+    if [[ ! "$@" =~ $REGEX ]]; then
+        if [[ $COMPILER == *clang++* ]]; then
+            CXXINC="$CXXINC -Qunused-arguments -lc++abi"
+        fi
+        CXXINC="$CXXINC -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
+    fi
 else
     CXXINC="-cxx-isystem $OSXCROSS_SDK/usr/lib/gcc/i686-apple-$OSXCROSS_TARGET/4.2.1/include"
     CXXINC="$CXXINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0 "

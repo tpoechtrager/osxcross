@@ -34,13 +34,20 @@ if [[ $COMPILER == *g++ ]] && [[ $type == *libc++* ]]; then
 
     OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -std=c++0x -nostdinc++ -nodefaultlibs"
     OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -lc -isystem $OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/include/c++/v1"
-    OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib -lc++ -lc++abi"
-    OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -L$OSXCROSS_SDK/usr/lib -lgcc_s.10.5"
+
+    REGEX="\-o\s*[^ ]+\.gch"
+    if [[ ! "$@" =~ $REGEX ]]; then
+        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib -lc++ -lc++abi"
+        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -L$OSXCROSS_SDK/usr/lib -lgcc_s.10.5"
+    fi
 else
-    if [[ $COMPILER == *g++ ]]; then
-        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -static-libgcc -static-libstdc++"
-    else
-        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -static-libgcc"
+    REGEX="\-o\s*[^ ]+\.gch"
+    if [[ ! "$@" =~ $REGEX ]]; then
+        if [[ $COMPILER == *g++ ]]; then
+            OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -static-libgcc -static-libstdc++"
+        else
+            OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -static-libgcc"
+        fi
     fi
 fi
 
