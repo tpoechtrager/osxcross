@@ -54,7 +54,7 @@ See below in how to use libc++ as the standard library.
 
 If you want to build GCC as well, then you can do this by running `./build_gcc.sh`.  
 But before you do this, make sure you have got the GCC build depedencies installed on your system,  
-on debian like systems you can run `apt-get install mpc-dev mpfr-dev gmp-dev` to install them.
+on debian like systems you can run `apt-get install libmpc-dev libmpfr-dev libgmp-dev` to install them.
 
 ### SDK DOWNLOAD LINKS: ###
 
@@ -132,6 +132,7 @@ You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like 
   * bash scripts: GPLv2
   * cctools: APSL 2.0
   * xar: New BSD
+  * bc: GPLv3
 
 
 ### CREDITS: ####

@@ -98,9 +98,9 @@ if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
 rm -rf cctools*
 rm -rf xar*
+rm -rf bc*
 
 tar xJfv $TARBALL_DIR/cctools*.tar.xz
-tar xzfv $TARBALL_DIR/xar*.tar.gz
 
 pushd cctools*/cctools &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
@@ -127,8 +127,30 @@ popd &>/dev/null
 
 fi # have cctools
 
+
+set +e
+which bc &>/dev/null
+NEED_BC=$?
+set -e
+
+
+if [ $NEED_BC -ne 0 ]; then
+
+tar xfv $TARBALL_DIR/bc*.tar.bz2
+
+pushd bc* &>/dev/null
+CFLAGS="-w" ./configure --prefix=$TARGET_DIR --without-flex
+make -j$JOBS
+make install -j$JOBS
+popd &>/dev/null
+
+fi # NEED BC
+
+
 if [ ! -f "have_xar_$TARGET" ]; then
 if [ -n "$FORCE_XAR_BUILD" ] || [ `echo "$SDK_VERSION<=10.5" | bc -l` -eq 1 ]; then
+
+tar xzfv $TARBALL_DIR/xar*.tar.gz
 
 pushd xar* &>/dev/null
 set +e
