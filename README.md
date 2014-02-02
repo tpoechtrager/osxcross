@@ -37,8 +37,8 @@ Now edit the `SDK_VERSION` in `build.sh`, so it matches the version you have dow
 
 Then run `./build.sh` to build the cross toolchain (it will build in its own directory).
 
-**Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile` or `~/.bashrc`.  
-Then either run `source ~/.profile` or restart your shell session.
+**Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile`.  
+Then either run `source ~/.profile` or restart your session.
 
 That's it. See usage examples below.
 
