@@ -51,7 +51,7 @@ pushd build &>/dev/null
 
 if [ "`uname -s`" == "FreeBSD" ]; then
     export CPATH="/usr/local/include"
-    export LIBRARY_PATH="/usr/local/lib"
+    export LDFLAGS="-L/usr/local/lib $LDFLAGS"
     MAKE=gmake
     IS_FREEBSD=1
 else
@@ -73,10 +73,6 @@ require $MAKE
     --enable-lto \
     --enable-checking=release \
     --prefix=$OSXCROSS_TARGET_DIR
-
-if [ $IS_FREEBSD -eq 1 ]; then
-    export LIBRARY_PATH=""
-fi
 
 $MAKE -j$JOBS
 $MAKE install -j$JOBS

@@ -225,6 +225,7 @@ pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
 ln -s $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h usr/include 2>/dev/null
 $BASE_DIR/oclang/find_intrinsic_headers.sh $SDK_DIR/MacOSX$SDK_VERSION.sdk
+test ! -f "usr/include/float.h" && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
 set -e
 popd &>/dev/null
 
@@ -297,7 +298,8 @@ echo ""                                                                         
 echo "BDIR=\`readlink -f \\\`dirname \$0\\\`\`"                                    >> $OSXCROSS_ENV
 echo ""                                                                            >> $OSXCROSS_ENV
 echo "echo \"export PATH=\$PATH:\$BDIR\""                                          >> $OSXCROSS_ENV
-echo "echo \"export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$BDIR/../lib${LIB_PATH}"\"  >> $OSXCROSS_ENV
+echo "echo \"export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$BDIR/../lib${LIB_PATH}\""  >> $OSXCROSS_ENV
+
 
 chmod +x $OSXCROSS_CONF $OSXCROSS_ENV
 
