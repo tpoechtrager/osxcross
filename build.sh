@@ -29,7 +29,7 @@ guess_sdk_version()
         tmp2=`echo $sdk | sed s/[^0-9.]//g`
         tmp3=`echo $tmp2 | sed s/\\\.*$//g`
         guess_sdk_version_result=$tmp3
-        echo 'found SDK version' $SDK_VERSION 'at tarballs/'$sdk
+        echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$sdk
     fi
     if [ $guess_sdk_version_result ]; then
         if [ $guess_sdk_version_result = 10.4 ]; then
