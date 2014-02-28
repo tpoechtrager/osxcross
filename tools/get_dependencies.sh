@@ -12,8 +12,11 @@ get_fedora_deps()
 
 get_freebsd_deps()
 {
- pkg install clang llvm-devel automake autogen libtool \
-  libxml2-devel uuid-devel openssl-devel bash
+ for pkgname in llvm-devel automake autogen libtool \
+  libxml2 ossp-uuid openssl bash; do
+    echo $pkgname
+    pkg install $pkgname
+ done
 }
 
 get_netbsd_deps()
