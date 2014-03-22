@@ -39,7 +39,7 @@ verify_sdk_version()
     sdkv=$1
     for file in tarballs/*; do
         if [ `echo $file | grep OSX.*$sdkv` ]; then
-            echo "verified at tarballs/"$file
+            echo "verified at "$file
             sdk=$file
         fi
     done
