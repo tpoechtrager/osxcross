@@ -31,10 +31,10 @@ Then ensure you have the following installed on your Linux/FreeBSD box:
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
 
-Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically
+Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically.
 Hint 2: On Ubuntu 12.04 LTS you can use [llvm.org/apt](http://llvm.org/apt) to get a newer version of clang.
 
-Then run `./build.sh` to build the cross toolchain (it will search 'tarballs' for an SDK and then build in its own directory).
+Then run `./build.sh` to build the cross toolchain (it will search 'tarballs' for your downloaded SDK and then build in its own directory).
 
 **Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile` or `~/.bashrc`.  
 Then either run `source ~/.profile` or restart your shell session.
