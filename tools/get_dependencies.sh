@@ -7,7 +7,8 @@
 get_fedora_deps()
 {
  yum install clang llvm-devel automake autogen libtool \
-  libxml2-devel libuuid-devel openssl-devel bash patch
+  libxml2-devel libuuid-devel openssl-devel bash patch \
+  libstdc++-static
 }
 
 get_freebsd_deps()
