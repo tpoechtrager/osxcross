@@ -28,7 +28,7 @@ Download the SDK version (links below) you want to the tarball/ (important!) dir
 
 Then ensure you have the following installed on your Linux/FreeBSD box:
 
-`Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
+`Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`, `patch`
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
 
 Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically.
