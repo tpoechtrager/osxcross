@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+function check_for_bug_1242300()
+{
+    if [ -e /etc/issue ]; then
+        if [ "`grep -i ubuntu.13.10 /etc/issue`" ]; then
+            echo "Ubuntu 13.10 detected. if there was a 'configure:' error"
+            echo "please see https://bugs.launchpad.net/ubuntu/+source/llvm-defaults/+bug/1242300"
+        fi
+    fi
+}
+
 function _exit()
 {
     EC=$?
@@ -12,6 +22,7 @@ function _exit()
         remove_locks
         echo "if it is happening the first time, then just re-run the script"
         echo ""
+        check_for_bug_1242300
     fi
 }
 

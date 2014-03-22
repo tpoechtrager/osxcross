@@ -4,8 +4,58 @@ pushd "${0%/*}" &>/dev/null
 
 source tools/tools.sh
 
-# SDK version to use
-SDK_VERSION=10.8
+# find sdk version to use
+guess_sdk_version()
+{
+    tmp1=
+    tmp2=
+    tmp3=
+    file=
+    sdk=
+    sdkcount=`ls tarballs/ | grep MacOSX | wc -l`
+    sdks=`ls tarballs/ | grep MacOSX`
+    if [ $sdkcount -eq 0 ]; then
+        echo no SDK found in 'tarballs/'. please see README.md
+        exit
+    elif [ $sdkcount -gt 1 ]; then
+        for sdk in $sdks; do echo $sdk; done
+        echo 'more than one MacOSX SDK tarball found. please set'
+        echo 'SDK_VERSION environment variable for the one you want'
+        echo '(for example: run   SDK_VERSION=10.x build.sh   )'
+        exit 1
+    else
+        sdk=$sdks # only 1
+        tmp2=`echo $sdk | sed s/[^0-9.]//g`
+        tmp3=`echo $tmp2 | sed s/\\\.*$//g`
+        guess_sdk_version_result=$tmp3
+        echo 'found SDK version' $SDK_VERSION 'at tarballs/'$sdk
+    fi
+    export guess_sdk_version_result
+}
+
+# make sure there is actually a file with the given SDK_VERSION
+verify_sdk_version()
+{
+    sdkv=$1
+    for file in tarballs/*; do
+        if [ `echo $file | grep OSX.*$sdkv` ]; then
+            echo "verified at tarballs/"$file
+            sdk=$file
+        fi
+    done
+    if [ ! $sdk ] ; then
+        echo cant find SDK for OSX $sdkv in tarballs. exiting
+        exit
+    fi
+}
+
+if [ $SDK_VERSION ]; then
+    echo 'SDK VERSION set in environment variable: ' $SDK_VERSION
+else
+    guess_sdk_version
+    SDK_VERSION=$guess_sdk_version_result
+fi
+verify_sdk_version $SDK_VERSION
 
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
