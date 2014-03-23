@@ -4,8 +4,64 @@ pushd "${0%/*}" &>/dev/null
 
 source tools/tools.sh
 
-# SDK version to use
-SDK_VERSION=10.8
+# find sdk version to use
+guess_sdk_version()
+{
+    tmp1=
+    tmp2=
+    tmp3=
+    file=
+    sdk=
+    guess_sdk_version_result=
+    sdkcount=`find tarballs/ | grep MacOSX | wc -l`
+    if [ $sdkcount -eq 0 ]; then
+        echo no SDK found in 'tarballs/'. please see README.md
+        exit 1
+    elif [ $sdkcount -gt 1 ]; then
+        sdks=`find tarballs/ | grep MacOSX`
+        for sdk in $sdks; do echo $sdk; done
+        echo 'more than one MacOSX SDK tarball found. please set'
+        echo 'SDK_VERSION environment variable for the one you want'
+        echo '(for example: run SDK_VERSION=10.x build.sh )'
+        exit 1
+    else
+        sdk=`find tarballs/ | grep MacOSX`
+        tmp2=`echo $sdk | sed s/[^0-9.]//g`
+        tmp3=`echo $tmp2 | sed s/\\\.*$//g`
+        guess_sdk_version_result=$tmp3
+        echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$sdk
+    fi
+    if [ $guess_sdk_version_result ]; then
+        if [ $guess_sdk_version_result = 10.4 ]; then
+            guess_sdk_version_result=10.4u
+        fi
+    fi
+    export guess_sdk_version_result
+}
+
+# make sure there is actually a file with the given SDK_VERSION
+verify_sdk_version()
+{
+    sdkv=$1
+    for file in tarballs/*; do
+        if [ `echo $file | grep OSX.*$sdkv` ]; then
+            echo "verified at "$file
+            sdk=$file
+        fi
+    done
+    if [ ! $sdk ] ; then
+        echo cant find SDK for OSX $sdkv in tarballs. exiting
+        exit
+    fi
+}
+
+if [ $SDK_VERSION ]; then
+    echo 'SDK VERSION set in environment variable: ' $SDK_VERSION
+else
+    guess_sdk_version
+    SDK_VERSION=$guess_sdk_version_result
+fi
+verify_sdk_version $SDK_VERSION
 
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
@@ -100,7 +156,7 @@ rm -rf cctools*
 rm -rf xar*
 rm -rf bc*
 
-tar xJfv $TARBALL_DIR/cctools*.tar.xz
+xz -cd $TARBALL_DIR/cctools*.tar.xz | tar xvf -
 
 pushd cctools*/cctools &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
@@ -211,10 +267,10 @@ case $SDK in
         cat Payload | gunzip -dc | cpio -i 2>/dev/null
         ;;
     *.tar.xz)
-        tar xJf $SDK
+        xz -cd $SDK | tar xvf -
         ;;
     *.tar.gz)
-        tar xzf $SDK
+        gunzip -dc $SDK | tar xvf -
         ;;
 esac
 
