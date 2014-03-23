@@ -36,7 +36,7 @@ get_mageia_deps()
 {
  urpmi ctags
  urpmi task-c-devel task-c++-devel clang llvm-devel automake autogen libtool \
-  libxml2-dev lib64uuid-dev openssl bash patch make
+  libxml2-devel libuuid-devel openssl bash patch make
 }
 
 get_debian_deps()
