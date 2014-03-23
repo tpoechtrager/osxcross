@@ -8,13 +8,13 @@ get_fedora_deps()
 {
  yum install clang llvm-devel automake autogen libtool \
   libxml2-devel libuuid-devel openssl-devel bash patch \
-  libstdc++-static
+  libstdc++-static make
 }
 
 get_freebsd_deps()
 {
  for pkgname in llvm-devel automake autogen libtool \
-  libxml2 e2fsprogs-libuuid openssl bash; do
+  libxml2 e2fsprogs-libuuid openssl bash make; do
     echo $pkgname
     pkg install $pkgname
  done
@@ -23,26 +23,27 @@ get_freebsd_deps()
 get_netbsd_deps()
 {
  pkgin install clang llvm-devel automake autogen libtool \
-  libxml2-devel uuid-devel openssl-devel bash
+  libxml2-devel uuid-devel openssl-devel bash patch make
 }
 
 get_opensuse_deps()
 {
- zypper install clang llvm-devel automake autogen libtool \
-  libxml2-devel uuid-devel openssl-devel bash
+ zypper install llvm-clang-devel llvm-clang libclang automake autogen libtool \
+  libxml2-devel libuuid-devel openssl bash patch make
 }
 
 get_mageia_deps()
 {
  urpmi ctags
  urpmi task-c-devel task-c++-devel clang llvm-devel automake autogen libtool \
-  libxml2-dev uuid-dev openssl bash
+  libxml2-dev lib64uuid-dev openssl bash patch make
 }
 
 get_debian_deps()
 {
  for pkg in build-essential clang llvm-devel automake autogen libtool \
-  libxml2-dev uuid-dev openssl bash; do apt-get -y install $pkg;
+  libxml2-dev uuid-dev openssl bash patch make; do
+    apt-get -y install $pkg;
  done
 }
 
