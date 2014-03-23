@@ -156,7 +156,7 @@ rm -rf cctools*
 rm -rf xar*
 rm -rf bc*
 
-tar xJfv $TARBALL_DIR/cctools*.tar.xz
+xz -cd $TARBALL_DIR/cctools*.tar.xz | tar xvf -
 
 pushd cctools*/cctools &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
@@ -267,10 +267,10 @@ case $SDK in
         cat Payload | gunzip -dc | cpio -i 2>/dev/null
         ;;
     *.tar.xz)
-        tar xJf $SDK
+        xz -cd $SDK | tar xvf -
         ;;
     *.tar.gz)
-        tar xzf $SDK
+        gunzip -dc $SDK | tar xvf -
         ;;
 esac
 
