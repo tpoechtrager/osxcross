@@ -32,7 +32,7 @@ guess_sdk_version()
         echo 'found SDK version' $SDK_VERSION 'at tarballs/'$sdk
     fi
     if [ $guess_sdk_version_result ]; then
-        if [ $guess_sdk_version_result -eq 10.4 ]; then
+        if [ $guess_sdk_version_result = 10.4 ]; then
             guess_sdk_version_result=10.4u
         fi
     fi
