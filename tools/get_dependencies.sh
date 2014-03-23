@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # auto-install dependency packages using the systems package manager.
-# this assumes you have installed or are running as root.
+# this assumes you are running as root or are using sudo
 #
 
 get_fedora_deps()
@@ -35,8 +35,9 @@ get_opensuse_deps()
 get_mageia_deps()
 {
  urpmi ctags
- urpmi task-c-devel task-c++-devel clang llvm-devel automake autogen libtool \
-  libxml2-devel libuuid-devel openssl bash patch make
+ urpmi task-c-devel task-c++-devel clang lib64llvm-devel llvm \
+  automake autogen libtool libxml2-devel libuuid-devel openssl \
+  libopenssl-devel bash patch make libstdc++-devel
 }
 
 get_debian_deps()
