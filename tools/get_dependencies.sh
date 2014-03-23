@@ -22,8 +22,8 @@ get_freebsd_deps()
 
 get_netbsd_deps()
 {
- pkgin install clang llvm-devel automake autogen libtool \
-  libxml2-devel uuid-devel openssl-devel bash patch make
+ pkgin install clang automake autogen libtool \
+  libxml2 libuuid openssl bash patch gmake
 }
 
 get_opensuse_deps()
