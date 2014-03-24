@@ -1,8 +1,8 @@
-## OS X Cross toolchain for Linux and FreeBSD ##
+## OS X Cross toolchain for Linux, FreeBSD and NetBSD ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to provide a well working OS X cross toolchain for Linux and FreeBSD.
+The goal of OSXCross is to provide a well working OS X cross toolchain for Linux, FreeBSD and NetBSD.
 
 ### HOW DOES IT WORK? ###
 
@@ -16,7 +16,7 @@ If you want, then you can build an up-to-date vanilla GCC as well.
 ### WHAT IS NOT WORKING (YET)? ###
 
 * GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/12f5dcdde4bc1000180d25ffda229f0a13cf723d),
-      but builds fine when clang is used to build GCC.
+  but builds fine when clang is used to build GCC.
 
 ### WHAT CAN I BUILD WITH IT? ###
 
@@ -28,13 +28,14 @@ Download the SDK version (links below) you want to the tarball/ (important!) dir
 
 Then ensure you have the following installed on your Linux/FreeBSD box:
 
-`Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`,  
+`Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`, `patch`,  
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
 
-Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically.
+Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically.  
 Hint 2: On Ubuntu 12.04 LTS you can use [llvm.org/apt](http://llvm.org/apt) to get a newer version of clang.
 
-Then run `./build.sh` to build the cross toolchain (it will search 'tarballs' for your downloaded SDK and then build in its own directory).
+Then run `./build.sh` to build the cross toolchain.  
+(It will search 'tarballs' for your downloaded SDK and then build in its own directory.)
 
 **Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile` or `~/.bashrc`.  
 Then either run `source ~/.profile` or restart your shell session.

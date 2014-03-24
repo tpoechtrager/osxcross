@@ -22,7 +22,7 @@ function _exit()
         remove_locks
         echo "if it is happening the first time, then just re-run the script"
         echo ""
-        check_for_bug_1242300
+        test $SCRIPT = "build.sh" && check_for_bug_1242300
     fi
 }
 

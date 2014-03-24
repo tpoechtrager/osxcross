@@ -13,10 +13,8 @@ fi
 # libc++ version to build
 LIBCXX_VERSION=3.4
 
-set +e
 require wget
 require cmake
-set -e
 
 pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
@@ -33,7 +31,7 @@ pushd $OSXCROSS_TARBALL_DIR &>/dev/null
 wget -c "http://llvm.org/releases/${LIBCXX_VERSION}/libcxx-${LIBCXX_VERSION}.src.tar.gz"
 popd &>/dev/null
 
-tar xzfv "$OSXCROSS_TARBALL_DIR/libcxx-${LIBCXX_VERSION}.src.tar.gz"
+extract "$OSXCROSS_TARBALL_DIR/libcxx-${LIBCXX_VERSION}.src.tar.gz"
 pushd libcxx-${LIBCXX_VERSION}* &>/dev/null
 rm -rf build
 mkdir build
@@ -94,7 +92,7 @@ fi # have libcxx
 
 popd &>/dev/null # build dir
 
-function test_compiler_clang
+function test_compiler_clang()
 {
     echo -ne "testing $2 -stdlib=libc++ ... "
     $1 $3 -O2 -stdlib=libc++ -std=c++11 -Wall -o test
@@ -102,7 +100,7 @@ function test_compiler_clang
     echo "ok"
 }
 
-function test_compiler_gcc
+function test_compiler_gcc()
 {
     echo -ne "testing $2 ... "
     $1 $3 -O2 -std=c++0x -Wall -o test

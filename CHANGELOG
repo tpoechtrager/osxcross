@@ -1,3 +1,7 @@
+0.6:
+- added: NetBSD support
+- added: dependencies installer script (Don Bright)
+
 0.5:
 - fixed: help clang to find its own intrinsic headers (this issue appears to be fixed in clang 3.4+)
 - changed: attempt to make the toolchain less path dependent
@@ -8,7 +12,7 @@
 
 0.4:
 - added: gcc support
-- added: a workaround for buggish unistd.h headers, no more need to edit /usr/include/unistd.h
+- added: a workaround for buggy unistd.h headers
 
 0.3:
 - added: SDK download links to README

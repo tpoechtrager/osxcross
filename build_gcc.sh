@@ -2,7 +2,7 @@
 
 pushd "${0%/*}" &>/dev/null
 
-export LIBRARY_PATH=""
+unset LIBRARY_PATH
 
 DESC=gcc
 source tools/tools.sh
@@ -16,9 +16,7 @@ GCC_VERSION=4.8.2
 # GCC mirror
 GCC_MIRROR="ftp://ftp.gwdg.de/pub/misc/gcc/releases"
 
-set +e
 require wget
-set -e
 
 pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
@@ -38,8 +36,8 @@ popd &>/dev/null
 echo "cleaning up ..."
 rm -rf gcc* 2>/dev/null
 
-echo "extracting gcc ..."
-tar xf "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2"
+extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2" 1
+echo ""
 
 pushd gcc*$GCC_VERSION* &>/dev/null
 
@@ -49,17 +47,11 @@ rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 mkdir -p build
 pushd build &>/dev/null
 
-if [ "`uname -s`" == "FreeBSD" ]; then
-    export CPATH="/usr/local/include"
-    export LDFLAGS="-L/usr/local/lib $LDFLAGS"
-    MAKE=gmake
-    IS_FREEBSD=1
-else
-    MAKE=make
-    IS_FREEBSD=0
+if [[ "`uname -s`" == *BSD ]]; then
+    export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
+    export LDFLAGS="-L/usr/local/lib -L/usr/pkg/lib $LDFLAGS"
+    export LD_LIBRARY_PATH="/usr/local/lib:/usr/pkg/lib:$LD_LIBRARY_PATH"
 fi
-
-require $MAKE
 
 ../configure \
     --target=x86_64-apple-$OSXCROSS_TARGET \

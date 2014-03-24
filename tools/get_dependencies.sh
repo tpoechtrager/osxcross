@@ -14,7 +14,7 @@ get_fedora_deps()
 get_freebsd_deps()
 {
  for pkgname in llvm-devel automake autogen libtool \
-  libxml2 e2fsprogs-libuuid openssl bash make; do
+  libxml2 e2fsprogs-libuuid openssl bash gmake; do
     echo $pkgname
     pkg install $pkgname
  done

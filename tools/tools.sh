@@ -21,8 +21,9 @@ if [ "`basename $0`" != "build.sh" ]; then
     fi
 fi
 
-function require
+function require()
 {
+    set +e
     which $1 &>/dev/null
     while [ $? -ne 0 ]
     do
@@ -30,9 +31,54 @@ function require
         read -p "Please install $1 then press enter"
         which $1 &>/dev/null
     done
+    set -e
 }
 
-function test_compiler
+if [[ "`uname -s`" == *BSD ]]; then
+    MAKE=gmake
+else
+    MAKE=make
+fi
+
+require $MAKE
+
+function extract()
+{
+    test $# -ge 2 -a $# -lt 4 && test $2 -eq 2 && echo ""
+    echo "extracting `basename $1` ..."
+
+    local tarflags
+
+    tarflags="xf"
+    test -n "$OCDEBUG" && tarflags+="v"
+
+    case $1 in
+        *.pkg)
+            which xar &>/dev/null || exit 1
+            xar -xf $1
+            cat Payload | gunzip -dc | cpio -i 2>/dev/null && rm Payload
+            ;;
+        *.tar.xz)
+            xz -dc $1 | tar $tarflags -
+            ;;
+        *.tar.gz)
+            gunzip -dc $1 | tar $tarflags -
+            ;;
+        *.tar.bz2)
+            bzip2 -dc $1 | tar $tarflags -
+            ;;
+        *)
+            echo "Unhandled archive type"
+            exit 1
+            ;;
+    esac
+
+    if [ $# -eq 2 -o $# -eq 4 ]; then
+        echo ""
+    fi
+}
+
+function test_compiler()
 {
     echo -ne "testing $1 ... "
     $1 $2 -O2 -Wall -o test

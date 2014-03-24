@@ -5,7 +5,7 @@ pushd "${0%/*}" &>/dev/null
 source tools/tools.sh
 
 # find sdk version to use
-guess_sdk_version()
+function guess_sdk_version()
 {
     tmp1=
     tmp2=
@@ -13,7 +13,7 @@ guess_sdk_version()
     file=
     sdk=
     guess_sdk_version_result=
-    sdkcount=`find tarballs/ | grep MacOSX | wc -l`
+    sdkcount=`find tarballs/ -type f | grep MacOSX | wc -l`
     if [ $sdkcount -eq 0 ]; then
         echo no SDK found in 'tarballs/'. please see README.md
         exit 1
@@ -22,14 +22,14 @@ guess_sdk_version()
         for sdk in $sdks; do echo $sdk; done
         echo 'more than one MacOSX SDK tarball found. please set'
         echo 'SDK_VERSION environment variable for the one you want'
-        echo '(for example: run SDK_VERSION=10.x build.sh )'
+        echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] ./build.sh)'
         exit 1
     else
         sdk=`find tarballs/ | grep MacOSX`
         tmp2=`echo $sdk | sed s/[^0-9.]//g`
         tmp3=`echo $tmp2 | sed s/\\\.*$//g`
         guess_sdk_version_result=$tmp3
-        echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$sdk
+        echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'`basename $sdk`
     fi
     if [ $guess_sdk_version_result ]; then
         if [ $guess_sdk_version_result = 10.4 ]; then
@@ -40,7 +40,7 @@ guess_sdk_version()
 }
 
 # make sure there is actually a file with the given SDK_VERSION
-verify_sdk_version()
+function verify_sdk_version()
 {
     sdkv=$1
     for file in tarballs/*; do
@@ -56,7 +56,8 @@ verify_sdk_version()
 }
 
 if [ $SDK_VERSION ]; then
-    echo 'SDK VERSION set in environment variable: ' $SDK_VERSION
+    echo 'SDK VERSION set in environment variable:' $SDK_VERSION
+    test $SDK_VERSION = 10.4 && SDK_VERSION=10.4u
 else
     guess_sdk_version
     SDK_VERSION=$guess_sdk_version_result
@@ -66,14 +67,20 @@ verify_sdk_version $SDK_VERSION
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
 # You can comment this variable out,
-# if you want to use the compilers default value
-OSX_VERSION_MIN=10.5
+# if you want to use the compiler's default value
+if [ -z "$OSX_VERSION_MIN" ]; then
+    if [ $SDK_VERSION = 10.4u ]; then
+        OSX_VERSION_MIN=10.4
+    else
+        OSX_VERSION_MIN=10.5
+    fi
+fi
 
 # ld version
 LINKER_VERSION=134.9
 
 # Don't change this
-OSXCROSS_VERSION=0.5
+OSXCROSS_VERSION=0.6
 
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build
@@ -114,11 +121,9 @@ mkdir -p $BUILD_DIR
 mkdir -p $TARGET_DIR
 mkdir -p $SDK_DIR
 
-set +e
 require $CC
 require $CXX
 require clang
-require make
 require sed
 require patch
 require gunzip
@@ -126,7 +131,6 @@ require cpio
 require autogen
 require automake
 require libtool
-set -e
 
 CLANG_TARGET_OPTION=`./oclang/check_target_option.sh`
 
@@ -150,26 +154,31 @@ CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | \
                  tr '_' ' ' | tr '.' ' ' | \
                  awk '{print $3}'`
 
+# CCTOOLS
 if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
 rm -rf cctools*
 rm -rf xar*
 rm -rf bc*
 
-xz -cd $TARBALL_DIR/cctools*.tar.xz | tar xvf -
+extract $TARBALL_DIR/cctools*.tar.xz 1 1 1
 
 pushd cctools*/cctools &>/dev/null
+pushd .. &>/dev/null
+patch -p0 -l < $PATCH_DIR/cctools-63f6742.patch
+popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
+echo ""
 ./autogen.sh
 echo ""
 echo "if you see automake warnings, ignore them"
 echo "automake 1.14+ is supposed to print a lot of warnings"
 echo ""
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
-make -j$JOBS
-make install -j$JOBS
+$MAKE -j$JOBS
+$MAKE install -j$JOBS
 popd &>/dev/null
 
 pushd $TARGET_DIR/bin &>/dev/null
@@ -181,48 +190,56 @@ for CCTOOL in ${CCTOOLS[@]}; do
 done
 popd &>/dev/null
 
-fi # have cctools
+fi
+# CCTOOLS END
 
-
+# BC
 set +e
 which bc &>/dev/null
 NEED_BC=$?
 set -e
 
-
 if [ $NEED_BC -ne 0 ]; then
 
-tar xfv $TARBALL_DIR/bc*.tar.bz2
+extract $TARBALL_DIR/bc*.tar.bz2 2
 
 pushd bc* &>/dev/null
 CFLAGS="-w" ./configure --prefix=$TARGET_DIR --without-flex
-make -j$JOBS
-make install -j$JOBS
+$MAKE -j$JOBS
+$MAKE install -j$JOBS
 popd &>/dev/null
 
-fi # NEED BC
+fi
+# BC END
 
+SDK=`ls $TARBALL_DIR/MacOSX$SDK_VERSION*`
 
-if [ ! -f "have_xar_$TARGET" ]; then
-if [ -n "$FORCE_XAR_BUILD" ] || [ `echo "$SDK_VERSION<=10.5" | bc -l` -eq 1 ]; then
+# XAR
+if [[ $SDK == *.pkg ]]; then
 
-tar xzfv $TARBALL_DIR/xar*.tar.gz
+set +e
+which xar &>/dev/null
+NEED_XAR=$?
+set -e
+
+if [ $NEED_XAR -ne 0 ]; then
+
+extract $TARBALL_DIR/xar*.tar.gz 2
 
 pushd xar* &>/dev/null
-set +e
-sed -i 's/-Wall/-w/g' configure
-set -e
-./configure --prefix=$TARGET_DIR
-make -j$JOBS
-make install -j$JOBS
+test "`uname -s`" = "NetBSD" && patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
+CFLAGS+=" -w" ./configure --prefix=$TARGET_DIR
+$MAKE -j$JOBS
+$MAKE install -j$JOBS
 popd &>/dev/null
 
-fi # SDK <= 10.5
-fi # have xar
+fi
+fi
+# XAR END
 
 if [ ! -f "have_cctools_$TARGET" ]; then
 
-function check_cctools
+function check_cctools()
 {
     [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-lipo" ] || exit 1
     [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ld" ] || exit 1
@@ -236,6 +253,8 @@ check_cctools i386
 check_cctools x86_64
 
 touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET"
+
+echo ""
 
 fi # HAVE_CCTOOLS
 
@@ -255,24 +274,7 @@ do
 done
 set -e
 
-SDK=`ls $TARBALL_DIR/MacOSX$SDK_VERSION*`
-SDK_FILENAME=`basename $SDK`
-
-echo "extracting $SDK_FILENAME ..."
-
-case $SDK in
-    *.pkg)
-        which xar &>/dev/null || { echo "please build with: FORCE_XAR_BUILD=1 ./build.sh" && exit 1; }
-        xar -xf $SDK
-        cat Payload | gunzip -dc | cpio -i 2>/dev/null
-        ;;
-    *.tar.xz)
-        xz -cd $SDK | tar xvf -
-        ;;
-    *.tar.gz)
-        gunzip -dc $SDK | tar xvf -
-        ;;
-esac
+extract $SDK 1 1
 
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
 mv -f SDKs/*$SDK_VERSION* $SDK_DIR
@@ -363,12 +365,24 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ld
 
 echo ""
 
-if [ `echo "$SDK_VERSION>=10.9" | bc -l` -eq 1 ] && ( [ $OSX_VERSION_MIN == "default" ] ||
+if [ -n $OSX_VERSION_MIN ]; then
+if [ `echo "${SDK_VERSION/u/}<$OSX_VERSION_MIN" | bc -l` -eq 1 ]; then
+    echo "OSX_VERSION_MIN must be <= SDK_VERSION"
+    trap "" EXIT
+    exit 1
+elif [ `echo "$OSX_VERSION_MIN<10.4" | bc -l` -eq 1  ]; then
+    echo "OSX_VERSION_MIN must be >= 10.4"
+    trap "" EXIT
+    exit 1
+fi
+
+if [ `echo "${SDK_VERSION/u/}>=10.9" | bc -l` -eq 1 ] && ( [ $OSX_VERSION_MIN == "default" ] ||
    [ `echo "$OSX_VERSION_MIN>=10.9" | bc -l` -eq 1 ] );
 then
     export SCRIPT=`basename $0`
     ./build_libcxx.sh || exit 0
 fi
+fi # OSX_VERSION_MIN set
 
 test_compiler o32-clang $BASE_DIR/oclang/test.c
 test_compiler o64-clang $BASE_DIR/oclang/test.c

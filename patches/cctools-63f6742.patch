@@ -1,0 +1,289 @@
+commit 63f674235b363b7d762d075b4f1eddc09d10686b
+Author: Thomas Pöchtrager <t.poechtrager@gmail.com>
+Date:   Mon Mar 24 21:16:34 2014 +0100
+
+    support NetBSD
+
+diff --git cctools/ar/contents.c cctools/ar/contents.c
+index b5bf05d..9df1a33 100644
+--- cctools/ar/contents.c
++++ cctools/ar/contents.c
+@@ -81,7 +81,9 @@ static char rcsid[] = "$OpenBSD: contents.c,v 1.2 1996/06/26 05:31:19 deraadt Ex
+ #include "archive.h"
+ #include "extern.h"
+ 
++#ifndef HAVE_STRMODE
+ extern void strmode(int mode, char *p);
++#endif
+ 
+ /*
+  * contents --
+diff --git cctools/configure.ac cctools/configure.ac
+index 31f075b..17c0d09 100644
+--- cctools/configure.ac
++++ cctools/configure.ac
+@@ -10,11 +10,10 @@ AC_ARG_PROGRAM
+ CC=clang
+ CXX=clang++
+ 
+-CFLAGS="$CFLAGS `cat tmp/cflags 2>/dev/null` -O3"
+-CXXFLAGS="$CXXFLAGS `cat tmp/cxxflags 2>/dev/null` -O3"
++CFLAGS="$CFLAGS `cat tmp/cflags 2>/dev/null` -isystem /usr/local/include -isystem /usr/pkg/include -O3"
++CXXFLAGS="$CXXFLAGS `cat tmp/cxxflags 2>/dev/null` -isystem /usr/local/include -isystem /usr/pkg/include -O3"
+ LDFLAGS="$LDFLAGS -L/usr/local/lib `cat tmp/ldflags 2>/dev/null`"
+ export LD_LIBRARY_PATH="`cat tmp/ldpath 2>/dev/null`"
+-export C_INCLUDE_PATH="$C_INCLUDE_PATH:/usr/local/include"
+ 
+ CPP="clang -E"
+ 
+@@ -225,6 +224,17 @@ AC_COMPILE_IFELSE(
+ )
+ CFLAGS=$ORIGCFLAGS
+ 
++ORIGCFLAGS=$CFLAGS
++CFLAGS="$CFLAGS -Wno-char-subscripts"
++AC_MSG_CHECKING([if -Wno-char-subscripts is supported])
++AC_COMPILE_IFELSE(
++   [AC_LANG_SOURCE([[const char hw[] = "Hello, World\n";]])],
++   [WARNINGS="$WARNINGS -Wno-char-subscripts"
++    AC_MSG_RESULT([yes])],
++   [AC_MSG_RESULT([no])]  
++)  
++CFLAGS=$ORIGCFLAGS
++
+ AC_SUBST([WARNINGS], [$WARNINGS])
+ 
+ 
+@@ -251,6 +261,8 @@ AC_SUBST(CRYPT_LIBS)
+ AC_C_BIGENDIAN([AC_SUBST([ENDIAN_FLAG],[-D__BIG_ENDIAN__=1])],
+            [AC_SUBST([ENDIAN_FLAG],[-D__LITTLE_ENDIAN__=1])])
+ 
++AC_CHECK_FUNCS([strmode])
++
+ AC_CONFIG_FILES([Makefile libstuff/Makefile])
+ AC_CONFIG_FILES([ar/Makefile])
+ AC_CONFIG_FILES([as/Makefile])
+diff --git cctools/include/foreign/i386/endian.h cctools/include/foreign/i386/endian.h
+index 2dbebcb..2fbd938 100644
+--- cctools/include/foreign/i386/endian.h
++++ cctools/include/foreign/i386/endian.h
+@@ -96,9 +96,9 @@
+ 
+ #define    BYTE_ORDER  __DARWIN_BYTE_ORDER
+ 
+-#ifndef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+ #include <sys/_endian.h>
+-#endif /* !__FreeBSD__ */
++#endif /* __FreeBSD__ || __NetBSD__ || __OpenBSD__ */
+ 
+ #endif /* defined(KERNEL) || (!defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)) */
+ #endif /* !_I386__ENDIAN_H_ */
+diff --git cctools/include/foreign/i386/signal.h cctools/include/foreign/i386/signal.h
+index d729a28..5ddde95 100644
+--- cctools/include/foreign/i386/signal.h
++++ cctools/include/foreign/i386/signal.h
+@@ -40,9 +40,9 @@ typedef int sig_atomic_t;
+ 
+ #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+ 
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
+ #include <sys/appleapiopts.h>
+-#endif /* __FreeBSD__ */
++#endif /* !__FreeBSD__ && !__NetBSD__ && !__OpenBSD__ */
+ 
+ #ifdef __APPLE_API_OBSOLETE
+ 
+diff --git cctools/include/foreign/i386/types.h cctools/include/foreign/i386/types.h
+index 80e9e80..13d95ec 100644
+--- cctools/include/foreign/i386/types.h
++++ cctools/include/foreign/i386/types.h
+@@ -67,6 +67,9 @@
+ #define    _MACHTYPES_H_
+ 
+ #ifndef __ASSEMBLER__
++#if defined(__NetBSD__) || defined(__OpenBSD__)
++#include_next <machine/types.h> /* __cpu_simple_lock_t */
++#endif /* __NetBSD__ || __OpenBSD__ */
+ #include <i386/_types.h>
+ #include <sys/cdefs.h>
+ /*
+@@ -90,9 +93,17 @@ typedef  int         int32_t;
+ typedef    unsigned int        u_int32_t;
+ #ifndef _INT64_T
+ #define _INT64_T
++#if !defined(__NetBSD__) && !defined(__OpenBSD__)
+ typedef    long long       int64_t;
++#else
++typedef long            int64_t;
++#endif /* ! __NetBSD__ && !__OpenBSD__  */
+ #endif
++#if !defined(__NetBSD__) && !defined(__OpenBSD__)
+ typedef    unsigned long long  u_int64_t;
++#else
++typedef unsigned long       u_int64_t;
++#endif /* ! __NetBSD__ && !__OpenBSD__  */
+ 
+ #if __LP64__
+ typedef int64_t            register_t;
+diff --git cctools/include/foreign/mach/vm_inherit.h cctools/include/foreign/mach/vm_inherit.h
+index d6440e4..27cf97b 100644
+--- cctools/include/foreign/mach/vm_inherit.h
++++ cctools/include/foreign/mach/vm_inherit.h
+@@ -72,7 +72,11 @@
+  * vm_inherit_t    inheritance codes.
+  */
+ 
+-typedef unsigned int       vm_inherit_t;   /* might want to change this */
++#if defined(__NetBSD__) || defined(__OpenBSD__)
++typedef  int                vm_inherit_t;   /* might want to change this */
++#else
++typedef unsigned int        vm_inherit_t;   /* might want to change this */
++#endif /* __NetBSD__ || __OpenBSD__ */
+ 
+ /*
+  * Enumeration of valid values for vm_inherit_t.
+diff --git cctools/include/foreign/mach/vm_prot.h cctools/include/foreign/mach/vm_prot.h
+index 6fe17d4..e5c8c12 100644
+--- cctools/include/foreign/mach/vm_prot.h
++++ cctools/include/foreign/mach/vm_prot.h
+@@ -88,6 +88,7 @@ typedef int       vm_prot_t;
+  * The default protection for newly-created virtual memory
+  */
+ 
++#undef VM_PROT_DEFAULT
+ #define VM_PROT_DEFAULT    (VM_PROT_READ|VM_PROT_WRITE)
+ 
+ /*
+diff --git cctools/include/foreign/machine/_limits.h cctools/include/foreign/machine/_limits.h
+index ef021a2..61ceec2 100644
+--- cctools/include/foreign/machine/_limits.h
++++ cctools/include/foreign/machine/_limits.h
+@@ -25,7 +25,7 @@
+  * 
+  * @APPLE_OSREFERENCE_LICENSE_HEADER_END@
+  */
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+ #include_next <machine/_limits.h>
+ #else
+ #ifndef _BSD_MACHINE__LIMITS_H_
+@@ -42,4 +42,4 @@
+ #endif
+ 
+ #endif /* _BSD_MACHINE__LIMITS_H_ */
+-#endif /* __FreeBSD__ */
++#endif /* __FreeBSD__ || __NetBSD__ || __OpenBSD__ */
+diff --git cctools/include/foreign/machine/_types.h cctools/include/foreign/machine/_types.h
+index d1b89b4..789a323 100644
+--- cctools/include/foreign/machine/_types.h
++++ cctools/include/foreign/machine/_types.h
+@@ -25,7 +25,7 @@
+  * 
+  * @APPLE_OSREFERENCE_LICENSE_HEADER_END@
+  */
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__)
+ #include_next <machine/_types.h>
+ #else
+ #ifndef _BSD_MACHINE__TYPES_H_
+diff --git cctools/include/foreign/machine/endian.h cctools/include/foreign/machine/endian.h
+index 9fd936a..2341cdd 100644
+--- cctools/include/foreign/machine/endian.h
++++ cctools/include/foreign/machine/endian.h
+@@ -28,7 +28,7 @@
+ /*
+  * Copyright 1995 NeXT Computer, Inc. All rights reserved.
+  */
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+ #include_next <machine/endian.h>
+ #else
+ #ifndef _BSD_MACHINE_ENDIAN_H_
+@@ -45,4 +45,4 @@
+ #endif
+ 
+ #endif /* _BSD_MACHINE_ENDIAN_H_ */
+-#endif /* __FreeBSD__ */
++#endif /* __FreeBSD__ || __NetBSD__ || __OpenBSD__ */
+diff --git cctools/ld64/src/3rd/helper.c cctools/ld64/src/3rd/helper.c
+index b75c215..d387c54 100644
+--- cctools/ld64/src/3rd/helper.c
++++ cctools/ld64/src/3rd/helper.c
+@@ -14,7 +14,7 @@
+ #include <sys/time.h>
+ #include <assert.h>
+  
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+ #include <sys/sysctl.h>
+ #endif
+ 
+@@ -27,6 +27,8 @@ void __assert_rtn(const char *func, const char *file, int line, const char *msg)
+ {
+ #ifdef __FreeBSD__
+     __assert(msg, file, line, func);
++#elif defined(__NetBSD__) || defined(__OpenBSD__)
++    __assert(msg, line, file);
+ #else
+     __assert(msg, file, line);
+ #endif /* __FreeBSD__ */
+diff --git cctools/ld64/src/ld/ld.cpp cctools/ld64/src/ld/ld.cpp
+index ee337a0..45b7f95 100644
+--- cctools/ld64/src/ld/ld.cpp
++++ cctools/ld64/src/ld/ld.cpp
+@@ -37,9 +37,9 @@
+ #include <errno.h>
+ #include <limits.h>
+ #include <unistd.h>
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
+ #include <execinfo.h>
+-#endif /* __FreeBSD__ */
++#endif /* !__FreeBSD__ && !__NetBSD__ && !__OpenBSD__ */
+ #include <mach/mach_time.h>
+ #include <mach/vm_statistics.h>
+ #include <mach/mach_init.h>
+@@ -757,7 +757,7 @@ int main(int argc, const char* argv[])
+ // implement assert() function to print out a backtrace before aborting
+ void __assert_rtn(const char* func, const char* file, int line, const char* failedexpr)
+ {
+-#ifndef __FreeBSD__
++#if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
+     Snapshot *snapshot = Snapshot::globalSnapshot;
+     
+     snapshot->setSnapshotMode(Snapshot::SNAPSHOT_DEBUG);
+@@ -783,7 +783,7 @@ void __assert_rtn(const char* func, const char* file, int line, const char* fail
+        snapshot->recordAssertionMessage("%d  %p  %s + %ld\n", i, callStack[i], symboName, offset);
+    }
+     fprintf(stderr, "A linker snapshot was created at:\n\t%s\n", snapshot->rootDir());
+-#endif /* __FreeBSD__ */
++#endif /* !__FreeBSD__ && !__NetBSD__ && !__OpenBSD__ */
+    fprintf(stderr, "ld: Assertion failed: (%s), function %s, file %s, line %d.\n", failedexpr, func, file, line);
+    exit(1);
+ }
+diff --git cctools/libstuff/dylib_roots.c cctools/libstuff/dylib_roots.c
+index eb661b0..74b6519 100644
+--- cctools/libstuff/dylib_roots.c
++++ cctools/libstuff/dylib_roots.c
+@@ -32,6 +32,7 @@
+ #include <fts.h>
+ #endif
+ #include <sys/errno.h>
++#include <errno.h>
+ #include "stuff/bool.h"
+ #include "stuff/SymLoc.h"
+ #include "stuff/ofile.h"
+diff --git tools/find_lto_header.sh tools/find_lto_header.sh
+index 665683d..6ce5979 100755
+--- tools/find_lto_header.sh
++++ tools/find_lto_header.sh
+@@ -26,6 +26,7 @@ try "-3.2"
+ try "-3.3"
+ try "-3.4"
+ try "-3.5"
++try "-devel"
+ 
+ try "32"
+ try "33"
