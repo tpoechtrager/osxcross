@@ -24,7 +24,7 @@ Basically everything you can build on OS X with clang/gcc should build with this
 
 ### INSTALLATION: ###
 
-Download the SDK version (links below) you want to the tarball/ (important!) directory.
+Move your packaged SDK to the tarball/ directory.
 
 Then ensure you have the following installed on your Linux/FreeBSD box:
 
@@ -35,7 +35,7 @@ Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically.
 Hint 2: On Ubuntu 12.04 LTS you can use [llvm.org/apt](http://llvm.org/apt) to get a newer version of clang.
 
 Then run `./build.sh` to build the cross toolchain.  
-(It will search 'tarballs' for your downloaded SDK and then build in its own directory.)
+(It will search 'tarballs' for your SDK and then build in its own directory.)
 
 **Don't forget** to add the printed `` `<path>/osxcross-env` `` to your `~/.profile` or `~/.bashrc`.  
 Then either run `source ~/.profile` or restart your shell session.
@@ -56,7 +56,9 @@ If you want to build GCC as well, then you can do this by running `./build_gcc.s
 But before you do this, make sure you have got the GCC build depedencies installed on your system,  
 on debian like systems you can run `apt-get install libmpc-dev libmpfr-dev libgmp-dev` to install them.
 
-### SDK DOWNLOAD LINKS: ###
+### PACKAGING THE SDK: ###
+
+* Soon.
 
 ### USAGE EXAMPLES: ###
 
