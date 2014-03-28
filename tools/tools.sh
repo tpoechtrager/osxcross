@@ -86,5 +86,19 @@ function test_compiler()
     echo "works"
 }
 
+function test_compiler_cxx11()
+{
+    set +e
+    echo -ne "testing $1 -stdlib=libc++ -std=c++11 ... "
+    $1 $2 -O2 -stdlib=libc++ -std=c++11 -Wall -o test &>/dev/null
+    if [ $? -eq 0 ]; then
+        rm test
+        echo "works"
+    else
+        echo "failed (ignored)"
+    fi
+    set -e
+}
+
 # exit on error
 set -e

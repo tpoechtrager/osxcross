@@ -35,6 +35,8 @@ fi
 TARGET=$ARCH1-apple-$OSXCROSS_TARGET
 OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
 
+export COMPILER_PATH="$OSXCROSS_CCTOOLS_PATH:$COMPILER_PATH"
+
 if [ $# -gt 0 ]; then
     for p in "$@"
     do
@@ -59,64 +61,43 @@ else
     exit $?
 fi
 
-if [ $OSXCROSS_OSX_VERSION_MIN != "default" ]; then
-    OSX_VERSION_MIN_OPT="-mmacosx-version-min=$OSXCROSS_OSX_VERSION_MIN"
-else
-    OSX_VERSION_MIN_OPT=""
-fi
-
-export COMPILER_PATH="$OSXCROSS_CCTOOLS_PATH:$COMPILER_PATH"
-
 STDINC=$OSXCROSS_SDK/usr/include
 
-if [ -n "$BUILD_LIBCXX" ]; then
-    if [ $BUILD_LIBCXX -eq 1 ]; then
-        # TODO: Write a fake libc++ library (without any symbols)
-        # once libstdc++ disappears from the SDK.
-        # Newer versions of clang default to libc++ for >= 10.9,
-        # so configuring libc++ fails because of the hardcoded
-        # -lc++ ... (at least with cmake).
+if [ $USE_LIBCXX -eq 0 ]; then
+    MIN_TARGET_VERSION=`echo "$OSX_VERSION_MIN" | tr '.' ' ' | awk '{printf "%d %d", $1, $2}'`
+    MIN_TARGET_VERSION_MAJOR=`echo $MIN_TARGET_VERSION | awk '{print $1}'`
+    MIN_TARGET_VERSION_MINOR=`echo $MIN_TARGET_VERSION | awk '{print $2}'`
 
-        OSXCROSS_OPT_ARGS="$OSXCROSS_OPT_ARGS -stdlib=libstdc++"
-    fi
-
-    USE_LIBCXX=0
-else
-    if [ $USE_LIBCXX -eq 0 ]; then
-        MIN_TARGET_VERSION=`echo "$OSX_VERSION_MIN" | tr '.' ' ' | awk '{printf "%d %d", $1, $2}'`
-        MIN_TARGET_VERSION_MAJOR=`echo $MIN_TARGET_VERSION | awk '{print $1}'`
-        MIN_TARGET_VERSION_MINOR=`echo $MIN_TARGET_VERSION | awk '{print $2}'`
-
-        if [ $MIN_TARGET_VERSION_MAJOR -ge 10 ] && [ $MIN_TARGET_VERSION_MINOR -ge 9 ]; then
-            # default to libc++ on >= 10.9
-            USE_LIBCXX=1
-        fi
+    if [ $MIN_TARGET_VERSION_MAJOR -ge 10 ] && [ $MIN_TARGET_VERSION_MINOR -ge 9 ]; then
+        # default to libc++ on >= 10.9
+        USE_LIBCXX=1
     fi
 fi
 
 if [ $USE_LIBCXX -ne 0 ]; then
-    if [ ! -f "$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib/libc++.a" ]; then
-        echo -e "\e[1mosxcross \e[31merror:\e[0m\e[1m you must build libc++ before you can use it (./build_libcxx.sh)\e[0m" 1>&2
-        exit 1
-    fi
+    # -nostdinc++ to avoid using local libc++ headers...
+    CXXINC="-nostdinc++ -cxx-isystem $OSXCROSS_SDK/usr/include/c++/v1"
 
-    CXXINC="-nostdinc++ -cxx-isystem $OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/include/c++/v1"
-
-    if [ $USE_LIBCXX -eq 1 ]; then
-        CXXINC="$CXXINC -stdlib=libc++"
-    fi
-
-    REGEX="\-o\s*[^ ]+\.gch"
-    if [[ ! "$@" =~ $REGEX ]]; then
-        if [[ $COMPILER == *clang++* ]]; then
-            CXXINC="$CXXINC -Qunused-arguments -lc++abi"
+    if ( [ $OSX_VERSION_MIN != "default" ] &&
+         [ `echo "$OSX_VERSION_MIN<=10.6" | bc -l` -eq 1  ] );
+    then
+        if [ $OSXCROSS_OSX_VERSION_MIN = "default" ]; then
+            echo -en "\e[1mosxcross \e[31merror:\e[0m\e[0m" 2>&1
+            echo " -stdlib=libc++ requires Mac OS X 10.7 or later" 2>&1
+            exit 1
         fi
-        CXXINC="$CXXINC -L$OSXCROSS_SDK/../libcxx_$OSXCROSS_SDK_VERSION/lib"
+        OSXCROSS_OSX_VERSION_MIN="10.7"
     fi
 else
     CXXINC="-cxx-isystem $OSXCROSS_SDK/usr/lib/gcc/i686-apple-$OSXCROSS_TARGET/4.2.1/include"
     CXXINC="$CXXINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0 "
     CXXINC="$CXXINC -cxx-isystem $OSXCROSS_SDK/usr/include/c++/4.0.0/$ARCH2-apple-darwin9 "
+fi
+
+if [ $OSXCROSS_OSX_VERSION_MIN != "default" ]; then
+    OSX_VERSION_MIN_OPT="-mmacosx-version-min=$OSXCROSS_OSX_VERSION_MIN"
+else
+    OSX_VERSION_MIN_OPT=""
 fi
 
 XMMINTRIN=`readlink "$STDINC/xmmintrin.h"`
@@ -127,14 +108,15 @@ if [ $? -eq 0 ] && [ ! -f "$XMMINTRIN" ]; then
         ./osxcross-fix-intrinsic-headers $OSXCROSS_SDK || { echo -e "\e[31mfailed.\e[0m" 1>&2 && exit 1; }
         echo -e "\e[1mdone.\e[0m" 1>&2
     else
-        echo -e "\e[1mosxcross \e[31merror:\e[0m\e[1m dead intrinsic link found - please re-run ./build.sh\e[0m" 1>&2 
+        echo -en "\e[1mosxcross \e[31merror:\e[0m\e[1m dead intrinsic link found -" 1>&2
+        echo -e  "please re-run ./build.sh\e[0m" 1>&2 
         exit 1
     fi
 fi
 
 $COMPILER \
     $OSXCROSS_TARGET_OPTION $TARGET -isysroot $OSXCROSS_SDK \
-    $CXXINC $OSX_VERSION_MIN_OPT -mlinker-version=$OSXCROSS_LINKER_VERSION \
-    $OSXCROSS_OPT_ARGS ${1+"$@"}
+    $CXXINC -mlinker-version=$OSXCROSS_LINKER_VERSION \
+    $OSXCROSS_OPT_ARGS ${1+"$@"} $OSX_VERSION_MIN_OPT
 
 exit $?

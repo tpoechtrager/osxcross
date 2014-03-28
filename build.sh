@@ -150,9 +150,7 @@ if [ "`ls $TARBALL_DIR/cctools*.tar.* | wc -l | tr -d ' '`" != "1" ]; then
     exit 1
 fi
 
-CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | \
-                 tr '_' ' ' | tr '.' ' ' | \
-                 awk '{print $3}'`
+CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
 
 # CCTOOLS
 if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
@@ -277,11 +275,18 @@ set -e
 extract $SDK 1 1
 
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
-mv -f SDKs/*$SDK_VERSION* $SDK_DIR
+
+if [ "`ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' '`" != "0" ]; then
+    mv -f SDKs/*$SDK_VERSION* $SDK_DIR
+else
+    mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
+fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
-ln -s $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h usr/include 2>/dev/null
+ln -s \
+  $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
+  usr/include 2>/dev/null
 $BASE_DIR/oclang/find_intrinsic_headers.sh $SDK_DIR/MacOSX$SDK_VERSION.sdk
 test ! -f "usr/include/float.h" && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
 set -e
@@ -389,6 +394,19 @@ test_compiler o64-clang $BASE_DIR/oclang/test.c
 
 test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
 test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
+
+if [ `echo "${SDK_VERSION/u/}>=10.7" | bc -l` -eq 1 ]; then
+    if [ ! -d "$SDK_DIR/MacOSX$SDK_VERSION.sdk/usr/include/c++/v1" ]; then
+        echo ""
+        echo -n "Given SDK does not contain libc++ headers "
+        echo "(-stdlib=libc++ test may fail)"
+        echo -n "You may want to re-package your SDK using "
+        echo "'tools/gen_sdk_package.sh' on OS X"
+    fi
+    echo ""
+    test_compiler_cxx11 o32-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+    test_compiler_cxx11 o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+fi
 
 echo ""
 echo "Now add"

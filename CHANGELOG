@@ -1,6 +1,7 @@
 0.6:
 - added: NetBSD support
 - added: dependencies installer script (Don Bright)
+- added: SDK package script
 
 0.5:
 - fixed: help clang to find its own intrinsic headers (this issue appears to be fixed in clang 3.4+)
@@ -15,7 +16,6 @@
 - added: a workaround for buggy unistd.h headers
 
 0.3:
-- added: SDK download links to README
 - added: support 10.9 (Mavericks) SDK
 - added: *-apple-darwin*-clang* symlinks (same as invoking o32-clang or o64-clang++)
 - changed: no need to build extra cctools binaries for targeting i386, symlinking the x86_64 builds works as well
