@@ -43,7 +43,7 @@ get_mageia_deps()
 get_debian_deps()
 {
  for pkg in build-essential clang llvm-devel automake autogen libtool \
-  libxml2-dev uuid-dev openssl bash patch make; do
+  libxml2-dev uuid-dev libssl-dev bash patch make; do
     apt-get -y install $pkg;
  done
 }
