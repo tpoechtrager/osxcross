@@ -26,7 +26,7 @@ function guess_sdk_version()
         exit 1
     else
         sdk=`find tarballs/ | grep MacOSX`
-        tmp2=`echo $sdk | sed s/[^0-9.]//g`
+        tmp2=`echo ${sdk/bz2/} | sed s/[^0-9.]//g`
         tmp3=`echo $tmp2 | sed s/\\\.*$//g`
         guess_sdk_version_result=$tmp3
         echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'`basename $sdk`
