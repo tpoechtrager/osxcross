@@ -339,8 +339,8 @@ if [ `echo "${SDK_VERSION/u/}>=10.7" | bc -l` -eq 1 ]; then
 fi
 
 set +e
-which csh &>/dev/null
 HAVE_CSH=0
+which csh &>/dev/null
 [ $? -eq 0 ] && HAVE_CSH=1
 
 if [ $HAVE_CSH -eq 0 ]; then
