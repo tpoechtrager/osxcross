@@ -78,13 +78,7 @@ fi # have gcc
 
 popd &>/dev/null # build dir
 
-WRAPPER=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-${OSXCROSS_TARGET}-ogcc
-cp ogcc/ogcc $WRAPPER
-
-WRAPPER_SCRIPT=`basename $WRAPPER`
-WRAPPER_DIR=`dirname $WRAPPER`
-
-pushd $WRAPPER_DIR &>/dev/null
+pushd $OSXCROSS_TARGET_DIR/bin &>/dev/null
 
 if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
   mv x86_64-apple-$OSXCROSS_TARGET-gcc x86_64-apple-$OSXCROSS_TARGET-base-gcc
@@ -94,21 +88,14 @@ if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
   ln -sf x86_64-apple-$OSXCROSS_TARGET-base-g++ i386-apple-$OSXCROSS_TARGET-base-g++
 fi
 
-ln -sf $WRAPPER_SCRIPT o32-gcc
-ln -sf $WRAPPER_SCRIPT o32-g++
-ln -sf $WRAPPER_SCRIPT o32-g++-libc++
+echo "compiling wrapper ..."
 
-ln -sf $WRAPPER_SCRIPT o64-gcc
-ln -sf $WRAPPER_SCRIPT o64-g++
-ln -sf $WRAPPER_SCRIPT o64-g++-libc++
+export TARGET=$OSXCROSS_TARGET
+export OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
+export LINKER_VERSION=$OSXCROSS_LINKER_VERSION
 
-ln -sf $WRAPPER_SCRIPT i386-apple-$OSXCROSS_TARGET-gcc
-ln -sf $WRAPPER_SCRIPT i386-apple-$OSXCROSS_TARGET-g++
-ln -sf $WRAPPER_SCRIPT i386-apple-$OSXCROSS_TARGET-g++-libc++
-
-ln -sf $WRAPPER_SCRIPT x86_64-apple-$OSXCROSS_TARGET-gcc
-ln -sf $WRAPPER_SCRIPT x86_64-apple-$OSXCROSS_TARGET-g++
-ln -sf $WRAPPER_SCRIPT x86_64-apple-$OSXCROSS_TARGET-g++-libc++
+TARGETCOMPILER=gcc \
+  $BASE_DIR/wrapper/build.sh 1>/dev/null
 
 popd &>/dev/null # wrapper dir
 

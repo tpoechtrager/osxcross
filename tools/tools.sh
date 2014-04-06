@@ -9,15 +9,19 @@ export CXX=clang++
 # enable debug messages
 test -n "$OCDEBUG" && set -x
 
-# how many concurrent jobs should be used for compiling?
-JOBS=`tools/get_cpu_count.sh`
+PSCRIPT="`basename $0`"
 
-if [ "`basename $0`" != "build.sh" ]; then
-  `tools/osxcross_conf.sh`
+if [[ $PSCRIPT != *wrapper/build.sh ]]; then 
+  # how many concurrent jobs should be used for compiling?
+  JOBS=`tools/get_cpu_count.sh`
 
-  if [ $? -ne 0 ]; then
-    echo "you need to complete ./build.sh first, before you can start building $DESC"
-    exit 1
+  if [ $PSCRIPT != "build.sh" ]; then
+    `tools/osxcross_conf.sh`
+
+    if [ $? -ne 0 ]; then
+      echo "you need to complete ./build.sh first, before you can start building $DESC"
+      exit 1
+    fi
   fi
 fi
 
@@ -76,6 +80,12 @@ function extract()
   if [ $# -eq 2 -o $# -eq 4 ]; then
     echo ""
   fi
+}
+
+function verbose_cmd()
+{
+  echo "$@"
+  eval "$@"
 }
 
 function test_compiler()

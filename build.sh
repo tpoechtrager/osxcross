@@ -80,7 +80,7 @@ fi
 LINKER_VERSION=134.9
 
 # Don't change this
-OSXCROSS_VERSION=0.6
+OSXCROSS_VERSION=0.7
 
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build
@@ -101,6 +101,8 @@ case $SDK_VERSION in
   10.9*) TARGET=darwin13 ;;
   *) echo "Invalid SDK Version" && exit 1 ;;
 esac
+
+export TARGET
 
 echo ""
 echo "Building OSXCross toolchain, Version: $OSXCROSS_VERSION"
@@ -131,8 +133,6 @@ require cpio
 require autogen
 require automake
 require libtool
-
-CLANG_TARGET_OPTION=`./oclang/check_target_option.sh`
 
 pushd $BUILD_DIR &>/dev/null
 
@@ -287,107 +287,37 @@ set +e
 ln -s \
   $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
   usr/include 2>/dev/null
-$BASE_DIR/oclang/find_intrinsic_headers.sh $SDK_DIR/MacOSX$SDK_VERSION.sdk
 test ! -f "usr/include/float.h" && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
 set -e
 popd &>/dev/null
 
 popd &>/dev/null
 
-cp -f oclang/dsymutil $TARGET_DIR/bin
-
-WRAPPER=$TARGET_DIR/bin/x86_64-apple-$TARGET-oclang
-cp -f oclang/oclang $WRAPPER
-
-WRAPPER_SCRIPT=`basename $WRAPPER`
-WRAPPER_DIR=`dirname $WRAPPER`
-
-pushd $WRAPPER_DIR &>/dev/null
-
-ln -sf $WRAPPER_SCRIPT o32-clang
-ln -sf $WRAPPER_SCRIPT o32-clang++
-ln -sf $WRAPPER_SCRIPT o32-clang++-libc++
-
-ln -sf $WRAPPER_SCRIPT o64-clang
-ln -sf $WRAPPER_SCRIPT o64-clang++
-ln -sf $WRAPPER_SCRIPT o64-clang++-libc++
-
-ln -sf $WRAPPER_SCRIPT i386-apple-$TARGET-clang
-ln -sf $WRAPPER_SCRIPT i386-apple-$TARGET-clang++
-ln -sf $WRAPPER_SCRIPT i386-apple-$TARGET-clang++-libc++
-
-ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang
-ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang++
-ln -sf $WRAPPER_SCRIPT x86_64-apple-$TARGET-clang++-libc++
-
-popd &>/dev/null
-
 OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
 OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
 
-rm -f $OSXCROSS_CONF $ENV_CONF
+rm -f $OSXCROSS_CONF $OSXCROSS_ENV
 
-echo "#!/usr/bin/env bash"                                                                > $OSXCROSS_CONF
-echo ""                                                                                  >> $OSXCROSS_CONF
-echo "pushd \"\${0%/*}\" &>/dev/null"                                                    >> $OSXCROSS_CONF
-echo ""                                                                                  >> $OSXCROSS_CONF
-echo "DIR=\`pwd\`"                                                                       >> $OSXCROSS_CONF
-echo "OSXCROSS_ROOT=\$DIR/../.."                                                         >> $OSXCROSS_CONF
-echo ""                                                                                  >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_VERSION=$OSXCROSS_VERSION\""                                >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN\""                         >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARGET=$TARGET\""                                           >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_SDK_VERSION=$SDK_VERSION\""                                 >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_SDK=\$DIR/../`basename $SDK_DIR`/MacOSX$SDK_VERSION.sdk\""  >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARBALL_DIR=\$OSXCROSS_ROOT/`basename $TARBALL_DIR`\""      >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_PATCH_DIR=\$OSXCROSS_ROOT/`basename $PATCH_DIR`\""          >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARGET_DIR=\$OSXCROSS_ROOT/`basename $TARGET_DIR`\""        >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_BUILD_DIR=\$OSXCROSS_ROOT/`basename $BUILD_DIR`\""          >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_CCTOOLS_PATH=\$DIR\""                                       >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_TARGET_OPTION=$CLANG_TARGET_OPTION\""                       >> $OSXCROSS_CONF
-echo "echo \"export OSXCROSS_LINKER_VERSION=$LINKER_VERSION\""                           >> $OSXCROSS_CONF
-echo ""                                                                                  >> $OSXCROSS_CONF
-echo "popd &>/dev/null"                                                                  >> $OSXCROSS_CONF
-echo ""                                                                                  >> $OSXCROSS_CONF
-
-if [ -f $BUILD_DIR/cctools*/cctools/tmp/ldpath ]; then
-    LIB_PATH=:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`
-else
-    LIB_PATH=""
-fi
-
-echo "#!/bin/sh"                                                                    > $OSXCROSS_ENV
-echo ""                                                                            >> $OSXCROSS_ENV
-echo "BDIR=\`readlink -f \\\`dirname \$0\\\`\`"                                    >> $OSXCROSS_ENV
-echo ""                                                                            >> $OSXCROSS_ENV
-echo "echo \"export PATH=\$PATH:\$BDIR\""                                          >> $OSXCROSS_ENV
-echo "echo \"export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:\$BDIR/../lib${LIB_PATH}\""  >> $OSXCROSS_ENV
-
-
-chmod +x $OSXCROSS_CONF $OSXCROSS_ENV
+echo "compiling wrapper ..."
+export OSX_VERSION_MIN
+export LINKER_VERSION
+$BASE_DIR/wrapper/build.sh 1>/dev/null
 
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`" # libLTO.so
 
 echo ""
 
 if [ -n $OSX_VERSION_MIN ]; then
-if [ `echo "${SDK_VERSION/u/}<$OSX_VERSION_MIN" | bc -l` -eq 1 ]; then
-  echo "OSX_VERSION_MIN must be <= SDK_VERSION"
-  trap "" EXIT
-  exit 1
-elif [ `echo "$OSX_VERSION_MIN<10.4" | bc -l` -eq 1  ]; then
-  echo "OSX_VERSION_MIN must be >= 10.4"
-  trap "" EXIT
-  exit 1
+  if [ `echo "${SDK_VERSION/u/}<$OSX_VERSION_MIN" | bc -l` -eq 1 ]; then
+    echo "OSX_VERSION_MIN must be <= SDK_VERSION"
+    trap "" EXIT
+    exit 1
+  elif [ `echo "$OSX_VERSION_MIN<10.4" | bc -l` -eq 1  ]; then
+    echo "OSX_VERSION_MIN must be >= 10.4"
+    trap "" EXIT
+    exit 1
+  fi
 fi
-
-if [ `echo "${SDK_VERSION/u/}>=10.9" | bc -l` -eq 1 ] && ( [ $OSX_VERSION_MIN == "default" ] ||
-   [ `echo "$OSX_VERSION_MIN>=10.9" | bc -l` -eq 1 ] );
-then
-  export SCRIPT=`basename $0`
-  ./build_libcxx.sh || exit 0
-fi
-fi # OSX_VERSION_MIN set
 
 test_compiler o32-clang $BASE_DIR/oclang/test.c
 test_compiler o64-clang $BASE_DIR/oclang/test.c
@@ -408,12 +338,33 @@ if [ `echo "${SDK_VERSION/u/}>=10.7" | bc -l` -eq 1 ]; then
   test_compiler_cxx11 o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
 fi
 
+set +e
+which csh &>/dev/null
+HAVE_CSH=0
+[ $? -eq 0 ] && HAVE_CSH=1
+
+if [ $HAVE_CSH -eq 0 ]; then
+  which tcsh &>/dev/null
+  [ $? -eq 0 ] && HAVE_CSH=1
+fi
+
+CSHRC=""
+[ $HAVE_CSH -eq 1 ] && CSHRC=", ~/.cshrc"
+set -e
+
 echo ""
 echo "Now add"
 echo ""
 echo -e "\e[32m\`$OSXCROSS_ENV\`\e[0m"
 echo ""
-echo "to your ~/.bashrc or ~/.profile (including the '\`')"
+if [ $HAVE_CSH -eq 1 ]; then
+echo "or in case of csh:"
+echo ""
+echo -e "\e[32msetenv PATH \`$OSXCROSS_ENV -v=PATH\`\e[0m"
+echo -e "\e[32msetenv LD_LIBRARY_PATH \`$OSXCROSS_ENV -v=LD_LIBRARY_PATH\`\e[0m"
+echo ""
+fi
+echo "to your ~/.bashrc${CSHRC} or ~/.profile (including the '\`')"
 echo ""
 
 echo "Done! Now you can use o32-clang(++) and o64-clang(++) like a normal compiler"

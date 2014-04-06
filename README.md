@@ -6,7 +6,8 @@ The goal of OSXCross is to provide a well working OS X cross toolchain for Linux
 
 ### HOW DOES IT WORK? ###
 
-[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html) and is now available on nearly every Linux distribution,  
+[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html)
+and is now available on nearly every Linux distribution,  
 so we just need a proper
 [port](https://github.com/tpoechtrager/cctools-port)
 of the [cctools](http://www.opensource.apple.com/tarballs/cctools) (ld, lipo, ...) and the OS X SDK.
@@ -89,6 +90,14 @@ You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like 
   * `CC=o32-clang CXX=o32-clang++ ./configure --host=i386-apple-darwinXX`
 
 ##### Building test.cpp with libc++: #####
+
+Note: libc++ requires Mac OS X 10.7 or newer! If you really need C++11 for  
+an older OS X version, then you can do the following:
+
+1. Build GCC so you have an up-to-date libstdc++
+2. Build your source code with GCC or with clang and '-oc-use-gcc-libs'
+
+Usage Examples:
 
 * Clang:
 

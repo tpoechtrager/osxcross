@@ -11,11 +11,14 @@ else
   BINARYPACKAGE="0"
 fi
 
-TMPDIR=`mktemp -d`
+TMPDIR=`mktemp -d /tmp/XXXXXXXXX`
 
 BASEDIR=`pwd`
 
+set +e
 REVHASH=`git rev-parse --short HEAD`
+set -e
+
 OSXCROSSVER=`cat build.sh | grep "OSXCROSS_VERSION" | head -n1 | tr '=' ' ' | awk '{print $2}'`
 
 pushd $TMPDIR
@@ -53,7 +56,7 @@ else
   echo ""                                        >> $READMEINSTALL
 fi
 
-find $BASEDIR -maxdepth 1 -type f -print0 | xargs -0 -i cp {} .
+find $BASEDIR -maxdepth 1 -type f -exec cp {} . \;
 
 if [ $BINARYPACKAGE == "1" ]; then
   rm -f *.sh

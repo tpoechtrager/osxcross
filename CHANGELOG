@@ -1,3 +1,11 @@
+0.7:
+- added: new compiler wrapper written in C++
+- added: '-oc-use-gcc-libs' option (uses './build_gcc.sh' libstdc++)
+- added: 10.6 SDK support (10.4-10.9 are all supported now)
+- added: 'sw_vers' tool, which is required by some projects
+- changed: 'osxcross-conf', 'osxcross-env' and the (fake) 'dsymutil' are now implemented in the wrapper
+- changed: switched to two-space indents
+
 0.6:
 - added: NetBSD support
 - added: dependencies installer script (Don Bright)
@@ -16,7 +24,7 @@
 - added: a workaround for buggy unistd.h headers
 
 0.3:
-- added: support 10.9 (Mavericks) SDK
+- added: 10.9 SDK support
 - added: *-apple-darwin*-clang* symlinks (same as invoking o32-clang or o64-clang++)
 - changed: no need to build extra cctools binaries for targeting i386, symlinking the x86_64 builds works as well
 
