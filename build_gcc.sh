@@ -22,7 +22,7 @@ pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
 function remove_locks()
 {
-    rm -rf $OSXCROSS_BUILD_DIR/have_gcc*
+  rm -rf $OSXCROSS_BUILD_DIR/have_gcc*
 }
 
 source $BASE_DIR/tools/trap_exit.sh
@@ -48,23 +48,23 @@ mkdir -p build
 pushd build &>/dev/null
 
 if [[ "`uname -s`" == *BSD ]]; then
-    export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
-    export LDFLAGS="-L/usr/local/lib -L/usr/pkg/lib $LDFLAGS"
-    export LD_LIBRARY_PATH="/usr/local/lib:/usr/pkg/lib:$LD_LIBRARY_PATH"
+  export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
+  export LDFLAGS="-L/usr/local/lib -L/usr/pkg/lib $LDFLAGS"
+  export LD_LIBRARY_PATH="/usr/local/lib:/usr/pkg/lib:$LD_LIBRARY_PATH"
 fi
 
 ../configure \
-    --target=x86_64-apple-$OSXCROSS_TARGET \
-    --with-ld=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-ld \
-    --with-as=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-as \
-    --with-sysroot=$OSXCROSS_SDK \
-    --disable-nls \
-    --enable-languages=c,c++,objc,obj-c++ \
-    --without-headers \
-    --enable-multilib \
-    --enable-lto \
-    --enable-checking=release \
-    --prefix=$OSXCROSS_TARGET_DIR
+  --target=x86_64-apple-$OSXCROSS_TARGET \
+  --with-ld=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-ld \
+  --with-as=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-as \
+  --with-sysroot=$OSXCROSS_SDK \
+  --disable-nls \
+  --enable-languages=c,c++,objc,obj-c++ \
+  --without-headers \
+  --enable-multilib \
+  --enable-lto \
+  --enable-checking=release \
+  --prefix=$OSXCROSS_TARGET_DIR
 
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
@@ -87,11 +87,11 @@ WRAPPER_DIR=`dirname $WRAPPER`
 pushd $WRAPPER_DIR &>/dev/null
 
 if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
-    mv x86_64-apple-$OSXCROSS_TARGET-gcc x86_64-apple-$OSXCROSS_TARGET-base-gcc
-    mv x86_64-apple-$OSXCROSS_TARGET-g++ x86_64-apple-$OSXCROSS_TARGET-base-g++
+  mv x86_64-apple-$OSXCROSS_TARGET-gcc x86_64-apple-$OSXCROSS_TARGET-base-gcc
+  mv x86_64-apple-$OSXCROSS_TARGET-g++ x86_64-apple-$OSXCROSS_TARGET-base-g++
 
-    ln -sf x86_64-apple-$OSXCROSS_TARGET-base-gcc i386-apple-$OSXCROSS_TARGET-base-gcc
-    ln -sf x86_64-apple-$OSXCROSS_TARGET-base-g++ i386-apple-$OSXCROSS_TARGET-base-g++
+  ln -sf x86_64-apple-$OSXCROSS_TARGET-base-gcc i386-apple-$OSXCROSS_TARGET-base-gcc
+  ln -sf x86_64-apple-$OSXCROSS_TARGET-base-g++ i386-apple-$OSXCROSS_TARGET-base-g++
 fi
 
 ln -sf $WRAPPER_SCRIPT o32-gcc

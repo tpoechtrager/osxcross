@@ -5,10 +5,10 @@ set -ex
 test -z "$COMPRESSLEVEL" && COMPRESSLEVEL=9
 
 if [ -n "$BINARYPACKAGE" ]; then
-    SUFFIX=""
+  SUFFIX=""
 else
-    SUFFIX="_src"
-    BINARYPACKAGE="0"
+  SUFFIX="_src"
+  BINARYPACKAGE="0"
 fi
 
 TMPDIR=`mktemp -d`
@@ -24,40 +24,40 @@ mkdir osxcross
 pushd osxcross
 
 if [ $BINARYPACKAGE != "1" ]; then
-    cp -r $BASEDIR/tarballs .
-    cp -r $BASEDIR/patches .
-    cp -r $BASEDIR/tools .
-    cp -r $BASEDIR/oclang .
-    cp -r $BASEDIR/ogcc .
+  cp -r $BASEDIR/tarballs .
+  cp -r $BASEDIR/patches .
+  cp -r $BASEDIR/tools .
+  cp -r $BASEDIR/oclang .
+  cp -r $BASEDIR/ogcc .
 else
-    ldd `ls $BASEDIR/target/bin/x86_64-apple-darwin*-ld | head -n1` | grep "libLTO.so" &>/dev/null && \
-        echo "-->> WARNING: ld is linked dynamically against libLTO.so! Consider recompiling with DISABLE_LTO_SUPPORT=1 <<--" && \
-        sleep 5
+  ldd `ls $BASEDIR/target/bin/x86_64-apple-darwin*-ld | head -n1` | grep "libLTO.so" &>/dev/null && \
+    echo "-->> WARNING: ld is linked dynamically against libLTO.so! Consider recompiling with DISABLE_LTO_SUPPORT=1 <<--" && \
+    sleep 5
 
-    cp -r $BASEDIR/target/* .
-    cp $BASEDIR/build/cctools*/cctools/APPLE_LICENSE CCTOOLS.LICENSE
-    cp $BASEDIR/oclang/find_intrinsic_headers.sh bin/osxcross-fix-intrinsic-headers
+  cp -r $BASEDIR/target/* .
+  cp $BASEDIR/build/cctools*/cctools/APPLE_LICENSE CCTOOLS.LICENSE
+  cp $BASEDIR/oclang/find_intrinsic_headers.sh bin/osxcross-fix-intrinsic-headers
 
-    READMEINSTALL="README_INSTALL"
+  READMEINSTALL="README_INSTALL"
 
-    echo "- BINARY INSTALLATION INSTRUCTIONS -"     > $READMEINSTALL
-    echo ""                                        >> $READMEINSTALL
-    echo "Add "                                    >> $READMEINSTALL
-    echo ""                                        >> $READMEINSTALL
-    echo "  \`<absolute path>/bin/osxcross-env\`"  >> $READMEINSTALL
-    echo ""                                        >> $READMEINSTALL
-    echo "To your ~/.profile or ~/.bashrc,"        >> $READMEINSTALL
-    echo "then restart your shell session."        >> $READMEINSTALL
-    echo ""                                        >> $READMEINSTALL
-    echo "That's it."                              >> $READMEINSTALL
-    echo ""                                        >> $READMEINSTALL
+  echo "- BINARY INSTALLATION INSTRUCTIONS -"     > $READMEINSTALL
+  echo ""                                        >> $READMEINSTALL
+  echo "Add "                                    >> $READMEINSTALL
+  echo ""                                        >> $READMEINSTALL
+  echo "  \`<absolute path>/bin/osxcross-env\`"  >> $READMEINSTALL
+  echo ""                                        >> $READMEINSTALL
+  echo "To your ~/.profile or ~/.bashrc,"        >> $READMEINSTALL
+  echo "then restart your shell session."        >> $READMEINSTALL
+  echo ""                                        >> $READMEINSTALL
+  echo "That's it."                              >> $READMEINSTALL
+  echo ""                                        >> $READMEINSTALL
 fi
 
 find $BASEDIR -maxdepth 1 -type f -print0 | xargs -0 -i cp {} .
 
 if [ $BINARYPACKAGE == "1" ]; then
-    rm -f *.sh
-    rm -f TODO
+  rm -f *.sh
+  rm -f TODO
 fi
 
 rm -rf tarballs/gcc*

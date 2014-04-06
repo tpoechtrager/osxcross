@@ -7,60 +7,60 @@ source tools/tools.sh
 # find sdk version to use
 function guess_sdk_version()
 {
-    tmp1=
-    tmp2=
-    tmp3=
-    file=
-    sdk=
-    guess_sdk_version_result=
-    sdkcount=`find tarballs/ -type f | grep MacOSX | wc -l`
-    if [ $sdkcount -eq 0 ]; then
-        echo no SDK found in 'tarballs/'. please see README.md
-        exit 1
-    elif [ $sdkcount -gt 1 ]; then
-        sdks=`find tarballs/ | grep MacOSX`
-        for sdk in $sdks; do echo $sdk; done
-        echo 'more than one MacOSX SDK tarball found. please set'
-        echo 'SDK_VERSION environment variable for the one you want'
-        echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] ./build.sh)'
-        exit 1
-    else
-        sdk=`find tarballs/ | grep MacOSX`
-        tmp2=`echo ${sdk/bz2/} | sed s/[^0-9.]//g`
-        tmp3=`echo $tmp2 | sed s/\\\.*$//g`
-        guess_sdk_version_result=$tmp3
-        echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'`basename $sdk`
+  tmp1=
+  tmp2=
+  tmp3=
+  file=
+  sdk=
+  guess_sdk_version_result=
+  sdkcount=`find tarballs/ -type f | grep MacOSX | wc -l`
+  if [ $sdkcount -eq 0 ]; then
+    echo no SDK found in 'tarballs/'. please see README.md
+    exit 1
+  elif [ $sdkcount -gt 1 ]; then
+    sdks=`find tarballs/ | grep MacOSX`
+    for sdk in $sdks; do echo $sdk; done
+    echo 'more than one MacOSX SDK tarball found. please set'
+    echo 'SDK_VERSION environment variable for the one you want'
+    echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] ./build.sh)'
+    exit 1
+  else
+    sdk=`find tarballs/ | grep MacOSX`
+    tmp2=`echo ${sdk/bz2/} | sed s/[^0-9.]//g`
+    tmp3=`echo $tmp2 | sed s/\\\.*$//g`
+    guess_sdk_version_result=$tmp3
+    echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'`basename $sdk`
+  fi
+  if [ $guess_sdk_version_result ]; then
+    if [ $guess_sdk_version_result = 10.4 ]; then
+      guess_sdk_version_result=10.4u
     fi
-    if [ $guess_sdk_version_result ]; then
-        if [ $guess_sdk_version_result = 10.4 ]; then
-            guess_sdk_version_result=10.4u
-        fi
-    fi
-    export guess_sdk_version_result
+  fi
+  export guess_sdk_version_result
 }
 
 # make sure there is actually a file with the given SDK_VERSION
 function verify_sdk_version()
 {
-    sdkv=$1
-    for file in tarballs/*; do
-        if [ `echo $file | grep OSX.*$sdkv` ]; then
-            echo "verified at "$file
-            sdk=$file
-        fi
-    done
-    if [ ! $sdk ] ; then
-        echo cant find SDK for OSX $sdkv in tarballs. exiting
-        exit
+  sdkv=$1
+  for file in tarballs/*; do
+    if [ `echo $file | grep OSX.*$sdkv` ]; then
+      echo "verified at "$file
+      sdk=$file
     fi
+  done
+  if [ ! $sdk ] ; then
+    echo cant find SDK for OSX $sdkv in tarballs. exiting
+    exit
+  fi
 }
 
 if [ $SDK_VERSION ]; then
-    echo 'SDK VERSION set in environment variable:' $SDK_VERSION
-    test $SDK_VERSION = 10.4 && SDK_VERSION=10.4u
+  echo 'SDK VERSION set in environment variable:' $SDK_VERSION
+  test $SDK_VERSION = 10.4 && SDK_VERSION=10.4u
 else
-    guess_sdk_version
-    SDK_VERSION=$guess_sdk_version_result
+  guess_sdk_version
+  SDK_VERSION=$guess_sdk_version_result
 fi
 verify_sdk_version $SDK_VERSION
 
@@ -69,11 +69,11 @@ verify_sdk_version $SDK_VERSION
 # You can comment this variable out,
 # if you want to use the compiler's default value
 if [ -z "$OSX_VERSION_MIN" ]; then
-    if [ $SDK_VERSION = 10.4u ]; then
-        OSX_VERSION_MIN=10.4
-    else
-        OSX_VERSION_MIN=10.5
-    fi
+  if [ $SDK_VERSION = 10.4u ]; then
+    OSX_VERSION_MIN=10.4
+  else
+    OSX_VERSION_MIN=10.5
+  fi
 fi
 
 # ld version
@@ -89,17 +89,17 @@ PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
 
 if [ -z "$OSX_VERSION_MIN" ]; then
-    OSX_VERSION_MIN="default"
+  OSX_VERSION_MIN="default"
 fi
 
 case $SDK_VERSION in
-    10.4*) TARGET=darwin8 ;;
-    10.5*) TARGET=darwin9 ;;
-    10.6*) TARGET=darwin10 ;;
-    10.7*) TARGET=darwin11 ;;
-    10.8*) TARGET=darwin12 ;;
-    10.9*) TARGET=darwin13 ;;
-    *) echo "Invalid SDK Version" && exit 1 ;;
+  10.4*) TARGET=darwin8 ;;
+  10.5*) TARGET=darwin9 ;;
+  10.6*) TARGET=darwin10 ;;
+  10.7*) TARGET=darwin11 ;;
+  10.8*) TARGET=darwin12 ;;
+  10.9*) TARGET=darwin13 ;;
+  *) echo "Invalid SDK Version" && exit 1 ;;
 esac
 
 echo ""
@@ -138,16 +138,16 @@ pushd $BUILD_DIR &>/dev/null
 
 function remove_locks()
 {
-    rm -rf $BUILD_DIR/have_cctools*
+  rm -rf $BUILD_DIR/have_cctools*
 }
 
 source $BASE_DIR/tools/trap_exit.sh
 
 if [ "`ls $TARBALL_DIR/cctools*.tar.* | wc -l | tr -d ' '`" != "1" ]; then
-    echo ""
-    echo "There should only be one cctools*.tar.* archive in the tarballs directory"
-    echo ""
-    exit 1
+  echo ""
+  echo "There should only be one cctools*.tar.* archive in the tarballs directory"
+  echo ""
+  exit 1
 fi
 
 CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
@@ -183,8 +183,8 @@ pushd $TARGET_DIR/bin &>/dev/null
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
 CCTOOLS=($CCTOOLS)
 for CCTOOL in ${CCTOOLS[@]}; do
-    CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
-    ln -sf $CCTOOL $CCTOOL_I386
+  CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
+  ln -sf $CCTOOL $CCTOOL_I386
 done
 popd &>/dev/null
 
@@ -239,12 +239,12 @@ if [ ! -f "have_cctools_$TARGET" ]; then
 
 function check_cctools()
 {
-    [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-lipo" ] || exit 1
-    [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ld" ] || exit 1
-    [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-nm" ] || exit 1
-    [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ar" ] || exit 1
-    [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ranlib" ] || exit 1
-    [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-strip" ] || exit 1
+  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-lipo" ] || exit 1
+  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ld" ] || exit 1
+  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-nm" ] || exit 1
+  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ar" ] || exit 1
+  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ranlib" ] || exit 1
+  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-strip" ] || exit 1
 }
 
 check_cctools i386
@@ -260,15 +260,15 @@ set +e
 ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
 while [ $? -ne 0 ]
 do
-    echo ""
-    echo "Get the MacOSX$SDK_VERSION SDK and move it into $TARBALL_DIR"
-    echo "(see README for SDK download links)"
-    echo ""
-    echo "You can press ctrl-c to break the build process,"
-    echo "if you restart ./build.sh then we will continue from here"
-    echo ""
-    read -p "Press enter to continue"
-    ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
+  echo ""
+  echo "Get the MacOSX$SDK_VERSION SDK and move it into $TARBALL_DIR"
+  echo "(see README for SDK download links)"
+  echo ""
+  echo "You can press ctrl-c to break the build process,"
+  echo "if you restart ./build.sh then we will continue from here"
+  echo ""
+  read -p "Press enter to continue"
+  ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
 done
 set -e
 
@@ -277,9 +277,9 @@ extract $SDK 1 1
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
 
 if [ "`ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' '`" != "0" ]; then
-    mv -f SDKs/*$SDK_VERSION* $SDK_DIR
+  mv -f SDKs/*$SDK_VERSION* $SDK_DIR
 else
-    mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
+  mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
 fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
@@ -372,20 +372,20 @@ echo ""
 
 if [ -n $OSX_VERSION_MIN ]; then
 if [ `echo "${SDK_VERSION/u/}<$OSX_VERSION_MIN" | bc -l` -eq 1 ]; then
-    echo "OSX_VERSION_MIN must be <= SDK_VERSION"
-    trap "" EXIT
-    exit 1
+  echo "OSX_VERSION_MIN must be <= SDK_VERSION"
+  trap "" EXIT
+  exit 1
 elif [ `echo "$OSX_VERSION_MIN<10.4" | bc -l` -eq 1  ]; then
-    echo "OSX_VERSION_MIN must be >= 10.4"
-    trap "" EXIT
-    exit 1
+  echo "OSX_VERSION_MIN must be >= 10.4"
+  trap "" EXIT
+  exit 1
 fi
 
 if [ `echo "${SDK_VERSION/u/}>=10.9" | bc -l` -eq 1 ] && ( [ $OSX_VERSION_MIN == "default" ] ||
    [ `echo "$OSX_VERSION_MIN>=10.9" | bc -l` -eq 1 ] );
 then
-    export SCRIPT=`basename $0`
-    ./build_libcxx.sh || exit 0
+  export SCRIPT=`basename $0`
+  ./build_libcxx.sh || exit 0
 fi
 fi # OSX_VERSION_MIN set
 
@@ -396,16 +396,16 @@ test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
 test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
 
 if [ `echo "${SDK_VERSION/u/}>=10.7" | bc -l` -eq 1 ]; then
-    if [ ! -d "$SDK_DIR/MacOSX$SDK_VERSION.sdk/usr/include/c++/v1" ]; then
-        echo ""
-        echo -n "Given SDK does not contain libc++ headers "
-        echo "(-stdlib=libc++ test may fail)"
-        echo -n "You may want to re-package your SDK using "
-        echo "'tools/gen_sdk_package.sh' on OS X"
-    fi
+  if [ ! -d "$SDK_DIR/MacOSX$SDK_VERSION.sdk/usr/include/c++/v1" ]; then
     echo ""
-    test_compiler_cxx11 o32-clang++ $BASE_DIR/oclang/test_libcxx.cpp
-    test_compiler_cxx11 o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+    echo -n "Given SDK does not contain libc++ headers "
+    echo "(-stdlib=libc++ test may fail)"
+    echo -n "You may want to re-package your SDK using "
+    echo "'tools/gen_sdk_package.sh' on OS X"
+  fi
+  echo ""
+  test_compiler_cxx11 o32-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+  test_compiler_cxx11 o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
 fi
 
 echo ""
