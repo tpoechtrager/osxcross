@@ -31,7 +31,7 @@ if [ $BINARYPACKAGE != "1" ]; then
   cp -r $BASEDIR/patches .
   cp -r $BASEDIR/tools .
   cp -r $BASEDIR/oclang .
-  cp -r $BASEDIR/ogcc .
+  cp -r $BASEDIR/wrapper .
 else
   ldd `ls $BASEDIR/target/bin/x86_64-apple-darwin*-ld | head -n1` | grep "libLTO.so" &>/dev/null && \
     echo "-->> WARNING: ld is linked dynamically against libLTO.so! Consider recompiling with DISABLE_LTO_SUPPORT=1 <<--" && \
@@ -63,9 +63,9 @@ if [ $BINARYPACKAGE == "1" ]; then
   rm -f TODO
 fi
 
+rm -rf tarballs/old*
 rm -rf tarballs/gcc*
 rm -rf tarballs/MacOSX*
-rm -rf tarballs/libcxx*
 
 rm -f tools/cpucount
 
