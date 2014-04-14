@@ -1,38 +1,69 @@
-0.7:
-- added: new compiler wrapper written in C++
-- added: '-oc-use-gcc-libs' option (uses './build_gcc.sh' libstdc++)
-- added: 10.6 SDK support (10.4-10.9 are all supported now)
-- added: 'sw_vers' tool, which is required by some projects
-- added: OS X support (as host)
-- changed: 'osxcross-conf', 'osxcross-env' and the (fake) 'dsymutil' are now implemented in the wrapper
-- changed: switched to two-space indents
+/******************************* v0.7 *******************************/
 
-0.6:
-- added: NetBSD support
-- added: dependencies installer script (Don Bright)
-- added: SDK package script
+added:
+ * new compiler wrapper written in C++
+ * '-oc-use-gcc-libs' option (uses './build_gcc.sh' libstdc++)
+ * 10.6 SDK support (10.4-10.9 are all supported now)
+ * 'sw_vers' tool, which is required by some projects
+ * '-stdlib=' support for gcc (as an extension through the wrapper)
+ * OS X support (as host)
 
-0.5:
-- fixed: help clang to find its own intrinsic headers (this issue appears to be fixed in clang 3.4+)
-- changed: attempt to make the toolchain less path dependent
-- fixed: building the toolchain on 32 bit systems
-- added: libc++ support (for both, clang and gcc)
-- changed: update cctools to 845
-- added: FreeBSD support
+changed:
+ * 'osxcross-conf', 'osxcross-env' and the (fake) 'dsymutil' are now
+   implemented in the wrapper
+ * <arch>-apple-darwinXX-cc/c++ defaults now to clang
+ * switched to two-space indents
 
-0.4:
-- added: gcc support
-- added: a workaround for buggy unistd.h headers
+/******************************* v0.6 *******************************/
 
-0.3:
-- added: 10.9 SDK support
-- added: *-apple-darwin*-clang* symlinks (same as invoking o32-clang or o64-clang++)
-- changed: no need to build extra cctools binaries for targeting i386, symlinking the x86_64 builds works as well
+added:
+ * NetBSD support
+ * dependencies installer script (Don Bright)
+ * SDK packaging script
 
-0.2:
-- changed: update cctools to 839 with ld64-134.9
-- added: check for broken unistd.h
-- fixed: check if MacOSX package is present in tarballs
-- added: comments in build.sh
+/******************************* v0.5 *******************************/
 
-0.1: -
+added:
+ * libc++ support (for both, clang and gcc)
+ * FreeBSD support
+
+changed:
+ * attempt to make the toolchain less path dependent
+ * update cctools to 845
+
+fixed:
+ * help clang to find its own intrinsic headers
+   (this issue appears to be fixed in clang 3.4+)
+ * building the toolchain on 32 bit systems
+
+/******************************* v0.4 *******************************/
+
+added:
+  * gcc support
+  * a workaround for buggy unistd.h headers
+
+/******************************* v0.3 *******************************/
+
+added:
+  * 10.9 SDK support
+  * *-apple-darwin*-clang* symlinks (same as invoking oXX-clang)
+
+changed:
+  * no need to build extra cctools binaries for targeting i386,
+    symlinking the x86_64 builds works as well
+
+/******************************* v0.2 *******************************/
+
+added:
+  * a check for broken unistd.h
+  * comments to build.sh
+
+changed:
+  * update cctools to 839 with ld64-134.9
+
+fixed:
+  * check if MacOSX package is present in tarballs
+
+/******************************* v0.1 *******************************/
+
+initial commit.
