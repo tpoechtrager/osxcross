@@ -48,7 +48,7 @@ if [ -n "$BWCXX" ]; then
   CXX=$BWCXX
 fi
 
-[ $PLATFORM = "Darwin" ] && FLAGS+="-framework CoreServices "
+[ $PLATFORM = "Darwin" ] && FLAGS+="-framework CoreServices -Wno-deprecated "
 [ $PLATFORM = "FreeBSD" ] && FLAGS+="-lutil "
 
 if [[ $PLATFORM != *Windows ]] && [ $PLATFORM != "Darwin" ]; then
@@ -114,9 +114,11 @@ create_wrapper_link x86_64-apple-$TARGET-c++
 create_wrapper_link osxcross-conf
 create_wrapper_link osxcross-env
 
-create_wrapper_link sw_vers
-create_wrapper_link i386-apple-$TARGET-sw_vers
-create_wrapper_link x86_64-apple-$TARGET-sw_vers
+if [ "$PLATFORM" != "Darwin" ]; then
+  create_wrapper_link sw_vers
+  create_wrapper_link i386-apple-$TARGET-sw_vers
+  create_wrapper_link x86_64-apple-$TARGET-sw_vers
+fi
 
 create_wrapper_link dsymutil
 create_wrapper_link i386-apple-$TARGET-dsymutil

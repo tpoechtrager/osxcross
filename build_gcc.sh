@@ -47,16 +47,25 @@ rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 mkdir -p build
 pushd build &>/dev/null
 
-if [[ "`uname -s`" == *BSD ]]; then
+if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
   export LDFLAGS="-L/usr/local/lib -L/usr/pkg/lib $LDFLAGS"
   export LD_LIBRARY_PATH="/usr/local/lib:/usr/pkg/lib:$LD_LIBRARY_PATH"
+elif [ "$PLATFORM" == "Darwin" ]; then
+  export CPATH="/opt/local/include:$CPATH"
+  export LDFLAGS="-L/opt/local/lib $LDFLAGS"
+  export LD_LIBRARY_PATH="/opt/local/lib:$LD_LIBRARY_PATH"
+fi
+
+EXTRACONFFLAGS=""
+
+if [ "$PLATFORM" != "Darwin" ]; then
+  EXTRACONFFLAGS+="--with-ld=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-ld "
+  EXTRACONFFLAGS+="--with-as=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-as "
 fi
 
 ../configure \
   --target=x86_64-apple-$OSXCROSS_TARGET \
-  --with-ld=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-ld \
-  --with-as=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-as \
   --with-sysroot=$OSXCROSS_SDK \
   --disable-nls \
   --enable-languages=c,c++,objc,obj-c++ \
@@ -64,7 +73,8 @@ fi
   --enable-multilib \
   --enable-lto \
   --enable-checking=release \
-  --prefix=$OSXCROSS_TARGET_DIR
+  --prefix=$OSXCROSS_TARGET_DIR \
+  $EXTRACONFFLAGS
 
 $MAKE -j$JOBS
 $MAKE install -j$JOBS

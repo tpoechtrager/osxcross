@@ -9,6 +9,7 @@ export CXX=clang++
 # enable debug messages
 test -n "$OCDEBUG" && set -x
 
+PLATFORM="`uname -s`"
 PSCRIPT="`basename $0`"
 
 if [[ $PSCRIPT != *wrapper/build.sh ]]; then 
@@ -38,7 +39,7 @@ function require()
   set -e
 }
 
-if [[ "`uname -s`" == *BSD ]]; then
+if [[ $PLATFORM == *BSD ]]; then
   MAKE=gmake
 else
   MAKE=make
@@ -80,6 +81,11 @@ function extract()
   if [ $# -eq 2 -o $# -eq 4 ]; then
     echo ""
   fi
+}
+
+function get_ld_version()
+{
+  echo "`ld -v 2>&1 | tr "-" " " | awk '{print $3}' | head -n1`"
 }
 
 function verbose_cmd()

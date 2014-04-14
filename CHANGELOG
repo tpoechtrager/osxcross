@@ -3,6 +3,7 @@
 - added: '-oc-use-gcc-libs' option (uses './build_gcc.sh' libstdc++)
 - added: 10.6 SDK support (10.4-10.9 are all supported now)
 - added: 'sw_vers' tool, which is required by some projects
+- added: OS X support (as host)
 - changed: 'osxcross-conf', 'osxcross-env' and the (fake) 'dsymutil' are now implemented in the wrapper
 - changed: switched to two-space indents
 

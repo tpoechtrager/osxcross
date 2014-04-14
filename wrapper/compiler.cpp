@@ -840,10 +840,28 @@ struct Target {
 
     if (!check()) {
       dir.str(std::string());
-      dir << clangbin << "/../include/clang";
 
-      if (!check()) {
-        return false;
+#ifdef __APPLE__
+      constexpr const char *OSXIntrinDirs[] = {
+        "/Library/Developer/CommandLineTools/usr/lib/clang",
+        "/Applications/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang"
+      };
+
+      for (auto intrindir : OSXIntrinDirs)
+      {
+        dir << intrindir;
+        if (check()) {
+          break;
+        }
+        dir.str(std::string());
+      }
+#endif
+
+      if (!dir.rdbuf()->in_avail()) {
+        dir << clangbin << "/../include/clang";
+
+        if (!check())
+          return false;
       }
     }
 
@@ -1035,6 +1053,7 @@ struct Target {
       fargs.push_back(tmp);
       tmp.clear();
 
+#ifndef __APPLE__
       if (!findClangIntrinsicHeaders(tmp)) {
         std::cerr << "cannot find clang intrinsic headers, please report this "
                      "issue to the OSXCross project" << std::endl;
@@ -1044,6 +1063,7 @@ struct Target {
       }
 
       tmp.clear();
+#endif
 
       fargs.push_back("-isysroot");
       fargs.push_back(SDKPath);

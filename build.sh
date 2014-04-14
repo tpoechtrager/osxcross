@@ -77,7 +77,11 @@ if [ -z "$OSX_VERSION_MIN" ]; then
 fi
 
 # ld version
-LINKER_VERSION=134.9
+if [ "$PLATFORM" == "Darwin" ]; then
+  LINKER_VERSION="`get_ld_version`"
+else
+  LINKER_VERSION=134.9
+fi
 
 # Don't change this
 OSXCROSS_VERSION=0.7
@@ -126,13 +130,16 @@ mkdir -p $SDK_DIR
 require $CC
 require $CXX
 require clang
-require sed
 require patch
+require sed
 require gunzip
 require cpio
-require autogen
-require automake
-require libtool
+
+if [ "$PLATFORM" != "Darwin" ]; then
+  require autogen
+  require automake
+  require libtool
+fi
 
 pushd $BUILD_DIR &>/dev/null
 
@@ -143,6 +150,8 @@ function remove_locks()
 
 source $BASE_DIR/tools/trap_exit.sh
 
+# CCTOOLS
+if [ "$PLATFORM" != "Darwin" ]; then
 if [ "`ls $TARBALL_DIR/cctools*.tar.* | wc -l | tr -d ' '`" != "1" ]; then
   echo ""
   echo "There should only be one cctools*.tar.* archive in the tarballs directory"
@@ -152,7 +161,6 @@ fi
 
 CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
 
-# CCTOOLS
 if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
 rm -rf cctools*
@@ -188,6 +196,7 @@ for CCTOOL in ${CCTOOLS[@]}; do
 done
 popd &>/dev/null
 
+fi
 fi
 # CCTOOLS END
 
@@ -235,6 +244,7 @@ fi
 fi
 # XAR END
 
+if [ "$PLATFORM" != "Darwin" ]; then
 if [ ! -f "have_cctools_$TARGET" ]; then
 
 function check_cctools()
@@ -255,6 +265,7 @@ touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET"
 echo ""
 
 fi # HAVE_CCTOOLS
+fi
 
 set +e
 ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
@@ -303,7 +314,10 @@ export OSX_VERSION_MIN
 export LINKER_VERSION
 $BASE_DIR/wrapper/build.sh 1>/dev/null
 
-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`" # libLTO.so
+if [ "$PLATFORM" != "Darwin" ]; then
+  # libLTO.so
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`"
+fi
 
 echo ""
 
@@ -355,13 +369,13 @@ set -e
 echo ""
 echo "Now add"
 echo ""
-echo -e "\e[32m\`$OSXCROSS_ENV\`\e[0m"
+echo -e "\x1B[32m\`$OSXCROSS_ENV\`\x1B[0m"
 echo ""
 if [ $HAVE_CSH -eq 1 ]; then
 echo "or in case of csh:"
 echo ""
-echo -e "\e[32msetenv PATH \`$OSXCROSS_ENV -v=PATH\`\e[0m"
-echo -e "\e[32msetenv LD_LIBRARY_PATH \`$OSXCROSS_ENV -v=LD_LIBRARY_PATH\`\e[0m"
+echo -e "\x1B[32msetenv PATH \`$OSXCROSS_ENV -v=PATH\`\x1B[0m"
+echo -e "\x1B[32msetenv LD_LIBRARY_PATH \`$OSXCROSS_ENV -v=LD_LIBRARY_PATH\`\x1B[0m"
 echo ""
 fi
 echo "to your ~/.bashrc${CSHRC} or ~/.profile (including the '\`')"
