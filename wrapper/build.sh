@@ -60,9 +60,11 @@ function compile_wrapper()
   mkdir -p ../target ../target/bin
 
   verbose_cmd $CXX compiler.cpp -std=c++0x -pedantic -Wall -Wextra \
+    "-DOSXCROSS_VERSION=\"\\\"$OSXCROSS_VERSION\\\"\"" \
     "-DOSXCROSS_TARGET=\"\\\"$TARGET\\\"\"" \
     "-DOSXCROSS_OSX_VERSION_MIN=\"\\\"$OSX_VERSION_MIN\\\"\"" \
     "-DOSXCROSS_LINKER_VERSION=\"\\\"$LINKER_VERSION\\\"\"" \
+    "-DOSXCROSS_LIBLTO_PATH=\"\\\"$OSXCROSS_LIBLTO_PATH\\\"\"" \
     -o "../target/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}" -O2 \
     $FLAGS $*
 }
@@ -112,7 +114,16 @@ create_wrapper_link x86_64-apple-$TARGET-cc
 create_wrapper_link x86_64-apple-$TARGET-c++
 
 create_wrapper_link osxcross-conf
+create_wrapper_link i386-apple-$TARGET-osxcross-conf
+create_wrapper_link x86_64-apple-$TARGET-osxcross-conf
+
 create_wrapper_link osxcross-env
+create_wrapper_link i386-apple-$TARGET-osxcross-env
+create_wrapper_link x86_64-apple-$TARGET-osxcross-env
+
+create_wrapper_link osxcross
+create_wrapper_link i386-apple-$TARGET-osxcross
+create_wrapper_link x86_64-apple-$TARGET-osxcross
 
 if [ "$PLATFORM" != "Darwin" ]; then
   create_wrapper_link sw_vers

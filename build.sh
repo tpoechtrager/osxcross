@@ -172,6 +172,9 @@ extract $TARBALL_DIR/cctools*.tar.xz 1 1 1
 pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
 patch -p0 -l < $PATCH_DIR/cctools-63f6742.patch
+if [ "$PLATFORM" == "Linux" ]; then
+  patch -p0 < $PATCH_DIR/cctools-old-linux.patch
+fi
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
@@ -310,14 +313,18 @@ OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
 rm -f $OSXCROSS_CONF $OSXCROSS_ENV
 
 echo "compiling wrapper ..."
+
+export OSXCROSS_VERSION
 export OSX_VERSION_MIN
 export LINKER_VERSION
-$BASE_DIR/wrapper/build.sh 1>/dev/null
 
 if [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so
-  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`"
+  export OSXCROSS_LIBLTO_PATH=`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`
+  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OSXCROSS_LIBLTO_PATH"
 fi
+
+$BASE_DIR/wrapper/build.sh 1>/dev/null
 
 echo ""
 

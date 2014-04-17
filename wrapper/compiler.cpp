@@ -1,6 +1,6 @@
 /***********************************************************************
- *  OSXCross                                                           *
- *  Copyright (C) 2013, 2014 by Thomas Poechtrager                     *
+ *  OSXCross Compiler Wrapper                                          *
+ *  Copyright (C) 2014 by Thomas Poechtrager                           *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -111,17 +111,17 @@ char *getExecutablePath(char *buf, size_t len) {
     return nullptr;
   buf[len - 1] = '\0';
   p = strrchr(buf, '/');
-  if (*p)
+  if (*p) {
     *p = '\0';
+  }
   return buf;
 }
 
 __attribute__((unused)) std::string &fixPathDiv(std::string &path) {
 #ifdef _WIN32
   for (auto &c : path) {
-    if (c == '/') {
+    if (c == '/')
       c = '\\';
-    }
   }
 #else
 // let's assume the compiler is smart enough
@@ -295,11 +295,23 @@ bool listFiles(const char *dir, std::vector<std::string> *files,
   closedir(d);
   return true;
 #else
-#warning TODO
-  (void)dir;
-  (void)files;
-  (void)cmp;
-  return false;
+  WIN32_FIND_DATA fdata;
+  HANDLE handle;
+
+  handle = FindFirstFile(dir, &fdata);
+
+  if (handle == INVALID_HANDLE_VALUE)
+    return false;
+
+  do {
+    if ((!cmp || cmp(fdata.cFileName)) && files) {
+      files->push_back(fdata.cFileName);
+    }
+  } while (FindNextFile(handle, &fdata));
+
+  FindClose(handle);
+
+  return files->size();
 #endif
 }
 
@@ -319,13 +331,11 @@ std::string &realPath(const char *file, std::string &result,
   assert(PATH);
 
   do {
-    if (*p == ':') {
+    if (*p == ':')
       ++p;
-    }
 
-    while (*p && *p != ':') {
+    while (*p && *p != ':')
       sfile += *p++;
-    }
 
     sfile += "/";
     sfile += file;
@@ -396,13 +406,8 @@ public:
 
   time_type getDiff() { return getTime() - s; }
 
-  void halt() {
-    h = getTime();
-  }
-
-  void resume() {
-    s += getTime() - h;
-  }
+  void halt() { h = getTime(); }
+  void resume() { s += getTime() - h; }
 
   ~benchmark() {
     time_type diff = getTime() - s;
@@ -410,9 +415,10 @@ public:
   }
 
 private:
-  time_type getTime() {
+  __attribute__((always_inline)) time_type getTime() {
     return getNanoSeconds();
   }
+
   time_type h;
   time_type s;
 };
@@ -458,6 +464,7 @@ struct OSVersion {
       if (*p++ == '.')
         ++c;
     }
+
     switch (c) {
     case 1:
       return shortStr() != val;
@@ -499,8 +506,6 @@ OSVersion parseOSVersion(const char *OSVer) {
     return OSNum;
 
   OSNum.minor = atoi(p);
-  if (!*p)
-    return OSNum;
 
   while (*p && *p++ != '.')
     ;
@@ -535,6 +540,14 @@ constexpr const char *getLibLTOPath() {
 #endif
 }
 
+constexpr const char *getOSXCrossVersion() {
+#ifdef OSXCROSS_VERSION
+  return OSXCROSS_VERSION[0] ? OSXCROSS_VERSION : "unknown";
+#else
+  return "unknown";
+#endif
+}
+
 const char *getDefaultCStandard() { return getenv("OSXCROSS_C_STANDARD"); }
 const char *getDefaultCXXStandard() { return getenv("OSXCROSS_CXX_STANDARD"); }
 
@@ -550,34 +563,32 @@ constexpr OSVersion getDefaultMinTarget() { return OSVersion(); }
 #endif
 
 //
-// Machine
+// Arch
 //
 
-enum Machine {
+enum Arch {
   x86_64,
   i386,
   unknown
 };
 
-constexpr const char *MachineStrs[] = { "x86_64", "i386", "unknown" };
-constexpr const char *MachineStrs2[] = { "x86_64", "i686", "unknown" };
+constexpr const char *ArchNames[] = { "x86_64", "i386", "unknown" };
+constexpr const char *ArchNames2[] = { "x86_64", "i686", "unknown" };
 
-constexpr const char *getMachineString(Machine machine) {
-  return MachineStrs[machine];
-}
+constexpr const char *getArchName(Arch arch) { return ArchNames[arch]; }
 
-constexpr const char *getMachineString2(Machine machine) {
-  return MachineStrs2[machine];
-}
+constexpr const char *getArchName2(Arch arch) { return ArchNames2[arch]; }
 
-Machine parseMachine(const char *machine) {
-  if (!strcmp(machine, "i386") || !strcmp(machine, "i486") ||
-      !strcmp(machine, "i586") || !strcmp(machine, "i686")) {
-    return Machine::i386;
-  } else if (!strcmp(machine, "x86_64")) {
-    return Machine::x86_64;
+Arch parseArch(const char *arch) {
+  if (arch[0] == 'i') {
+    if (!strcmp(arch, "i386") || !strcmp(arch, "i486") ||
+        !strcmp(arch, "i586") || !strcmp(arch, "i686")) {
+      return Arch::i386;
+    }
+  } else if (!strcmp(arch, "x86_64")) {
+    return Arch::x86_64;
   }
-  return Machine::unknown;
+  return Arch::unknown;
 }
 
 //
@@ -590,10 +601,10 @@ enum StdLib {
   libstdcxx
 };
 
-constexpr const char *StdLibStrs[] = { "default", "libc++", "libstdc++" };
+constexpr const char *StdLibNames[] = { "default", "libc++", "libstdc++" };
 
 constexpr const char *getStdLibString(StdLib stdlib) {
-  return StdLibStrs[stdlib];
+  return StdLibNames[stdlib];
 }
 
 //
@@ -619,26 +630,28 @@ struct Target {
 
   bool getSDKPath(std::string &path) const {
     OSVersion SDKVer = getSDKOSNum();
+
     path = execpath;
     path += "/../SDK/MacOSX";
     path += SDKVer.shortStr();
-    if (SDKVer <= OSVersion(10, 4)) {
+
+    if (SDKVer <= OSVersion(10, 4))
       path += "u";
-    }
+
     path += ".sdk";
     return dirExists(path);
   }
 
-  void addMachine(const Machine machine) {
-    auto &v = targetmachine;
+  void addArch(const Arch arch) {
+    auto &v = targetarch;
     for (size_t i = 0; i < v.size(); ++i) {
-      if (v[i] == machine) {
+      if (v[i] == arch) {
         v.erase(v.begin() + i);
-        addMachine(machine);
+        addArch(arch);
         return;
       }
     }
-    v.push_back(machine);
+    v.push_back(arch);
   }
 
   bool hasLibCXX() const { return getSDKOSNum() >= OSVersion(10, 7); }
@@ -760,9 +773,8 @@ struct Target {
                                     "c++1z", "gnu++1z" };
 
     for (auto std : STD) {
-      if (!strcmp(langstd, std)) {
+      if (!strcmp(langstd, std))
         return true;
-      }
     }
 
     return false;
@@ -780,9 +792,8 @@ struct Target {
       compiler += "-";
     }
 
-    if (isGCC()) {
+    if (isGCC())
       compiler += "base-";
-    }
 
     compiler += this->compiler;
     return compiler;
@@ -844,11 +855,11 @@ struct Target {
 #ifdef __APPLE__
       constexpr const char *OSXIntrinDirs[] = {
         "/Library/Developer/CommandLineTools/usr/lib/clang",
-        "/Applications/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang"
+        "/Applications/Contents/Developer/Toolchains/"
+        "XcodeDefault.xctoolchain/usr/lib/clang"
       };
 
-      for (auto intrindir : OSXIntrinDirs)
-      {
+      for (auto intrindir : OSXIntrinDirs) {
         dir << intrindir;
         if (check()) {
           break;
@@ -882,25 +893,23 @@ struct Target {
       return false;
     }
 
-    if (targetmachine.empty()) {
-      targetmachine.push_back(machine);
-    }
+    if (targetarch.empty())
+      targetarch.push_back(arch);
 
     if (!langStdGiven()) {
-      if (isC()) {
+      if (isC())
         langstd = getDefaultCStandard();
-      } else if (isCXX()) {
+      else if (isCXX())
         langstd = getDefaultCXXStandard();
-      }
     }
 
-    triple = getMachineString(machine);
+    triple = getArchName(arch);
     triple += "-";
     triple += vendor;
     triple += "-";
     triple += target;
 
-    otriple = getMachineString(Machine::x86_64);
+    otriple = getArchName(Arch::x86_64);
     otriple += "-";
     otriple += vendor;
     otriple += "-";
@@ -924,10 +933,11 @@ struct Target {
     }
 
     if (stdlib == StdLib::unset) {
-      if (libCXXIsDefaultCXXLib())
+      if (libCXXIsDefaultCXXLib()) {
         stdlib = StdLib::libcxx;
-      else
+      } else {
         stdlib = StdLib::libstdcxx;
+      }
     } else if (stdlib == StdLib::libcxx) {
       if (!hasLibCXX()) {
         std::cerr
@@ -979,7 +989,7 @@ struct Target {
 
       if (usegcclibs) {
 #ifndef _WIN32
-        // Use libs from './build_gcc' installation
+        // Use libs from './build_gcc.sh' installation
 
         CXXHeaderPath += "/../../";
         CXXHeaderPath += otriple;
@@ -1015,13 +1025,12 @@ struct Target {
         // Use SDK libs
         std::string tmp;
 
-        if (getSDKOSNum() <= OSVersion(10, 5)) {
+        if (getSDKOSNum() <= OSVersion(10, 5))
           CXXHeaderPath += "/usr/include/c++/4.0.0";
-        } else {
+        else
           CXXHeaderPath += "/usr/include/c++/4.2.1";
-        }
 
-        tmp = getMachineString2(machine);
+        tmp = getArchName2(arch);
         tmp += "-apple-";
         tmp += target;
         addCXXPath(tmp);
@@ -1076,13 +1085,13 @@ struct Target {
         if (stdlib == StdLib::libcxx ||
             (stdlib == StdLib::libstdcxx && usegcclibs)) {
           fargs.push_back("-nostdinc++");
-          // TODO: -Qunused-arguments ?
+          fargs.push_back("-Qunused-arguments");
         }
 
         if (stdlib == StdLib::libstdcxx && usegcclibs) {
           // Use libs from './build_gcc' installation
 
-          if (targetmachine.size() > 1) {
+          if (targetarch.size() > 1) {
             std::cerr
                 << "'-oc-use-gcc-libs' does not support multiple arch flags"
                 << std::endl;
@@ -1099,9 +1108,9 @@ struct Target {
           GCCLibPath << SDKPath << "/../../lib/gcc/" << otriple << "/"
                      << gccversion.Str();
 
-          if (targetmachine[0] == Machine::i386) {
-            GCCLibSTDCXXPath << "/" << getMachineString(Machine::i386);
-            GCCLibPath << "/" << getMachineString(Machine::i386);
+          if (targetarch[0] == Arch::i386) {
+            GCCLibSTDCXXPath << "/" << getArchName(Arch::i386);
+            GCCLibPath << "/" << getArchName(Arch::i386);
           }
 
           fargs.push_back("-Qunused-arguments");
@@ -1199,24 +1208,24 @@ struct Target {
       fargs.push_back(tmp);
     }
 
-    for (auto machine : targetmachine) {
-      switch (machine) {
-      case Machine::i386:
-      case Machine::x86_64:
+    for (auto arch : targetarch) {
+      switch (arch) {
+      case Arch::i386:
+      case Arch::x86_64:
         if (isGCC()) {
-          if (targetmachine.size() > 1) {
+          if (targetarch.size() > 1) {
             std::cerr << "gcc does not support multiple arch flags"
                       << std::endl;
             return false;
           }
-          fargs.push_back(machine == Machine::i386 ? "-m32" : "-m64");
+          fargs.push_back(arch == Arch::i386 ? "-m32" : "-m64");
         } else {
           fargs.push_back("-arch");
-          fargs.push_back(getMachineString(machine));
+          fargs.push_back(getArchName(arch));
         }
         break;
       default:
-        std::cerr << "unknown machine type" << std::endl;
+        std::cerr << "unknown architecture" << std::endl;
         return false;
       }
     }
@@ -1230,8 +1239,8 @@ struct Target {
   }
 
   const char *vendor;
-  Machine machine;
-  std::vector<Machine> targetmachine;
+  Arch arch;
+  std::vector<Arch> targetarch;
   std::string target;
   OSVersion OSNum;
   StdLib stdlib;
@@ -1263,9 +1272,8 @@ __attribute__((noreturn)) void prog_sw_vers(int argc, char **argv) {
     srand(static_cast<unsigned int>(getNanoSeconds()));
 #endif
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 5; ++i)
       tmp << std::hex << (rand() % 16 + 1);
-    }
 
     build = tmp.str();
     build.resize(5);
@@ -1312,18 +1320,34 @@ __attribute__((noreturn)) void prog_sw_vers(int argc, char **argv) {
 }
 
 //
+// Program 'osxcross'
+//
+
+__attribute__((noreturn)) void prog_osxcross(int argc, char **argv) {
+  (void)argc;
+  (void)argv;
+
+  std::cout << "version: " << getOSXCrossVersion() << std::endl;
+  exit(EXIT_SUCCESS);
+}
+
+//
 // Program 'osxcross-env'
 //
 
 __attribute__((noreturn)) void prog_osxcross_conf(const Target &target) {
   std::string sdkpath;
+  const char *ltopath = getLibLTOPath();
+
   if (!target.getSDKPath(sdkpath)) {
     std::cerr << "cannot find Mac OS X SDK!" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  // TODO: echo "export OSXCROSS_VERSION=..."
+  if (!ltopath)
+    ltopath = "";
 
+  std::cout << "export OSXCROSS_VERSION=" << getOSXCrossVersion() << std::endl;
   std::cout << "export OSXCROSS_OSX_VERSION_MIN="
             << getDefaultMinTarget().shortStr() << std::endl;
   std::cout << "export OSXCROSS_TARGET=" << getDefaultTarget() << std::endl;
@@ -1339,6 +1363,7 @@ __attribute__((noreturn)) void prog_osxcross_conf(const Target &target) {
   std::cout << "export OSXCROSS_BUILD_DIR=" << target.execpath << "/../../build"
             << std::endl;
   std::cout << "export OSXCROSS_CCTOOLS_PATH=" << target.execpath << std::endl;
+  std::cout << "export OSXCROSS_LIBLTO_PATH=" << ltopath << std::endl;
   std::cout << "export OSXCROSS_LINKER_VERSION=" << getLinkerVersion()
             << std::endl;
 
@@ -1357,9 +1382,8 @@ __attribute__((noreturn)) void prog_osxcross_env(int argc, char **argv) {
 
   assert(oldpath);
 
-  if (!getExecutablePath(epath, sizeof(epath))) {
+  if (!getExecutablePath(epath, sizeof(epath)))
     exit(EXIT_FAILURE);
-  }
 
   // TODO: escape?
 
@@ -1379,9 +1403,9 @@ __attribute__((noreturn)) void prog_osxcross_env(int argc, char **argv) {
         size_t len = std::min(strlen(start), static_cast<size_t>(60));
         std::cerr << std::string(start, len) << std::endl;
 
-        while (start++ != p) {
+        while (start++ != p)
           std::cerr << " ";
-        }
+
         std::cerr << "^" << std::endl;
 
         exit(EXIT_FAILURE);
@@ -1438,13 +1462,11 @@ __attribute__((noreturn)) void prog_osxcross_env(int argc, char **argv) {
 
       tmp += v;
 
-      if (vs) {
+      if (vs)
         tmp += vs;
-      }
 
-      if (t == 1) {
+      if (t == 1)
         tmp += ':';
-      }
 
       return strstr(ov, tmp.c_str()) != nullptr;
     };
@@ -1462,21 +1484,17 @@ __attribute__((noreturn)) void prog_osxcross_env(int argc, char **argv) {
 
   path << oldpath;
 
-  if (!hasPath(oldpath, epath, nullptr)) {
+  if (!hasPath(oldpath, epath, nullptr))
     path << ":" << epath;
-  }
 
-  if (oldlibpath) {
+  if (oldlibpath)
     librarypath << oldlibpath;
-  }
 
-  if (!hasPath(oldlibpath, epath, "/../lib")) {
+  if (!hasPath(oldlibpath, epath, "/../lib"))
     librarypath << ":" << epath << "/../lib";
-  }
 
-  if (ltopath && !hasPath(oldlibpath, ltopath, nullptr)) {
+  if (ltopath && !hasPath(oldlibpath, ltopath, nullptr))
     librarypath << ":" << ltopath;
-  }
 
   vars["PATH"] = path.str();
   vars["LD_LIBRARY_PATH"] = librarypath.str();
@@ -1498,9 +1516,9 @@ __attribute__((noreturn)) void prog_osxcross_env(int argc, char **argv) {
       std::cout << std::endl;
     }
   } else {
-    if (strncmp(argv[1], "-v=", 3)) {
+    if (strncmp(argv[1], "-v=", 3))
       exit(EXIT_FAILURE);
-    }
+
     const char *var = argv[1] + 3;
     printVariable(var);
   }
@@ -1523,9 +1541,6 @@ __attribute__((noreturn)) void prog_dsymutil(int argc, char **argv) {
 // detectTarget():
 //  - detect target and setup invocation command
 //
-// This function also handles/implements helper programs
-// like 'sw_vers', 'osxcross-env' and 'osxcross-conf'
-//
 
 bool detectTarget(int argc, char **argv, Target &target) {
   const char *cmd = argv[0];
@@ -1542,7 +1557,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
               << std::endl;
   };
 
-  auto parseArgs = [&]() {
+  auto parseArgs = [&]()->bool {
 
     auto getVal = [&](char * arg, const char * flag, int & i)->const char * {
       const char *val = arg + strlen(flag);
@@ -1572,16 +1587,35 @@ bool detectTarget(int argc, char **argv, Target &target) {
         }
       } else if (!strncmp(arg, "-stdlib=", 8)) {
         const char *val = arg + 8;
+        size_t i = 0;
 
-        if (!strcmp(val, "libc++")) {
-          target.stdlib = StdLib::libcxx;
-        } else if (!strcmp(val, "libstdc++")) {
-          target.stdlib = StdLib::libstdcxx;
-        }
-
-        if (target.isGCC()) {
+        if (target.isGCC())
           warnExtension("-stdlib=");
+
+        for (auto stdlibname : StdLibNames) {
+          if (!strcmp(val, stdlibname)) {
+            target.stdlib = static_cast<StdLib>(i);
+            break;
+          }
+          ++i;
         }
+
+        if (i == (sizeof(StdLibNames) / sizeof(StdLibNames[0]))) {
+          std::cerr << "value of '-stdlib=' must be ";
+
+          for (size_t j = 0; j < i; ++j) {
+            std::cerr << "'" << StdLibNames[j] << "'";
+            if (j == i - 2) {
+              std::cerr << " or ";
+            } else if (j < i - 2) {
+              std::cerr << ", ";
+            }
+          }
+
+          std::cerr << std::endl;
+          return false;
+        }
+
       } else if (!strncmp(arg, "-std=", 5)) {
         const char *val = arg + 5;
         target.langstd = val;
@@ -1596,30 +1630,30 @@ bool detectTarget(int argc, char **argv, Target &target) {
       } else if (!strncmp(arg, "-x", 2)) {
         target.lang = getVal(arg, "-x", i);
       } else if (!strcmp(arg, "-m32")) {
-        target.addMachine(Machine::i386);
+        target.addArch(Arch::i386);
       } else if (!strcmp(arg, "-m64")) {
-        target.addMachine(Machine::x86_64);
+        target.addArch(Arch::x86_64);
       } else if (!strncmp(arg, "-arch", 5)) {
         const char *val = getVal(arg, "-arch", i);
 
         if (!val)
-          return;
+          return false;
 
-        Machine machine = parseMachine(val);
+        Arch arch = parseArch(val);
 
-        if (machine == Machine::unknown) {
-          std::cerr << "warning '-arch': unknown machine type '" << val << "'"
+        if (arch == Arch::unknown) {
+          std::cerr << "warning '-arch': unknown architecture '" << val << "'"
                     << std::endl;
         }
 
-        const char *name = getMachineString(machine);
+        const char *name = getArchName(arch);
 
         if (strcmp(val, name)) {
           std::cerr << "warning '-arch': " << val << " != " << name
                     << std::endl;
         }
 
-        target.addMachine(machine);
+        target.addArch(arch);
       } else {
         if (arg[0] != '-') {
           // Detect source file
@@ -1629,9 +1663,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
           if (i > 1) {
             prevarg = argv[i - 1];
 
-            if (prevarg[0] == '-' && strlen(prevarg) > 2) {
+            if (prevarg[0] == '-' && strlen(prevarg) > 2)
               prevarg = "";
-            }
           }
 
           if (prevarg[0] != '-' || !strcmp(prevarg, "-c")) {
@@ -1645,6 +1678,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
         target.args.push_back(arg);
       }
     }
+
+    return true;
   };
 
   auto checkCXXLib = [&]() {
@@ -1659,22 +1694,23 @@ bool detectTarget(int argc, char **argv, Target &target) {
     }
   };
 
-  if (!strncmp(cmd, "osxcross-conf", 13)) {
-    prog_osxcross_conf(target);
-  } else if (!strncmp(cmd, "osxcross-env", 12)) {
-    prog_osxcross_env(argc, argv);
-  } else if (!strncmp(cmd, "sw_vers", 7)) {
+  if (!strcmp(cmd, "sw_vers"))
     prog_sw_vers(argc, argv);
-  } else if (!strncmp(cmd, "dsymutil", 8)) {
+  else if (!strcmp(cmd, "osxcross"))
+    prog_osxcross(argc, argv);
+  else if (!strcmp(cmd, "osxcross-env"))
+    prog_osxcross_env(argc, argv);
+  else if (!strcmp(cmd, "osxcross-conf"))
+    prog_osxcross_conf(target);
+  else if (!strcmp(cmd, "dsymutil"))
     prog_dsymutil(argc, argv);
-  }
 
-  for (auto M : MachineStrs) {
-    const size_t len = strlen(M);
+  for (auto arch : ArchNames) {
+    const size_t len = strlen(arch);
     ++i;
 
-    if (!strncmp(cmd, M, len)) {
-      target.machine = static_cast<Machine>(i - 1);
+    if (!strncmp(cmd, arch, len)) {
+      target.arch = static_cast<Arch>(i - 1);
       cmd += len;
 
       if (*cmd++ != '-')
@@ -1694,41 +1730,49 @@ bool detectTarget(int argc, char **argv, Target &target) {
       target.target = std::string(cmd, p - cmd);
       target.compiler = &p[1];
 
-      if (target.compiler == "wrapper") {
-        exit(EXIT_SUCCESS);
-      } else if (target.compiler == "sw_vers") {
-        prog_sw_vers(argc, argv);
-      } else if (target.compiler == "dsymutil") {
-        prog_dsymutil(argc, argv);
-      } else if (target.compiler == "cc") {
+      if (target.compiler == "cc")
         target.compiler = getDefaultCompiler();
-      } else if (target.compiler == "c++") {
+      else if (target.compiler == "c++")
         target.compiler = getDefaultCXXCompiler();
-      }
+      else if (target.compiler == "wrapper")
+        exit(EXIT_SUCCESS);
+      else if (target.compiler == "sw_vers")
+        prog_sw_vers(argc, argv);
+      else if (target.compiler == "osxcross")
+        prog_osxcross(argc, argv);
+      else if (target.compiler == "osxcross-env")
+        prog_osxcross_env(argc, argv);
+      else if (target.compiler == "osxcross-conf")
+        prog_osxcross_conf(target);
+      else if (target.compiler == "dsymutil")
+        prog_dsymutil(argc, argv);
 
       if (target.target != getDefaultTarget()) {
         std::cerr << "warning: target mismatch (" << target.target
                   << " != " << getDefaultTarget() << ")" << std::endl;
       }
 
-      parseArgs();
+      if (!parseArgs())
+        return false;
+
       checkCXXLib();
       return target.Setup();
     }
   }
 
-  if (!strncmp(cmd, "o32", 3)) {
-    target.machine = Machine::i386;
-  } else if (!strncmp(cmd, "o64", 3)) {
-    target.machine = Machine::x86_64;
-  } else {
+  if (!strncmp(cmd, "o32", 3))
+    target.arch = Arch::i386;
+  else if (!strncmp(cmd, "o64", 3))
+    target.arch = Arch::x86_64;
+  else
     return false;
-  }
 
   if (cmd[3])
     target.compiler = &cmd[4];
 
-  parseArgs();
+  if (!parseArgs())
+    return false;
+
   checkCXXLib();
   return target.Setup();
 }
