@@ -82,8 +82,7 @@ fi
   $EXTRACONFFLAGS
 
 $MAKE -j$JOBS
-$MAKE install -j$JOBS || \
-$MAKE install -j$JOBS
+$MAKE install
 
 GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
 pushd $OSXCROSS_TARGET_DIR/x86_64-apple-$OSXCROSS_TARGET/include/c++/${GCC_VERSION}* &>/dev/null
