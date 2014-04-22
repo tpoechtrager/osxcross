@@ -5,6 +5,12 @@ pushd .. &>/dev/null
 source ./tools/tools.sh
 popd &>/dev/null
 
+set +e
+if [ -z "$OSXCROSS_VERSION" ]; then
+  `../target/bin/osxcross-conf 2>/dev/null`
+fi
+set -e
+
 EXESUFFIX=""
 
 function create_wrapper_link
@@ -12,12 +18,12 @@ function create_wrapper_link
   verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "${1}${EXESUFFIX}"
 }
 
-[ -z "$TARGET" ] && TARGET=darwin12
-[ -z "$OSX_VERSION_MIN" ] && OSX_VERSION_MIN=10.5
-[ -z "$LINKER_VERSION" ] && LINKER_VERSION=134.9
+[ -z "$OSXCROSS_TARGET" ] && OSXCROSS_TARGET=darwin12
+[ -z "$OSXCROSS_OSX_VERSION_MIN" ] && OSXCROSS_OSX_VERSION_MIN=10.5
+[ -z "$OSXCROSS_LINKER_VERSION" ] && OSXCROSS_LINKER_VERSION=134.9
 [ -z "$TARGETCOMPILER" ] && TARGETCOMPILER=clang
 
-TARGETTRIPLE=x86_64-apple-$TARGET
+TARGETTRIPLE=x86_64-apple-${OSXCROSS_TARGET}
 
 FLAGS=""
 
@@ -61,9 +67,9 @@ function compile_wrapper()
 
   verbose_cmd $CXX compiler.cpp -std=c++0x -pedantic -Wall -Wextra \
     "-DOSXCROSS_VERSION=\"\\\"$OSXCROSS_VERSION\\\"\"" \
-    "-DOSXCROSS_TARGET=\"\\\"$TARGET\\\"\"" \
-    "-DOSXCROSS_OSX_VERSION_MIN=\"\\\"$OSX_VERSION_MIN\\\"\"" \
-    "-DOSXCROSS_LINKER_VERSION=\"\\\"$LINKER_VERSION\\\"\"" \
+    "-DOSXCROSS_TARGET=\"\\\"$OSXCROSS_TARGET\\\"\"" \
+    "-DOSXCROSS_OSX_VERSION_MIN=\"\\\"$OSXCROSS_OSX_VERSION_MIN\\\"\"" \
+    "-DOSXCROSS_LINKER_VERSION=\"\\\"$OSXCROSS_LINKER_VERSION\\\"\"" \
     "-DOSXCROSS_LIBLTO_PATH=\"\\\"$OSXCROSS_LIBLTO_PATH\\\"\"" \
     -o "../target/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}" -O2 \
     $FLAGS $*
@@ -82,13 +88,13 @@ if [ $TARGETCOMPILER = "clang" ]; then
   create_wrapper_link o64-clang++
   create_wrapper_link o64-clang++-libc++
 
-  create_wrapper_link i386-apple-$TARGET-clang
-  create_wrapper_link i386-apple-$TARGET-clang++
-  create_wrapper_link i386-apple-$TARGET-clang++-libc++
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-clang
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-clang++
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-clang++-libc++
 
-  create_wrapper_link x86_64-apple-$TARGET-clang
-  create_wrapper_link x86_64-apple-$TARGET-clang++
-  create_wrapper_link x86_64-apple-$TARGET-clang++-libc++
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-clang
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-clang++
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-clang++-libc++
 elif [ $TARGETCOMPILER = "gcc" ]; then
   create_wrapper_link o32-gcc
   create_wrapper_link o32-g++
@@ -98,42 +104,42 @@ elif [ $TARGETCOMPILER = "gcc" ]; then
   create_wrapper_link o64-g++
   create_wrapper_link o64-g++-libc++
 
-  create_wrapper_link i386-apple-$TARGET-gcc
-  create_wrapper_link i386-apple-$TARGET-g++
-  create_wrapper_link i386-apple-$TARGET-g++-libc++
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-gcc
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-g++
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-g++-libc++
 
-  create_wrapper_link x86_64-apple-$TARGET-gcc
-  create_wrapper_link x86_64-apple-$TARGET-g++
-  create_wrapper_link x86_64-apple-$TARGET-g++-libc++
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-gcc
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-g++
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-g++-libc++
 fi
 
-create_wrapper_link i386-apple-$TARGET-cc
-create_wrapper_link i386-apple-$TARGET-c++
+create_wrapper_link i386-apple-${OSXCROSS_TARGET}-cc
+create_wrapper_link i386-apple-${OSXCROSS_TARGET}-c++
 
-create_wrapper_link x86_64-apple-$TARGET-cc
-create_wrapper_link x86_64-apple-$TARGET-c++
+create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-cc
+create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-c++
 
 create_wrapper_link osxcross-conf
-create_wrapper_link i386-apple-$TARGET-osxcross-conf
-create_wrapper_link x86_64-apple-$TARGET-osxcross-conf
+create_wrapper_link i386-apple-${OSXCROSS_TARGET}-osxcross-conf
+create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-osxcross-conf
 
 create_wrapper_link osxcross-env
-create_wrapper_link i386-apple-$TARGET-osxcross-env
-create_wrapper_link x86_64-apple-$TARGET-osxcross-env
+create_wrapper_link i386-apple-${OSXCROSS_TARGET}-osxcross-env
+create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-osxcross-env
 
 create_wrapper_link osxcross
-create_wrapper_link i386-apple-$TARGET-osxcross
-create_wrapper_link x86_64-apple-$TARGET-osxcross
+create_wrapper_link i386-apple-${OSXCROSS_TARGET}-osxcross
+create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-osxcross
 
 if [ "$PLATFORM" != "Darwin" ]; then
   create_wrapper_link sw_vers
-  create_wrapper_link i386-apple-$TARGET-sw_vers
-  create_wrapper_link x86_64-apple-$TARGET-sw_vers
+  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-sw_vers
+  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-sw_vers
 fi
 
 create_wrapper_link dsymutil
-create_wrapper_link i386-apple-$TARGET-dsymutil
-create_wrapper_link x86_64-apple-$TARGET-dsymutil
+create_wrapper_link i386-apple-${OSXCROSS_TARGET}-dsymutil
+create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-dsymutil
 
 popd &>/dev/null
 popd &>/dev/null

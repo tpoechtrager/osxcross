@@ -29,9 +29,6 @@
  *
  * Debug messages can be enabled by setting 'OCDEBUG' (ENV) to 1.
  *
- * TODO:
- *  - handle MACOSX_DEPLOYMENT_TARGET (env)
- *
  */
 
 #include "compat.h"
@@ -429,8 +426,8 @@ private:
 
 struct OSVersion {
   constexpr OSVersion(int major, int minor, int patch = 0)
-      : major(major), minor(minor), patch(patch) {}
-  constexpr OSVersion() : major(), minor(), patch() {}
+      : major(major), minor(minor), patch(patch), s() {}
+  constexpr OSVersion() : major(), minor(), patch(), s() {}
 
   constexpr int Num() const {
     return major * 10000 + minor * 100 + patch;
@@ -490,6 +487,7 @@ struct OSVersion {
   int major;
   int minor;
   int patch;
+  char s[12];
 };
 
 static_assert(OSVersion(10, 6) != OSVersion(10, 5), "");
@@ -657,6 +655,11 @@ struct Target {
   bool hasLibCXX() const { return getSDKOSNum() >= OSVersion(10, 7); }
 
   bool libCXXIsDefaultCXXLib() const {
+    OSVersion OSNum = this->OSNum;
+
+    if (!OSNum.Num())
+      OSNum = getSDKOSNum();
+
     return stdlib != libstdcxx && hasLibCXX() && OSNum >= OSVersion(10, 9);
   }
 
@@ -988,7 +991,6 @@ struct Target {
         break;
 
       if (usegcclibs) {
-#ifndef _WIN32
         // Use libs from './build_gcc.sh' installation
 
         CXXHeaderPath += "/../../";
@@ -1017,10 +1019,6 @@ struct Target {
         CXXHeaderPath += gccversion.Str();
 
         addCXXPath(otriple);
-#else
-        std::cerr << "'-oc-use-gcc-libs' not implemented" << std::endl;
-        return false;
-#endif
       } else {
         // Use SDK libs
         std::string tmp;
@@ -1261,7 +1259,8 @@ struct Target {
 // Program 'sw_vers'
 //
 
-__attribute__((noreturn)) void prog_sw_vers(int argc, char **argv) {
+__attribute__((noreturn)) void prog_sw_vers(int argc, char **argv,
+                                            const Target &target) {
 
   auto genFakeBuildVer = [](std::string & build)->std::string & {
     std::stringstream tmp;
@@ -1281,16 +1280,22 @@ __attribute__((noreturn)) void prog_sw_vers(int argc, char **argv) {
     return build;
   };
 
-  auto getProductVer = []()->OSVersion {
+  auto getProductVer = [&]()->OSVersion {
     char *p = getenv("OSXCROSS_SW_VERS_OSX_VERSION");
+    OSVersion OSNum;
 
     if (!p)
       p = getenv("MACOSX_DEPLOYMENT_TARGET");
 
     if (p)
-      return parseOSVersion(p);
+      OSNum = parseOSVersion(p);
+    else
+      OSNum = getDefaultMinTarget();
 
-    return getDefaultMinTarget();
+    if (!OSNum.Num())
+      OSNum = target.getSDKOSNum();
+
+    return OSNum;
   };
 
   if (argc == 2) {
@@ -1337,6 +1342,7 @@ __attribute__((noreturn)) void prog_osxcross(int argc, char **argv) {
 
 __attribute__((noreturn)) void prog_osxcross_conf(const Target &target) {
   std::string sdkpath;
+  OSVersion OSXVersionMin = getDefaultMinTarget();
   const char *ltopath = getLibLTOPath();
 
   if (!target.getSDKPath(sdkpath)) {
@@ -1344,12 +1350,15 @@ __attribute__((noreturn)) void prog_osxcross_conf(const Target &target) {
     exit(EXIT_FAILURE);
   }
 
+  if (!OSXVersionMin.Num())
+    OSXVersionMin = target.getSDKOSNum();
+
   if (!ltopath)
     ltopath = "";
 
   std::cout << "export OSXCROSS_VERSION=" << getOSXCrossVersion() << std::endl;
-  std::cout << "export OSXCROSS_OSX_VERSION_MIN="
-            << getDefaultMinTarget().shortStr() << std::endl;
+  std::cout << "export OSXCROSS_OSX_VERSION_MIN=" << OSXVersionMin.shortStr()
+            << std::endl;
   std::cout << "export OSXCROSS_TARGET=" << getDefaultTarget() << std::endl;
   std::cout << "export OSXCROSS_SDK_VERSION=" << target.getSDKOSNum().shortStr()
             << std::endl;
@@ -1574,6 +1583,11 @@ bool detectTarget(int argc, char **argv, Target &target) {
       return val;
     };
 
+    if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
+      target.OSNum = parseOSVersion(p);
+      unsetenv("MACOSX_DEPLOYMENT_TARGET");
+    }
+
     for (int i = 1; i < argc; ++i) {
       char *arg = argv[i];
 
@@ -1624,6 +1638,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
           std::cerr << "warning: '" << arg << "' has no effect" << std::endl;
           continue;
         }
+        target.stdlib = StdLib::libstdcxx;
         target.usegcclibs = true;
       } else if (!strncmp(arg, "-o", 2)) {
         target.outputname = getVal(arg, "-o", i);
@@ -1695,7 +1710,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
   };
 
   if (!strcmp(cmd, "sw_vers"))
-    prog_sw_vers(argc, argv);
+    prog_sw_vers(argc, argv, target);
   else if (!strcmp(cmd, "osxcross"))
     prog_osxcross(argc, argv);
   else if (!strcmp(cmd, "osxcross-env"))
@@ -1737,7 +1752,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
       else if (target.compiler == "wrapper")
         exit(EXIT_SUCCESS);
       else if (target.compiler == "sw_vers")
-        prog_sw_vers(argc, argv);
+        prog_sw_vers(argc, argv, target);
       else if (target.compiler == "osxcross")
         prog_osxcross(argc, argv);
       else if (target.compiler == "osxcross-env")

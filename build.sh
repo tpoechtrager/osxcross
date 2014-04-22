@@ -315,8 +315,9 @@ rm -f $OSXCROSS_CONF $OSXCROSS_ENV
 echo "compiling wrapper ..."
 
 export OSXCROSS_VERSION
-export OSX_VERSION_MIN
-export LINKER_VERSION
+export OSXCROSS_TARGET=$TARGET
+export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN
+export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
 
 if [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so
@@ -328,7 +329,7 @@ $BASE_DIR/wrapper/build.sh 1>/dev/null
 
 echo ""
 
-if [ -n $OSX_VERSION_MIN ]; then
+if [ "$OSX_VERSION_MIN" != "default" ]; then
   if [ `echo "${SDK_VERSION/u/}<$OSX_VERSION_MIN" | bc -l` -eq 1 ]; then
     echo "OSX_VERSION_MIN must be <= SDK_VERSION"
     trap "" EXIT

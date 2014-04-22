@@ -10,5 +10,7 @@ int setenv(const char *name, const char *value, int overwrite) {
 
   return putenv(buf.c_str());
 }
+
+int unsetenv(const char *name) { return setenv(name, "", 1); }
 #endif
 }

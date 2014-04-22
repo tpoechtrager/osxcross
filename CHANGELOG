@@ -16,6 +16,9 @@ changed:
  * <arch>-apple-darwinXX-cc/c++ defaults now to clang
  * switched to two-space indents
 
+fixed:
+ * 'MACOSX_DEPLOYMENT_TARGET' env var is now handled correctly
+
 /******************************* v0.6 *******************************/
 
 added:

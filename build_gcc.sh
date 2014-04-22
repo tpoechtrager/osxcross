@@ -12,9 +12,10 @@ source tools/tools.sh
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 GCC_VERSION=4.8.2
+#GCC_VERSION=4.9-20140416 # snapshot
 
 # GCC mirror
-GCC_MIRROR="ftp://ftp.gwdg.de/pub/misc/gcc/releases"
+GCC_MIRROR="ftp://ftp.gwdg.de/pub/misc/gcc"
 
 require wget
 
@@ -30,7 +31,11 @@ source $BASE_DIR/tools/trap_exit.sh
 if [ ! -f "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR &>/dev/null
-wget -c "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+if [[ $GCC_VERSION != *-* ]]; then
+  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+else
+  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+fi
 popd &>/dev/null
 
 echo "cleaning up ..."
@@ -102,9 +107,9 @@ echo "compiling wrapper ..."
 
 export OSXCROSS_VERSION
 export OSXCROSS_LIBLTO_PATH
-export TARGET=$OSXCROSS_TARGET
-export OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
-export LINKER_VERSION=$OSXCROSS_LINKER_VERSION
+export OSXCROSS_TARGET
+export OSXCROSS_OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
+export OSXCROSS_LINKER_VERSION=$OSXCROSS_LINKER_VERSION
 
 TARGETCOMPILER=gcc \
   $BASE_DIR/wrapper/build.sh 1>/dev/null
