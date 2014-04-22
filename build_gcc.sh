@@ -11,11 +11,11 @@ source tools/tools.sh
 
 # GCC version to build
 # (<4.7 will not work properly with libc++)
-GCC_VERSION=4.8.2
+GCC_VERSION=4.9.0
 #GCC_VERSION=4.9-20140416 # snapshot
 
 # GCC mirror
-GCC_MIRROR="ftp://ftp.gwdg.de/pub/misc/gcc"
+GCC_MIRROR="ftp://ftp.fu-berlin.de/unix/languages/gcc"
 
 require wget
 
@@ -82,7 +82,13 @@ fi
   $EXTRACONFFLAGS
 
 $MAKE -j$JOBS
+$MAKE install -j$JOBS || \
 $MAKE install -j$JOBS
+
+GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
+pushd $OSXCROSS_TARGET_DIR/x86_64-apple-$OSXCROSS_TARGET/include/c++/${GCC_VERSION}* &>/dev/null
+patch -p0 -l < $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch &>/dev/null || true
+popd  &>/dev/null
 
 popd &>/dev/null # build
 popd &>/dev/null # gcc
