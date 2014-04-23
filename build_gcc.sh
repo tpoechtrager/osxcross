@@ -85,9 +85,16 @@ $MAKE -j$JOBS
 $MAKE install
 
 GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
-pushd $OSXCROSS_TARGET_DIR/x86_64-apple-$OSXCROSS_TARGET/include/c++/${GCC_VERSION}* &>/dev/null
-patch -p0 -l < $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch &>/dev/null || true
-popd  &>/dev/null
+
+pushd $OSXCROSS_TARGET_DIR/x86_64-apple-$OSXCROSS_TARGET/include &>/dev/null
+pushd c++/${GCC_VERSION}* &>/dev/null
+
+cat $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch | \
+  sed "s/darwin13/$OSXCROSS_TARGET/g" | \
+  patch -p0 -l &>/dev/null || true
+
+popd &>/dev/null
+popd &>/dev/null
 
 popd &>/dev/null # build
 popd &>/dev/null # gcc
