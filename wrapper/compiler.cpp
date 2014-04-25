@@ -660,7 +660,8 @@ struct Target {
     if (!OSNum.Num())
       OSNum = getSDKOSNum();
 
-    return stdlib != libstdcxx && hasLibCXX() && OSNum >= OSVersion(10, 9);
+    return stdlib != libstdcxx && hasLibCXX() && !isGCC() &&
+           OSNum >= OSVersion(10, 9);
   }
 
   bool isLibCXX() const {

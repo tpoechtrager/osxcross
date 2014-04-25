@@ -79,7 +79,8 @@ XX= the target version, you can find it out by running  `osxcross-conf`  and the
 
 You can use the shortcut `o32-...` or `i386-apple-darwin...` what ever you like more.
 
-*I'll continue from now on with `o32-clang`, but remember, you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
+*I'll continue from now on with `o32-clang`, but remember,
+ you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
 
 ##### Building Makefile based projects: #####
 
@@ -131,6 +132,18 @@ Usage Examples:
   * build the 64 bit binary: `o64-g++ test.cpp -O3 -o test.x86_64`
   * use lipo to generate the universal binary: `x86_64-apple darwinXX-lipo -create test.i386 test.x86_64 -output test`
 
+### DEPLOYMENT TARGET: ###
+
+The default deployment target is `Mac OS X 10.5`.
+
+However, there are several ways to override the default value:
+
+1. by passing `OSX_VERSION_MIN=10.x` to `./build.sh`
+2. by passing `-mmacosx-version-min=10.x` to the compiler
+3. by setting the `MACOSX_DEPLOYMENT_TARGET` environment variable
+
+\>= 10.9 also defaults to `libc++` instead of `libstdc++`, this behavior  
+can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
 ### LICENSE: ####
   * bash scripts: GPLv2
