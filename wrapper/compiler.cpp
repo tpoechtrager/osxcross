@@ -255,6 +255,11 @@ void concatEnvVariable(const char *var, const std::string val) {
   setenv(var, nval.c_str(), 1);
 }
 
+bool fileExists(const std::string &dir) {
+  struct stat st;
+  return !stat(dir.c_str(), &st);
+}
+
 bool dirExists(const std::string &dir) {
   struct stat st;
   return !stat(dir.c_str(), &st) && S_ISDIR(st.st_mode);
@@ -832,13 +837,31 @@ struct Target {
             static std::stringstream tmp;
             tmp.str(std::string());
 
+            auto checkDir = [&](std::stringstream &dir)
+            {
+              static std::string intrindir;
+              auto &file = dir;
+
+              intrindir = dir.str();
+              file << "/xmmintrin.h";
+
+              if (fileExists(file.str())) {
+                if (cv > clangversion) {
+                  clangversion = cv;
+                  pathtmp.swap(intrindir);
+                }
+                return true;
+              }
+
+              return false;
+            };
+
             tmp << dir.str() << "/" << file << "/include";
 
-            if (dirExists(tmp.str())) {
-              if (cv > clangversion) {
-                clangversion = cv;
-                pathtmp = tmp.str();
-              }
+            if (!checkDir(tmp)) {
+              tmp.str(std::string());
+              tmp << dir.str() << "/" << file;
+              checkDir(tmp);
             }
           }
 
@@ -1176,6 +1199,9 @@ struct Target {
         fargs.push_back("-static-libgcc");
         fargs.push_back("-static-libstdc++");
       }
+
+      if (OSNum <= OSVersion(10, 5))
+        fargs.push_back("-Wl,-no_compact_unwind");
     }
 
     auto addCXXHeaderPath = [&](const std::string &path) {

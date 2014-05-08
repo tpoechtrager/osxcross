@@ -46,7 +46,7 @@ if [ -n "$BWPLATFORM" ]; then
   fi
 else
   PLATFORM=$(uname -s)
-  FLAGS="-march=native "
+  FLAGS="-march=native $CXXFLAGS "
 fi
 
 if [ -n "$BWCXX" ]; then
