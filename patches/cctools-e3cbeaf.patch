@@ -12,14 +12,16 @@ index 8b59f6b..3411e34 100644
  
  LDFLAGS="$LDFLAGS -L/usr/local/lib `cat tmp/ldflags 2>/dev/null`"
 diff --git cctools/ld64/src/ld/code-sign-blobs/memutils.h cctools/ld64/src/ld/code-sign-blobs/memutils.h
-index 8fa48d6..bcf1a23 100644
+index 8fa48d6..4c97973 100644
 --- cctools/ld64/src/ld/code-sign-blobs/memutils.h
 +++ cctools/ld64/src/ld/code-sign-blobs/memutils.h
-@@ -33,6 +33,7 @@
+@@ -33,6 +33,9 @@
  #include <stdlib.h>
  #include <algorithm>
  
++#ifdef __GLIBCXX__
 +using namespace __gnu_cxx;
++#endif
  
  //
  // Encapsulate these very sharp tools in a separate (ugly-named) namespace

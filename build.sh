@@ -173,7 +173,7 @@ extract $CCTOOLS_TARBALL 1
 pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
 if [ $LINKER_VERSION != "134.9" ]; then
-  patch -p0 < $PATCH_DIR/cctools-f19cc13.patch
+  patch -p0 < $PATCH_DIR/cctools-e3cbeaf.patch
 fi
 if [ "$PLATFORM" == "Linux" ]; then
   patch -p0 < $PATCH_DIR/cctools-old-linux.patch
