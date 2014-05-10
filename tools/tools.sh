@@ -98,7 +98,7 @@ function check_cxx_stdlib()
 {
   set +e
 
-  $CXX $CXXFLAGS -std=gnu++0x $BASE_DIR/tools/stdlib-test.cpp -S -o- \
+  $CXX $CXXFLAGS -std=c++0x $BASE_DIR/tools/stdlib-test.cpp -S -o- \
     2>$BUILD_DIR/stdlib-test.log 1>/dev/null
   echo "$?"
 
