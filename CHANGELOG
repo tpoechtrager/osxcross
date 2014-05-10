@@ -1,3 +1,8 @@
+/******************************* v0.8 *******************************/
+
+changed:
+ * updated cctools to 855 with ld64-236.3 (Xcode 5.1)
+
 /******************************* v0.7 *******************************/
 
 added:
@@ -15,6 +20,7 @@ changed:
    implemented in the wrapper
  * <arch>-apple-darwinXX-cc/c++ defaults now to clang
  * switched to two-space indents
+ * gcc 4.8.2 -> gcc 4.9.0
 
 fixed:
  * 'MACOSX_DEPLOYMENT_TARGET' env var is now handled correctly
@@ -34,7 +40,7 @@ added:
 
 changed:
  * attempt to make the toolchain less path dependent
- * update cctools to 845
+ * updated cctools to 845
 
 fixed:
  * help clang to find its own intrinsic headers
@@ -64,7 +70,7 @@ added:
   * comments to build.sh
 
 changed:
-  * update cctools to 839 with ld64-134.9
+  * updated cctools to 839 with ld64-134.9
 
 fixed:
   * check if MacOSX package is present in tarballs

@@ -146,8 +146,8 @@ However, there are several ways to override the default value:
 can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
 ### LICENSE: ####
-  * bash scripts: GPLv2
-  * cctools: APSL 2.0
+  * scripts/wrapper: GPLv2
+  * cctools/ld64: APSL 2.0
   * xar: New BSD
   * bc: GPLv3
 

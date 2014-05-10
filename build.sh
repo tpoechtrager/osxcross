@@ -76,15 +76,8 @@ if [ -z "$OSX_VERSION_MIN" ]; then
   fi
 fi
 
-# ld version
-if [ "$PLATFORM" == "Darwin" ]; then
-  LINKER_VERSION="`get_ld_version`"
-else
-  LINKER_VERSION=134.9
-fi
-
 # Don't change this
-OSXCROSS_VERSION=0.7
+OSXCROSS_VERSION=0.8
 
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build
@@ -152,14 +145,22 @@ source $BASE_DIR/tools/trap_exit.sh
 
 # CCTOOLS
 if [ "$PLATFORM" != "Darwin" ]; then
-if [ "`ls $TARBALL_DIR/cctools*.tar.* | wc -l | tr -d ' '`" != "1" ]; then
+
+res=`check_cxx_stdlib`
+
+if [ $res -ne 0 ]; then
+  echo "Your C++ standard library is either broken or too old to build ld64-236.3"
+  echo "Building ld64-134.9 instead"
   echo ""
-  echo "There should only be one cctools*.tar.* archive in the tarballs directory"
-  echo ""
-  exit 1
+  sleep 3
+  LINKER_VERSION=134.9
+else
+  LINKER_VERSION=236.3
 fi
 
-CCTOOLS_REVHASH=`ls $TARBALL_DIR/cctools*.tar.* | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
+CCTOOLS="cctools-855-ld64-$LINKER_VERSION"
+CCTOOLS_TARBALL=`ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1`
+CCTOOLS_REVHASH=`echo "$CCTOOLS_TARBALL" head -n1 | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
 
 if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
@@ -167,24 +168,18 @@ rm -rf cctools*
 rm -rf xar*
 rm -rf bc*
 
-extract $TARBALL_DIR/cctools*.tar.xz 1 1 1
+extract $CCTOOLS_TARBALL 1
 
 pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
-patch -p0 -l < $PATCH_DIR/cctools-63f6742.patch
 if [ "$PLATFORM" == "Linux" ]; then
   patch -p0 < $PATCH_DIR/cctools-old-linux.patch
 fi
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
-patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
 echo ""
 ./autogen.sh
-echo ""
-echo "if you see automake warnings, ignore them"
-echo "automake 1.14+ is supposed to print a lot of warnings"
-echo ""
 ./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
@@ -200,6 +195,9 @@ done
 popd &>/dev/null
 
 fi
+else
+# Darwin
+LINKER_VERSION="`get_ld_version`"
 fi
 # CCTOOLS END
 
@@ -321,7 +319,7 @@ export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
 
 if [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so
-  export OSXCROSS_LIBLTO_PATH=`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath`
+  export OSXCROSS_LIBLTO_PATH=`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath 2>/dev/null`
   export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OSXCROSS_LIBLTO_PATH"
 fi
 
