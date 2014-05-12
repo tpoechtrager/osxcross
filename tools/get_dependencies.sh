@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 #
 # auto-install dependency packages using the systems package manager.
 # this assumes you are running as root or are using sudo
