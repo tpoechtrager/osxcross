@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 #
 # auto-install dependency packages using the systems package manager.
 # this assumes you are running as root or are using sudo
@@ -42,10 +42,8 @@ get_mageia_deps()
 
 get_debian_deps()
 {
- for pkg in build-essential clang llvm-devel automake autogen libtool \
-  libxml2-dev uuid-dev libssl-dev bash patch make; do
-    apt-get -y --force-yes install $pkg;
- done
+ apt-get install -y --force-yes clang llvm-dev automake autogen \
+  libtool libxml2-dev uuid-dev libssl-dev bash patch make
 }
 
 unknown()
