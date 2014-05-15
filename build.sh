@@ -13,7 +13,7 @@ function guess_sdk_version()
   file=
   sdk=
   guess_sdk_version_result=
-  sdkcount=`find tarballs/ -type f | grep MacOSX | wc -l`
+  sdkcount=`find -L tarballs/ -type f | grep MacOSX | wc -l`
   if [ $sdkcount -eq 0 ]; then
     echo no SDK found in 'tarballs/'. please see README.md
     exit 1
