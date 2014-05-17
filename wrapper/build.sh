@@ -15,12 +15,33 @@ EXESUFFIX=""
 
 function create_wrapper_link
 {
-  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "${1}${EXESUFFIX}"
+  # arg 2:
+  # 1: Create a standalone link and links with target triple prefix
+  # 2: Create links with target triple prefix and shorcut links such as o32, o64, ...
+
+  if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "${1}${EXESUFFIX}"
+  fi
+
+  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+
+  if [[ $1 == *clang* ]]; then
+    # Do not create Haswell links for gcc
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+  fi
+
+  if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "o32-${1}${EXESUFFIX}"
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "o64-${1}${EXESUFFIX}"
+
+    if [[ $1 == *clang* ]]; then
+      # Do not create Haswell links for gcc
+      verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "o64h-${1}${EXESUFFIX}"
+    fi
+  fi
 }
 
-[ -z "$OSXCROSS_TARGET" ] && OSXCROSS_TARGET=darwin12
-[ -z "$OSXCROSS_OSX_VERSION_MIN" ] && OSXCROSS_OSX_VERSION_MIN=10.5
-[ -z "$OSXCROSS_LINKER_VERSION" ] && OSXCROSS_LINKER_VERSION=134.9
 [ -z "$TARGETCOMPILER" ] && TARGETCOMPILER=clang
 
 TARGETTRIPLE=x86_64-apple-${OSXCROSS_TARGET}
@@ -32,9 +53,14 @@ if [ -n "$BWPLATFORM" ]; then
 
   if [ $PLATFORM = "Darwin" -a $(uname -s) != "Darwin" ]; then
     CXX=o32-clang++
+    #CXX=o32-g++
+    FLAGS+="-fvisibility-inlines-hidden "
   elif [ $PLATFORM = "FreeBSD" -a $(uname -s) != "FreeBSD" ]; then
     CXX=amd64-pc-freebsd10.0-clang++
-    FLAGS+="-lrt "
+    #CXX=amd64-pc-freebsd10.0-g++
+  elif [ $PLATFORM = "NetBSD" -a $(uname -s) != "NetBSD" ]; then
+    CXX=amd64-pc-netbsd6.1.3-clang++
+    #CXX=amd64-pc-netbsd6.1.3-g++
   elif [ $PLATFORM = "Windows" ]; then
     CXX=w32-clang++
     FLAGS+="-wc-static-runtime -g "
@@ -44,6 +70,8 @@ if [ -n "$BWPLATFORM" ]; then
     FLAGS+="-static-libgcc -static-libstdc++ -g "
     EXESUFFIX=".exe"
   fi
+
+  [ -z "$BWCOMPILEONLY" ] && BWCOMPILEONLY=1
 else
   PLATFORM=$(uname -s)
   FLAGS="-march=native $CXXFLAGS "
@@ -54,92 +82,54 @@ if [ -n "$BWCXX" ]; then
   CXX=$BWCXX
 fi
 
-[ $PLATFORM = "Darwin" ] && FLAGS+="-framework CoreServices -Wno-deprecated "
-[ $PLATFORM = "FreeBSD" ] && FLAGS+="-lutil "
-
-if [[ $PLATFORM != *Windows ]] && [ $PLATFORM != "Darwin" ]; then
-  FLAGS+="-lrt -isystem quirks/include"
+if [ "$PLATFORM" == "Linux" ]; then
+  FLAGS+="-isystem quirks/include "
 fi
 
 function compile_wrapper()
 {
   mkdir -p ../target ../target/bin
+  export PLATFORM
+  export CXX
 
-  verbose_cmd $CXX compiler.cpp -std=c++0x -pedantic -Wall -Wextra \
-    "-DOSXCROSS_VERSION=\"\\\"$OSXCROSS_VERSION\\\"\"" \
-    "-DOSXCROSS_TARGET=\"\\\"$OSXCROSS_TARGET\\\"\"" \
-    "-DOSXCROSS_OSX_VERSION_MIN=\"\\\"$OSXCROSS_OSX_VERSION_MIN\\\"\"" \
-    "-DOSXCROSS_LINKER_VERSION=\"\\\"$OSXCROSS_LINKER_VERSION\\\"\"" \
-    "-DOSXCROSS_LIBLTO_PATH=\"\\\"$OSXCROSS_LIBLTO_PATH\\\"\"" \
-    -o "../target/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}" -O2 \
-    $FLAGS $*
+  verbose_cmd make clean
+
+  OSXCROSS_CXXFLAGS="$FLAGS" \
+    verbose_cmd make wrapper -j$JOBS
 }
 
 compile_wrapper
 
+if [ -n "$BWCOMPILEONLY" ]; then
+  exit 0
+fi
+
+verbose_cmd mv wrapper "../target/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
+
 pushd "../target/bin" &>/dev/null
 
 if [ $TARGETCOMPILER = "clang" ]; then
-  create_wrapper_link o32-clang
-  create_wrapper_link o32-clang++
-  create_wrapper_link o32-clang++-libc++
-
-  create_wrapper_link o64-clang
-  create_wrapper_link o64-clang++
-  create_wrapper_link o64-clang++-libc++
-
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-clang
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-clang++
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-clang++-libc++
-
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-clang
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-clang++
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-clang++-libc++
+  create_wrapper_link clang 2
+  create_wrapper_link clang++ 2
+  create_wrapper_link clang++-libc++ 2
 elif [ $TARGETCOMPILER = "gcc" ]; then
-  create_wrapper_link o32-gcc
-  create_wrapper_link o32-g++
-  create_wrapper_link o32-g++-libc++
-
-  create_wrapper_link o64-gcc
-  create_wrapper_link o64-g++
-  create_wrapper_link o64-g++-libc++
-
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-gcc
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-g++
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-g++-libc++
-
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-gcc
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-g++
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-g++-libc++
+  create_wrapper_link gcc 2
+  create_wrapper_link g++ 2
+  create_wrapper_link g++-libc++ 2
 fi
 
-create_wrapper_link i386-apple-${OSXCROSS_TARGET}-cc
-create_wrapper_link i386-apple-${OSXCROSS_TARGET}-c++
+create_wrapper_link cc
+create_wrapper_link c++
 
-create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-cc
-create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-c++
-
-create_wrapper_link osxcross-conf
-create_wrapper_link i386-apple-${OSXCROSS_TARGET}-osxcross-conf
-create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-osxcross-conf
-
-create_wrapper_link osxcross-env
-create_wrapper_link i386-apple-${OSXCROSS_TARGET}-osxcross-env
-create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-osxcross-env
-
-create_wrapper_link osxcross
-create_wrapper_link i386-apple-${OSXCROSS_TARGET}-osxcross
-create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-osxcross
+create_wrapper_link osxcross 1
+create_wrapper_link osxcross-conf 1
+create_wrapper_link osxcross-env 1
+create_wrapper_link osxcross-cmp 1
 
 if [ "$PLATFORM" != "Darwin" ]; then
-  create_wrapper_link sw_vers
-  create_wrapper_link i386-apple-${OSXCROSS_TARGET}-sw_vers
-  create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-sw_vers
+  create_wrapper_link sw_vers 1
+  create_wrapper_link dsymutil 1
 fi
-
-create_wrapper_link dsymutil
-create_wrapper_link i386-apple-${OSXCROSS_TARGET}-dsymutil
-create_wrapper_link x86_64-apple-${OSXCROSS_TARGET}-dsymutil
 
 popd &>/dev/null
 popd &>/dev/null
