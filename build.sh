@@ -201,6 +201,10 @@ pushd $TARGET_DIR/bin &>/dev/null
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
 CCTOOLS=($CCTOOLS)
 for CCTOOL in ${CCTOOLS[@]}; do
+  CCTOOL_X86_64H=`echo "$CCTOOL" | sed 's/x86_64/x86_64h/g'`
+  ln -sf $CCTOOL $CCTOOL_X86_64H
+done
+for CCTOOL in ${CCTOOLS[@]}; do
   CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
   ln -sf $CCTOOL $CCTOOL_I386
 done

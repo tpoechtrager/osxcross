@@ -151,6 +151,27 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
           PABREAK;
         }
+        case 'f': {
+          // -f
+
+          if (!strcmp(arg, "-flto") || !strncmp(arg, "-flto=", 5)) {
+            target.args.push_back(arg);
+
+            if (target.isClang())
+              continue;
+
+            delayedfuncs.push_back([](Target &t) {
+              if (t.targetarch.size() > 1) {
+                std::cerr << "gcc does not support '-flto' with multiple "
+                          << "-arch flags" << std::endl;
+                return false;
+              }
+              return true;
+            });
+          }
+
+          PABREAK;
+        }
         case 'm': {
           // -m
 
@@ -352,6 +373,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   if (!strncmp(cmd, "o32", 3))
     target.arch = Arch::i386;
+  else if (!strncmp(cmd, "o64h", 4))
+    target.arch = Arch::x86_64h;
   else if (!strncmp(cmd, "o64", 3))
     target.arch = Arch::x86_64;
   else
@@ -366,6 +389,242 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   checkCXXLib();
   return target.setup();
+}
+
+//
+// generateMultiArchObjectFile():
+//  support multiple -arch flags with gcc
+//  and clang + -oc-use-gcc-libs
+//
+
+void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
+                                 int debug) {
+#ifndef _WIN32
+  std::string stdintmpfile;
+  string_vector objs;
+  std::stringstream obj;
+  bool compile = false;
+  size_t num = 0;
+
+  if (!strcmp(argv[argc - 1], "-")) {
+    //
+    // fork() + reading from stdin isn't a good idea
+    //
+
+    std::stringstream file;
+    std::string stdinsrc;
+    std::string line;
+
+    while (std::getline(std::cin, line)) {
+      stdinsrc += line;
+      stdinsrc += '\n';
+    }
+
+    file << "/tmp/" << getNanoSeconds() << "_stdin";
+
+    if (target.isC())
+      file << ".c";
+    else if (target.isCXX())
+      file << ".cpp";
+    else if (target.isObjC())
+      file << ".m";
+
+    stdintmpfile = file.str();
+    writeFileContent(stdintmpfile, stdinsrc);
+    target.args[target.args.size() - 1] = stdintmpfile;
+  }
+
+  auto cleanup = [&]() {
+    if (!stdintmpfile.empty())
+      remove(stdintmpfile.c_str());
+    for (auto &obj : objs)
+      remove(obj.c_str());
+  };
+
+  if (!target.outputname) {
+    bool f = false;
+
+    for (auto &arg : target.args) {
+      if (arg == "-c") {
+        f = true;
+        break;
+      }
+    }
+
+    if (f && target.haveSourceFile()) {
+      static std::string outputname;
+      const char *ext = getFileExtension(target.sourcefile);
+      size_t pos;
+
+      if (*ext)
+        outputname = std::string(target.sourcefile, ext - target.sourcefile);
+      else
+        outputname = target.sourcefile;
+
+      outputname += ".o";
+
+      if ((pos = outputname.find_last_of('/')) == std::string::npos)
+        pos = 0;
+      else
+        ++pos;
+
+      target.outputname = outputname.c_str() + pos;
+    } else {
+      if (f) {
+        std::cerr << "source filename detection failed" << std::endl;
+        std::cerr << "using a.out" << std::endl;
+      }
+      target.outputname = "a.out";
+    }
+  }
+
+  const char *outputname = strrchr(target.outputname, '/');
+
+  if (!outputname)
+    outputname = target.outputname;
+  else
+    ++outputname;
+
+  for (auto &arch : target.targetarch) {
+    const char *archname = getArchName(arch);
+    pid_t pid;
+    ++num;
+
+    obj.str(std::string());
+    obj << "/tmp/" << getNanoSeconds() << "_" << outputname << "_" << archname;
+
+    objs.push_back(obj.str());
+    pid = fork();
+
+    if (pid > 0) {
+      int status = 1;
+
+      if (wait(&status) == -1) {
+        std::cerr << "wait() failed" << std::endl;
+        cleanup();
+        rc = 1;
+        break;
+      }
+
+      if (WIFEXITED(status)) {
+        status = WEXITSTATUS(status);
+
+        if (status) {
+          rc = status;
+          break;
+        }
+      } else {
+        rc = 1;
+        break;
+      }
+    } else if (pid == 0) {
+
+      if (target.isGCC()) {
+        // GCC
+        bool is32bit = false;
+
+        switch (arch) {
+        case Arch::i386:
+        case Arch::i486:
+        case Arch::i586:
+        case Arch::i686:
+          is32bit = true;
+        case Arch::x86_64:
+          break;
+        default:
+          assert(false && "unsupported arch");
+        }
+
+        target.fargs.push_back(is32bit ? "-m32" : "-m64");
+      } else if (target.isClang()) {
+        // Clang
+        target.fargs.push_back("-arch");
+        target.fargs.push_back(getArchName(arch));
+      } else {
+        assert(false && "unsupported compiler");
+      }
+
+      target.fargs.push_back("-o");
+      target.fargs.push_back(obj.str());
+
+      if (target.usegcclibs) {
+        target.setupGCCLibs(arch);
+
+        if (target.langGiven()) {
+          // -x must be added *after* the static libstdc++ *.a
+          // otherwise clang thinks they are source files
+          target.fargs.push_back("-x");
+          target.fargs.push_back(target.lang);
+        }
+      }
+
+      if (debug) {
+        std::cerr << "[d] "
+                  << "[" << num << "/" << target.targetarch.size()
+                  << "] [compiling] " << archname << std::endl;
+      }
+
+      compile = true;
+      break;
+    } else {
+      std::cerr << "fork() failed" << std::endl;
+      rc = 1;
+      break;
+    }
+  }
+
+  if (!compile && !target.nocodegen && rc == -1) {
+    std::string cmd;
+    std::string lipo;
+    std::string path;
+
+    lipo = "x86_64-apple-";
+    lipo += getDefaultTarget();
+    lipo += "-lipo";
+
+    if (getPathOfCommand(lipo.c_str(), path).empty()) {
+      lipo = "lipo";
+
+      if (getPathOfCommand(lipo.c_str(), path).empty()) {
+        std::cerr << "cannot find lipo binary" << std::endl;
+        rc = 1;
+      }
+    }
+
+    if (rc == -1) {
+      cmd.swap(path);
+      cmd += "/";
+      cmd += lipo;
+      cmd += " -create ";
+
+      for (auto &obj : objs) {
+        cmd += obj;
+        cmd += " ";
+      }
+
+      cmd += "-output ";
+      cmd += target.outputname;
+
+      if (debug) {
+        std::cerr << "[d] [lipo] <-- " << cmd << std::endl;
+      }
+
+      rc = system(cmd.c_str());
+      rc = WEXITSTATUS(rc);
+    }
+  }
+
+  if (!compile)
+    cleanup();
+#else
+  (void)rc;
+  (void)argc;
+  (void)argv;
+  (void)target;
+  (void)debug;
+  std::cerr << __func__ << " not supported" << std::endl;
+  rc = 1;
+#endif
 }
 
 } // unnamed namespace
@@ -415,6 +674,9 @@ int main(int argc, char **argv) {
   }
 
   concatEnvVariable("COMPILER_PATH", target.execpath);
+
+  if (target.targetarch.size() > 1 && (target.usegcclibs || target.isGCC()))
+    generateMultiArchObjectFile(rc, argc, argv, target, debug);
 
   auto printCommand = [&]() {
     std::string in;

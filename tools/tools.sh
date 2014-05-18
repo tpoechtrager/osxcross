@@ -20,7 +20,7 @@ PSCRIPT="`basename $0`"
 
 if [[ $PSCRIPT != *wrapper/build.sh ]]; then 
   # how many concurrent jobs should be used for compiling?
-  JOBS=`tools/get_cpu_count.sh`
+  JOBS=${JOBS:=`tools/get_cpu_count.sh`}
 
   if [ $PSCRIPT != "build.sh" ]; then
     `tools/osxcross_conf.sh`

@@ -343,6 +343,9 @@ void Target::setupGCCLibs(Arch arch) {
   fargs.push_back(tmp.str());
 
   fargs.push_back("-lc");
+
+  if (OSNum <= OSVersion(10, 5))
+    fargs.push_back("-Wl,-no_compact_unwind");
 }
 
 bool Target::setup() {
@@ -382,7 +385,14 @@ bool Target::setup() {
   otriple += target;
 
   if (!OSNum.Num()) {
-    if (stdlib == StdLib::libcxx) {
+    if (haveArch(Arch::x86_64h)) {
+      OSNum = OSVersion(10, 9); // Default to 10.9 for x86_64h
+      if (SDKOSNum < OSNum) {
+        std::cerr << getArchName(arch) << "requires the SDK from "
+                  << OSNum.Str() << " (or later)";
+        return false;
+      }
+    } else if (stdlib == StdLib::libcxx) {
       OSNum = OSVersion(10, 7); // Default to 10.7 for libc++
     } else {
       OSNum = getDefaultMinTarget();
@@ -632,11 +642,19 @@ bool Target::setup() {
     case Arch::i686:
       is32bit = true;
     case Arch::x86_64:
+    case Arch::x86_64h:
       if (isGCC()) {
         if (targetarch.size() > 1)
           break;
 
         fargs.push_back(is32bit ? "-m32" : "-m64");
+
+        if (arch == Arch::x86_64h) {
+          std::cerr << getArchName(arch) << " requires clang" << std::endl;
+          return false;
+          // fargs.push_back("-march=core-avx2");
+          // fargs.push_back("-Wl,-arch,x86_64h");
+        }
       } else if (isClang()) {
         if (usegcclibs && targetarch.size() > 1)
           break;
