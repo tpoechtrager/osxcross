@@ -1,0 +1,77 @@
+commit a78597e93b6fc7332a3761771fa19c8e0d2945cf
+Author: Thomas Pöchtrager <t.poechtrager@gmail.com>
+Date:   Fri Jun 20 11:01:58 2014 +0200
+
+    check for __cxa_demangle in -lstdc++
+    clang 3.5 compile fix
+
+diff --git cctools/configure.ac cctools/configure.ac
+index 0d9a4ec..2b23112 100644
+--- cctools/configure.ac
++++ cctools/configure.ac
+@@ -239,26 +239,26 @@ CFLAGS=$ORIGCFLAGS
+ AC_SUBST([WARNINGS], [$WARNINGS])
+ 
+ 
+-AC_CHECK_LIB([dl],[dlopen],[
+-         DL_LIBS=-ldl
+-         ])
++AC_CHECK_LIB([dl],[dlopen],[DL_LIBS=-ldl])
+ AC_SUBST(DL_LIBS)
+ 
+-AC_CHECK_LIB([pthread],[pthread_create],[
+-         PTHREAD_FLAGS=-pthread
+-         ])
++AC_CHECK_LIB([pthread],[pthread_create],[PTHREAD_FLAGS=-pthread])
+ AC_SUBST(PTHREAD_FLAGS)
+ 
+-AC_CHECK_LIB([uuid],[uuid_generate_random],[
+-         UUID_LIBS=-luuid
+-         ])
++AC_CHECK_LIB([uuid],[uuid_generate_random],[UUID_LIBS=-luuid])
+ AC_SUBST(UUID_LIBS)
+ 
+-AC_CHECK_LIB([crypto],[MD5_Init],[
+-         CRYPT_LIBS=-lcrypto
+-         ])
++AC_CHECK_LIB([crypto],[MD5_Init],[CRYPT_LIBS=-lcrypto])
+ AC_SUBST(CRYPT_LIBS)
+ 
++AC_CHECK_LIB([c++abi],[__cxa_demangle],[CXXABI_LIB=-lc++abi],[
++  AC_CHECK_LIB([supc++],[__cxa_demangle],[CXXABI_LIB=-lsupc++],[
++    AC_CHECK_LIB([stdc++],[__cxa_demangle],[CXXABI_LIB=-lstdc++],[exit 1])
++  ])
++])
++
++AC_SUBST(CXXABI_LIB)
++
+ AC_C_BIGENDIAN([AC_SUBST([ENDIAN_FLAG],[-D__BIG_ENDIAN__=1])],
+ 			[AC_SUBST([ENDIAN_FLAG],[-D__LITTLE_ENDIAN__=1])])
+ 
+diff --git cctools/ld64/src/ld/code-sign-blobs/memutils.h cctools/ld64/src/ld/code-sign-blobs/memutils.h
+index 391ddc1..b0421f0 100644
+--- cctools/ld64/src/ld/code-sign-blobs/memutils.h
++++ cctools/ld64/src/ld/code-sign-blobs/memutils.h
+@@ -33,6 +33,9 @@
+ #include <stdlib.h>
+ #include <algorithm>
+ 
++#ifdef __GLIBCXX__
++using namespace __gnu_cxx;
++#endif
+ 
+ //
+ // Encapsulate these very sharp tools in a separate (ugly-named) namespace
+diff --git cctools/otool/Makefile.am cctools/otool/Makefile.am
+index 3172d7e..4adb742 100644
+--- cctools/otool/Makefile.am
++++ cctools/otool/Makefile.am
+@@ -4,7 +4,7 @@ otool_LDADD =  \
+ 		$(top_srcdir)/libobjc2/libobjc.la \
+ 		$(DL_LIBS) 
+ 
+-otool_LDFLAGS = $(PTHREAD_FLAGS) -lsupc++ # __cxa_demangle
++otool_LDFLAGS = $(PTHREAD_FLAGS) $(CXXABI_LIB)
+ 
+ otool_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/include/foreign -I$(top_srcdir)/libstuff -I$(top_srcdir)/libobjc2 $(WARNINGS) $(LTO_DEFS) -D_DARWIN_C_SOURCE -D__DARWIN_UNIX03 $(ENDIAN_FLAG) -DOTOOL
+ 

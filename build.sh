@@ -173,7 +173,13 @@ extract $CCTOOLS_TARBALL 1
 pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
 if [ $LINKER_VERSION != "134.9" ]; then
+  # fix compiling ld64 with libc++
   patch -p0 < $PATCH_DIR/cctools-e3cbeaf.patch
+  # check for __cxa_demangle in -lstdc++
+  patch -p0 < $PATCH_DIR/cctools-499e470.patch
+else
+  # __cxa_demangle + 3.5 build fix
+  patch -p0 < $PATCH_DIR/cctools-a78597e.patch
 fi
 if [ "$PLATFORM" == "Linux" ]; then
   patch -p0 < $PATCH_DIR/cctools-old-linux.patch
