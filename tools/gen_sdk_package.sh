@@ -4,22 +4,22 @@
 # This script must be run on OS X
 #
 
-if [ $(uname -s) != "Darwin" ]; then
+if [ -z "$XCODEDIR" -a $(uname -s) != "Darwin" ]; then
   echo "This script must be run on OS X"
   exit 1
-fi
+elif [ -z "$XCODEDIR" ]; then
+  XCODEDIR=$(ls /Volumes | grep Xcode | head -n1)
 
-XCODEDIR=$(ls /Volumes | grep Xcode | head -n1)
-
-if [ -z "$XCODEDIR" ]; then
-  if [ -d "/Applications/Xcode.app" ]; then
-    XCODEDIR="/Applications/Xcode.app"
+  if [ -z "$XCODEDIR" ]; then
+    if [ -d "/Applications/Xcode.app" ]; then
+      XCODEDIR="/Applications/Xcode*.app"
+    else
+      echo "please mount Xcode.dmg"
+      exit 1
+    fi
   else
-    echo "please mount Xcode.dmg"
-    exit 1
+    XCODEDIR="/Volumes/$XCODEDIR/Xcode*.app"
   fi
-else
-  XCODEDIR="/Volumes/$XCODEDIR/Xcode.app"
 fi
 
 [ ! -d $XCODEDIR ] && exit 1

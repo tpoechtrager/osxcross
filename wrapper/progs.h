@@ -80,6 +80,7 @@ namespace osxcross {
 int version();
 int env(int argc, char **argv);
 int conf(const Target &target);
+int cmp(int argc, char **argv);
 } // namespace osxcross
 
 static int dummy() { return 0; }
@@ -89,6 +90,7 @@ constexpr prog programs[] = { { "sw_vers", sw_vers },
                               { "osxcross", osxcross::version },
                               { "osxcross-env", osxcross::env },
                               { "osxcross-conf", osxcross::conf },
+                              { "osxcross-cmp", osxcross::cmp },
                               { "wrapper", dummy } };
 
 template <class T> const prog *getprog(const T &name) {

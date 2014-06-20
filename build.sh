@@ -96,6 +96,7 @@ case $SDK_VERSION in
   10.7*) TARGET=darwin11 ;;
   10.8*) TARGET=darwin12 ;;
   10.9*) TARGET=darwin13 ;;
+  10.10*) TARGET=darwin14 ;;
   *) echo "Invalid SDK Version" && exit 1 ;;
 esac
 
@@ -166,7 +167,6 @@ if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
 rm -rf cctools*
 rm -rf xar*
-rm -rf bc*
 
 extract $CCTOOLS_TARBALL 1
 
@@ -216,25 +216,6 @@ else
 LINKER_VERSION="`get_ld_version`"
 fi
 # CCTOOLS END
-
-# BC
-set +e
-which bc &>/dev/null
-NEED_BC=$?
-set -e
-
-if [ $NEED_BC -ne 0 ]; then
-
-extract $TARBALL_DIR/bc*.tar.bz2 2
-
-pushd bc* &>/dev/null
-CFLAGS="-w" ./configure --prefix=$TARGET_DIR --without-flex
-$MAKE -j$JOBS
-$MAKE install -j$JOBS
-popd &>/dev/null
-
-fi
-# BC END
 
 SDK=`ls $TARBALL_DIR/MacOSX$SDK_VERSION*`
 
@@ -344,11 +325,11 @@ $BASE_DIR/wrapper/build.sh 1>/dev/null
 echo ""
 
 if [ "$OSX_VERSION_MIN" != "default" ]; then
-  if [ `echo "${SDK_VERSION/u/}<$OSX_VERSION_MIN" | bc -l` -eq 1 ]; then
+  if [ `osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN` -eq 1 ]; then
     echo "OSX_VERSION_MIN must be <= SDK_VERSION"
     trap "" EXIT
     exit 1
-  elif [ `echo "$OSX_VERSION_MIN<10.4" | bc -l` -eq 1  ]; then
+  elif [ `osxcross-cmp $OSX_VERSION_MIN "<" 10.4` -eq 1  ]; then
     echo "OSX_VERSION_MIN must be >= 10.4"
     trap "" EXIT
     exit 1
@@ -361,7 +342,7 @@ test_compiler o64-clang $BASE_DIR/oclang/test.c
 test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
 test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
 
-if [ `echo "${SDK_VERSION/u/}>=10.7" | bc -l` -eq 1 ]; then
+if [ `osxcross-cmp ${SDK_VERSION/u/} ">=" 10.7` -eq 1 ]; then
   if [ ! -d "$SDK_DIR/MacOSX$SDK_VERSION.sdk/usr/include/c++/v1" ]; then
     echo ""
     echo -n "Given SDK does not contain libc++ headers "

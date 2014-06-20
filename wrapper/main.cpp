@@ -490,7 +490,7 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
     pid_t pid;
     ++num;
 
-    obj.str(std::string());
+    clear(obj);
     obj << "/tmp/" << getNanoSeconds() << "_" << outputname << "_" << archname;
 
     objs.push_back(obj.str());

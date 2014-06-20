@@ -214,7 +214,7 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
   static ClangVersion clangversion;
   static std::string pathtmp;
 
-  dir.str(std::string());
+  clear(dir);
   clangversion = ClangVersion();
   pathtmp.clear();
 
@@ -227,10 +227,9 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
 
         if (cv != ClangVersion()) {
           static std::stringstream tmp;
-          tmp.str(std::string());
+          clear(tmp);
 
-          auto checkDir = [&](std::stringstream &dir)
-          {
+          auto checkDir = [&](std::stringstream &dir) {
             static std::string intrindir;
             auto &file = dir;
 
@@ -251,7 +250,7 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
           tmp << dir.str() << "/" << file << "/include";
 
           if (!checkDir(tmp)) {
-            tmp.str(std::string());
+            clear(tmp);
             tmp << dir.str() << "/" << file;
             checkDir(tmp);
           }
@@ -269,7 +268,7 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
   dir << clangbin << "/../lib/clang";
 
   if (!check()) {
-    dir.str(std::string());
+    clear(dir);
 
 #ifdef __APPLE__
     constexpr const char *OSXIntrinDirs[] = {
@@ -283,7 +282,7 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
       if (check()) {
         break;
       }
-      dir.str(std::string());
+      clear(dir);
     }
 #endif
 
@@ -306,13 +305,19 @@ void Target::setupGCCLibs(Arch arch) {
   std::string SDKPath;
   std::stringstream GCCLibSTDCXXPath;
   std::stringstream GCCLibPath;
-  std::stringstream tmp;
 
   getSDKPath(SDKPath);
 
   GCCLibSTDCXXPath << SDKPath << "/../../" << otriple << "/lib";
   GCCLibPath << SDKPath << "/../../lib/gcc/" << otriple << "/"
              << gccversion.Str();
+
+  auto addLib = [&](const std::stringstream &path, const char *lib) {
+    static std::stringstream tmp;
+    clear(tmp);
+    tmp << path.str() << "/lib" << lib << ".a";
+    fargs.push_back(tmp.str());
+  };
 
   switch (arch) {
   case Arch::i386:
@@ -327,20 +332,10 @@ void Target::setupGCCLibs(Arch arch) {
 
   fargs.push_back("-Qunused-arguments");
 
-  tmp << GCCLibSTDCXXPath.str() << "/libstdc++.a";
-  fargs.push_back(tmp.str());
-
-  tmp.str(std::string());
-  tmp << GCCLibSTDCXXPath.str() << "/libsupc++.a";
-  fargs.push_back(tmp.str());
-
-  tmp.str(std::string());
-  tmp << GCCLibPath.str() << "/libgcc.a";
-  fargs.push_back(tmp.str());
-
-  tmp.str(std::string());
-  tmp << GCCLibPath.str() << "/libgcc_eh.a";
-  fargs.push_back(tmp.str());
+  addLib(GCCLibSTDCXXPath, "stdc++");
+  addLib(GCCLibSTDCXXPath, "supc++");
+  addLib(GCCLibPath, "gcc");
+  addLib(GCCLibPath, "gcc_eh");
 
   fargs.push_back("-lc");
 

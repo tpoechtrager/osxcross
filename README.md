@@ -145,13 +145,13 @@ However, there are several ways to override the default value:
 \>= 10.9 also defaults to `libc++` instead of `libstdc++`, this behavior  
 can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
-x86_64h defaults to `Mac OS X 10.9` and requires clang 3.5+.
+x86\_64h defaults to `Mac OS X 10.9` and requires clang 3.5+.  
+x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
 
 ### LICENSE: ####
   * scripts/wrapper: GPLv2
   * cctools/ld64: APSL 2.0
   * xar: New BSD
-  * bc: GPLv3
 
 ### CREDITS: ####
  * [cjacker for the cctools linux port](https://code.google.com/p/ios-toolchain-based-on-clang-for-linux/source/browse/#svn%2Ftrunk%2Fcctools-porting%2Fpatches)

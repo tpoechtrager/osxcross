@@ -173,7 +173,7 @@ const std::string &getParentProcessName() {
     }
     return name;
   } else {
-    file.str(std::string());
+    clear(file);
     file << "/proc/" << ppid << "/exe";
     char buf[PATH_MAX + 1];
     if (readlink(file.str().c_str(), buf, sizeof(buf)) > 0) {

@@ -41,6 +41,7 @@ SRCS= \
  programs/osxcross-version.cpp \
  programs/osxcross-env.cpp \
  programs/osxcross-conf.cpp \
+ programs/osxcross-cmp.cpp \
  programs/sw_vers.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))

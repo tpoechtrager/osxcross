@@ -21,7 +21,17 @@
 
 namespace tools {
 
+//
+// Misc helper tools
+//
+
 typedef std::vector<std::string> string_vector;
+
+static inline void clear(std::stringstream &sstr)
+{
+  sstr.clear();
+  sstr.str(std::string());
+}
 
 //
 // Executable path
@@ -38,7 +48,7 @@ std::string &fixPathDiv(std::string &path);
 void concatEnvVariable(const char *var, const std::string val);
 
 //
-// Files and Directories
+// Files and directories
 //
 
 std::string *getFileContent(const std::string &file, std::string &content);
@@ -128,6 +138,10 @@ struct OSVersion {
 
   constexpr bool operator<=(const OSVersion &OSNum) const {
     return Num() <= OSNum.Num();
+  }
+
+  constexpr bool operator==(const OSVersion &OSNum) const {
+    return Num() == OSNum.Num();
   }
 
   constexpr bool operator!=(const OSVersion &OSNum) const {
@@ -239,7 +253,7 @@ inline Arch parseArch(const char *arch) {
 }
 
 //
-// Stdlib
+// Standard Library
 //
 
 enum StdLib {

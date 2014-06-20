@@ -7,6 +7,7 @@ changed:
 added:
  * support for new '-arch x86_64h' (requires clang 3.5+)
  * support for multiple '-arch' flags with gcc
+ * OS X 10.10 support (DP1)
 
 /******************************* v0.7 *******************************/
 
