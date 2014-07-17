@@ -12,7 +12,7 @@ source tools/tools.sh
 
 # GCC version to build
 # (<4.7 will not work properly with libc++)
-GCC_VERSION=4.9.0
+GCC_VERSION=4.9.1
 #GCC_VERSION=4.9-20140416 # snapshot
 
 # GCC mirror
