@@ -3,8 +3,14 @@
 BASE_DIR=`pwd`
 
 export LC_ALL="C"
-export CC=clang
-export CXX=clang++
+
+if [ -z "$USESYSTEMCOMPILER" ]; then
+  export CC=clang
+  export CXX=clang++
+elif [ -n "$CC" -o -n "$CXX" ]; then
+  echo "CC/CXX should not be set, continuing in 5 seconds..." 1>&2
+  sleep 5
+fi
 
 # enable debug messages
 test -n "$OCDEBUG" && set -x

@@ -14,11 +14,6 @@ of the [cctools](http://www.opensource.apple.com/tarballs/cctools) (ld, lipo, ..
 
 If you want, then you can build an up-to-date vanilla GCC as well.
 
-### WHAT IS NOT WORKING (YET)? ###
-
-* GCC itself [doesn't build with GCC](https://github.com/tpoechtrager/osxcross/commit/dc8c471),
-  but builds fine when clang is used to build GCC.
-
 ### WHAT CAN I BUILD WITH IT? ###
 
 Basically everything you can build on OS X with clang/gcc should build with this cross toolchain as well.
@@ -46,8 +41,13 @@ That's it. See usage examples below.
 ##### Building GCC: #####
 
 If you want to build GCC as well, then you can do this by running `./build_gcc.sh`.  
-But before you do this, make sure you have got the GCC build depedencies installed on your system,  
-on debian like systems you can run `apt-get install libmpc-dev libmpfr-dev libgmp-dev` to install them.
+But before you do this, make sure you have got the GCC build depedencies installed on your system.  
+
+On debian like systems you can run:
+
+`[sudo] apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev`  
+
+to install them.
 
 ### PACKAGING THE SDK: ###
 

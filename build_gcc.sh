@@ -5,6 +5,7 @@ pushd "${0%/*}" &>/dev/null
 unset LIBRARY_PATH
 
 DESC=gcc
+USESYSTEMCOMPILER=1
 source tools/tools.sh
 
 `tools/osxcross_conf.sh`
@@ -107,6 +108,9 @@ touch "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}"
 fi # have gcc
 
 popd &>/dev/null # build dir
+
+unset USESYSTEMCOMPILER
+source tools/tools.sh
 
 pushd $OSXCROSS_TARGET_DIR/bin &>/dev/null
 
