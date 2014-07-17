@@ -76,9 +76,12 @@ fi
   --enable-languages=c,c++,objc,obj-c++ \
   --without-headers \
   --enable-multilib \
+  --with-multilib-list=m32,m64 \
   --enable-lto \
   --enable-checking=release \
+  --disable-libstdcxx-pch \
   --prefix=$OSXCROSS_TARGET_DIR \
+  --with-system-zlib \
   $EXTRACONFFLAGS
 
 $MAKE -j$JOBS
