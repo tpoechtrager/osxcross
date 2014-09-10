@@ -186,6 +186,7 @@ if [ "$PLATFORM" == "Linux" ]; then
 fi
 # fix LD_LIBRARY_PATH
 patch -p0 < $PATCH_DIR/cctools-f7a5930.patch
+patch -p0 < $PATCH_DIR/cctools-cdefs.patch
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch

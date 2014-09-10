@@ -58,7 +58,7 @@ fi
 [ $PLATFORM = "FreeBSD" ] && FLAGS+="-lutil "
 
 if [[ $PLATFORM != *Windows ]] && [ $PLATFORM != "Darwin" ]; then
-  FLAGS+="-lrt "
+  FLAGS+="-lrt -isystem quirks/include"
 fi
 
 function compile_wrapper()
