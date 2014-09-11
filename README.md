@@ -20,7 +20,7 @@ Basically everything you can build on OS X with clang/gcc should build with this
 
 ### INSTALLATION: ###
 
-Move your packaged SDK to the tarball/ directory.
+Move your packaged SDK to the tarballs/ directory.
 
 Then ensure you have the following installed on your Linux/FreeBSD box:
 
