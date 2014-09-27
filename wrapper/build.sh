@@ -26,7 +26,7 @@ function create_wrapper_link
   verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
-  if [[ $1 == *clang* ]]; then
+  if [[ $1 == *clang* ]] || ([ $# -ge 3 ] && [ $3 -eq 1 ]); then
     # Do not create Haswell links for gcc
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   fi
@@ -125,7 +125,7 @@ create_wrapper_link osxcross 1
 create_wrapper_link osxcross-conf 1
 create_wrapper_link osxcross-env 1
 create_wrapper_link osxcross-cmp 1
-create_wrapper_link pkg-config 1
+create_wrapper_link pkg-config 0 1
 
 if [ "$PLATFORM" != "Darwin" ]; then
   create_wrapper_link sw_vers 1
