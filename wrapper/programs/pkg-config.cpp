@@ -30,27 +30,32 @@ extern char **environ;
 namespace program {
 namespace osxcross {
 
+struct envvar {
+  std::string name;
+  std::string value;
+  envvar(std::string name, std::string value) : name(name), value(value) {}
+};
+
 int pkg_config(int argc, char **argv) {
   (void)argc;
 
-  bool execute = false;
-  std::string varname;
-  const char *val;
+  std::vector<envvar> envvars;
 
   // Map OSXCROSS_PKG_* to PKG_*
   for (char **env = environ; *env; ++env) {
      char *p = *env;
 
      if (!strncmp(p, "OSXCROSS_PKG", 12)) {
-       execute = true;
        p += 9; // skip OSXCROSS_
-       val = strchr(p, '=') + 1; // find value offset
-       varname.assign(p, val - p - 1);
-       setenv(varname.c_str(), val, 1);
+       const char *val = strchr(p, '=') + 1; // find value offset
+       envvars.push_back(envvar(std::string(p, val - p - 1), val));
      }
   }
 
-  if (execute && execvp("pkg-config", argv))
+  for (const envvar &evar : envvars)
+    setenv(evar.name.c_str(), evar.value.c_str(), 1);
+
+  if (!envvars.empty() && execvp("pkg-config", argv))
     std::cerr << "cannot find or execute pkg-config" << std::endl;
 
   return 1;
