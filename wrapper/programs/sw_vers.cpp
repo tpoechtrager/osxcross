@@ -26,7 +26,7 @@ using namespace target;
 
 namespace program {
 
-int sw_vers(int argc, char **argv, const Target &target) {
+int sw_vers(int argc, char **argv, Target &target) {
 
   auto genFakeBuildVer = [](std::string & build)->std::string & {
     std::stringstream tmp;

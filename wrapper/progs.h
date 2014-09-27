@@ -31,8 +31,8 @@ class prog {
 public:
   typedef int (*f1)();
   typedef int (*f2)(int, char **);
-  typedef int (*f3)(int, char **, const target::Target &);
-  typedef int (*f4)(const target::Target &);
+  typedef int (*f3)(int, char **, Target &);
+  typedef int (*f4)(Target &);
 
   constexpr prog(const char *name, f1 fun)
       : name(name), fun1(fun), fun2(), fun3(), fun4(), type(1) {}
@@ -46,7 +46,7 @@ public:
   constexpr prog(const char *name, f4 fun)
       : name(name), fun1(), fun2(), fun3(), fun4(fun), type(4) {}
 
-  void operator()(int argc, char **argv, const Target &target) const {
+  void operator()(int argc, char **argv, Target &target) const {
     switch (type) {
     case 1:
       exit(fun1());
@@ -74,13 +74,14 @@ private:
   int type;
 };
 
-int sw_vers(int argc, char **argv, const target::Target &target);
+int sw_vers(int argc, char **argv, target::Target &target);
 
 namespace osxcross {
 int version();
 int env(int argc, char **argv);
-int conf(const Target &target);
+int conf(Target &target);
 int cmp(int argc, char **argv);
+int pkg_config(int argc, char **argv);
 } // namespace osxcross
 
 static int dummy() { return 0; }
@@ -91,6 +92,7 @@ constexpr prog programs[] = { { "sw_vers", sw_vers },
                               { "osxcross-env", osxcross::env },
                               { "osxcross-conf", osxcross::conf },
                               { "osxcross-cmp", osxcross::cmp },
+                              { "pkg-config", osxcross::pkg_config },
                               { "wrapper", dummy } };
 
 template <class T> const prog *getprog(const T &name) {
