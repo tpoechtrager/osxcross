@@ -92,10 +92,10 @@ function compile_wrapper()
   export PLATFORM
   export CXX
 
-  verbose_cmd make clean
+  verbose_cmd $MAKE clean
 
   OSXCROSS_CXXFLAGS="$FLAGS" \
-    verbose_cmd make wrapper -j$JOBS
+    verbose_cmd $MAKE wrapper -j$JOBS
 }
 
 compile_wrapper

@@ -107,10 +107,13 @@ struct Target {
     return false;
   }
 
-  bool isClang() const { return !compiler.compare(0, 4, "clang", 4); }
+  bool isClang() const {
+    return !strncmp(getFileName(compiler.c_str()), "clang", 5);
+  }
 
   bool isGCC() const {
-    return !compiler.compare(0, 3, "gcc") || !compiler.compare(0, 3, "g++");
+    const char *c = getFileName(compiler.c_str());
+    return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
   }
 
   bool isKnownCompiler() const { return isClang() || isGCC(); }

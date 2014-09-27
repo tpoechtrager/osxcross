@@ -82,8 +82,8 @@ char *getExecutablePath(char *buf, size_t len) {
   if (l <= 0)
     return nullptr;
   buf[len - 1] = '\0';
-  p = strrchr(buf, '/');
-  if (*p) {
+  p = strrchr(buf, PATHDIV);
+  if (p) {
     *p = '\0';
   }
   return buf;
@@ -328,9 +328,8 @@ std::string &realPath(const char *file, std::string &result, realpathcmp cmp) {
     sfile += "/";
     sfile += file;
 
-    if (!stat(sfile.c_str(), &st) && (!cmp || cmp(sfile.c_str(), st))) {
+    if (!stat(sfile.c_str(), &st) && (!cmp || cmp(sfile.c_str(), st)))
       break;
-    }
 
     sfile.clear();
   } while (*p);
@@ -340,9 +339,8 @@ std::string &realPath(const char *file, std::string &result, realpathcmp cmp) {
     char buf[PATH_MAX + 1];
     ssize_t len;
 
-    if ((len = readlink(sfile.c_str(), buf, PATH_MAX)) != -1) {
+    if ((len = readlink(sfile.c_str(), buf, PATH_MAX)) != -1)
       result.assign(buf, len);
-    }
   }
 #endif
 
@@ -365,7 +363,7 @@ std::string &getPathOfCommand(const char *command, std::string &result) {
 }
 
 const char *getFileName(const char *file) {
-  const char *p = strrchr(file, '/');
+  const char *p = strrchr(file, PATHDIV);
 
   if (!p)
     p = file;

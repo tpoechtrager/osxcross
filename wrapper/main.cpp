@@ -85,7 +85,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
         val = argv[++i];
 
         if (i >= argc) {
-          std::cerr << "missing argument for '" << val << "'" << std::endl;
+          std::cerr << "missing argument for '" << flag << "'" << std::endl;
           return nullptr;
         }
       }
@@ -380,9 +380,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
   else
     return false;
 
-  if (const char *p = strchr(cmd, '-')) {
+  if (const char *p = strchr(cmd, '-'))
     target.compiler = &cmd[p - cmd + 1];
-  }
 
   if (!parseArgs())
     return false;
@@ -397,8 +396,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
 //  and clang + -oc-use-gcc-libs
 //
 
-void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
-                                 int debug) {
+void generateMultiArchObjectFile(int &rc, int argc, char **argv,
+                                 Target &target, int debug) {
 #ifndef _WIN32
   std::string stdintmpfile;
   string_vector objs;
@@ -705,13 +704,11 @@ int main(int argc, char **argv) {
     cargs = new char *[target.fargs.size() + target.args.size() + 1];
     size_t i = 0;
 
-    for (auto &arg : target.fargs) {
+    for (auto &arg : target.fargs)
       cargs[i++] = const_cast<char *>(arg.c_str());
-    }
 
-    for (auto &arg : target.args) {
+    for (auto &arg : target.args)
       cargs[i++] = const_cast<char *>(arg.c_str());
-    }
 
     cargs[i] = nullptr;
   }

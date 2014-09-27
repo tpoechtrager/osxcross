@@ -9,7 +9,7 @@ OSXCROSS_LINKER_VERSION ?= 134.9
 OSXCROSS_LIBLTO_PATH ?=
 OSXCROSS_CXXFLAGS ?= 
 
-override CXXFLAGS=-std=c++0x -Wall -Wextra -pedantic -I. -O$(OPTIMIZE)
+override CXXFLAGS=-std=c++0x -Wall -Wextra -pedantic -I. -O$(OPTIMIZE) -g
 
 ifeq ($(LTO), 1)
   override CXXFLAGS+=-flto

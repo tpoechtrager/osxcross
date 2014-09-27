@@ -41,9 +41,9 @@ int env(int argc, char **argv) {
 
   // TODO: escape?
 
-  auto check = [](const char * p, const char * desc)->const char * {
+  auto containsBadChars = [](const char * p, const char * desc)->bool {
     if (!p)
-      return nullptr;
+      return false;
 
     const char *pp = p;
 
@@ -52,7 +52,7 @@ int env(int argc, char **argv) {
         std::cerr << desc << " should not contain '" << *p << "'" << std::endl;
 
         const char *start =
-            p - std::min(static_cast<size_t>(p - pp), static_cast<size_t>(30));
+          p - std::min(static_cast<size_t>(p - pp), static_cast<size_t>(30));
 
         size_t len = std::min(strlen(start), static_cast<size_t>(60));
         std::cerr << std::string(start, len) << std::endl;
@@ -69,10 +69,10 @@ int env(int argc, char **argv) {
       case ' ':
       case ';':
         badChar(p);
-        return nullptr;
+        return true;
       }
     }
-    return pp;
+    return false;
   };
 
   if (argc <= 1) {
@@ -83,8 +83,8 @@ int env(int argc, char **argv) {
                 << std::endl << "please use " << std::endl << std::endl
                 << "setenv PATH `" << epath << "/osxcross-env -v=PATH`"
                 << std::endl << "setenv LD_LIBRARY_PATH `" << epath
-                << "/osxcross-env -v=LD_LIBRARY_PATH`" << std::endl << std::endl
-                << "instead." << std::endl << std::endl;
+                << "/osxcross-env -v=LD_LIBRARY_PATH`" << std::endl
+                << std::endl << "instead." << std::endl << std::endl;
     }
   }
 
@@ -127,8 +127,9 @@ int env(int argc, char **argv) {
     return ((hasPathSeparator && (check(0) || check(1))) || check(-1));
   };
 
-  if (!check(oldpath, "PATH") || !check(oldlibpath, "LD_LIBRARY_PATH") ||
-      !check(ltopath, "LIB LTO PATH"))
+  if (containsBadChars(oldpath, "PATH") ||
+      containsBadChars(oldlibpath, "LD_LIBRARY_PATH") ||
+      containsBadChars(ltopath, "LIB LTO PATH"))
     return 1;
 
   std::stringstream path;
