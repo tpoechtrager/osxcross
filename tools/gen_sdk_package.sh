@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
-#
 # OS X SDK packaging script
-# This script must be run on OS X
-#
 
-if [ -z "$XCODEDIR" -a $(uname -s) != "Darwin" ]; then
-  echo "This script must be run on OS X"
-  exit 1
-elif [ -z "$XCODEDIR" ]; then
-  XCODEDIR=$(ls /Volumes | grep Xcode | head -n1)
+export LC_ALL=C
+
+if [ $(uname -s) != "Darwin" ]; then
+  if [ -z "$XCODEDIR" ]; then
+    echo "This script must be run on OS X"
+    echo "... Or with XCODEDIR=... on Linux"
+    exit 1
+  else
+    XCODEDIR+="/$(ls "$XCODEDIR" | grep "^Xcode.*" | head -n1)"
+  fi
+else
+  XCODEDIR=$(ls /Volumes | grep "^Xcode.*" | head -n1)
 
   if [ -z "$XCODEDIR" ]; then
-    if [ -d "/Applications/Xcode.app" ]; then
+    if [ -d /Applications/Xcode*.app ]; then
       XCODEDIR="/Applications/Xcode*.app"
     else
       echo "please mount Xcode.dmg"
@@ -22,7 +26,11 @@ elif [ -z "$XCODEDIR" ]; then
   fi
 fi
 
-[ ! -d $XCODEDIR ] && exit 1
+if [ ! -d "$XCODEDIR" ]; then
+  echo "cannot find Xcode (XCODEDIR=$XCODEDIR)"
+  exit 1
+fi
+
 echo -e "found Xcode: $XCODEDIR"
 
 WDIR=$(pwd)
@@ -48,31 +56,45 @@ fi
 set -e
 
 pushd $XCODEDIR &>/dev/null
-pushd "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" &>/dev/null || {
-  echo "Xcode (or this script) is out of date"
-  echo "trying some magic to find the SDKs anyway ..."
 
-  SDKDIR=$(find . -name SDKs -type d | grep MacOSX | head -n1)
+if [ -d "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" ]; then
+  pushd "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" &>/dev/null
+else
+  if [ -d "../Packages" ]; then
+    pushd "../Packages" &>/dev/null
+  else
+    if [ $? -ne 0 ]; then
+      echo "Xcode (or this script) is out of date"
+      echo "trying some magic to find the SDKs anyway ..."
 
-  if [ -z "$SDKDIR" ]; then
-    echo "cannot find SDKs!"
-    exit 1
+      SDKDIR=$(find . -name SDKs -type d | grep MacOSX | head -n1)
+
+      if [ -z "$SDKDIR" ]; then
+        echo "cannot find SDKs!"
+        exit 1
+      fi
+
+      pushd $SDKDIR &>/dev/null
+    fi
   fi
+fi
 
-  pushd $SDKDIR &>/dev/null
-}
-
-SDKS=$(ls | grep MacOSX)
+SDKS=$(ls | grep "^MacOSX10.*" | grep -v "Patch")
 
 if [ -z "$SDKS" ]; then
     echo "No SDK found"
     exit 1
 fi
 
-LIBCXXDIR="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/c++/v1"
+# Xcode 5
+LIBCXXDIR1="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/c++/v1"
+
+# Xcode 6
+LIBCXXDIR2="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"
 
 for SDK in $SDKS; do
-  echo "packaging ${SDK/.sdk/} SDK (this may take several minutes) ..."
+  echo -n "packaging $(echo "$SDK" | sed -E "s/(.sdk|.pkg)//g") SDK "
+  echo "(this may take several minutes) ..."
 
   if [[ $SDK == *.pkg ]]; then
     cp $SDK $WDIR
@@ -85,8 +107,10 @@ for SDK in $SDKS; do
   pushd $XCODEDIR &>/dev/null
 
   # libc++ headers for C++11/C++14
-  if [ -d $LIBCXXDIR ]; then
-    cp -rf $LIBCXXDIR "$TMP/$SDK/usr/include/c++"
+  if [ -d $LIBCXXDIR1 ]; then
+    cp -rf $LIBCXXDIR1 "$TMP/$SDK/usr/include/c++"
+  elif [ -d $LIBCXXDIR2 ]; then
+    cp -rf $LIBCXXDIR2 "$TMP/$SDK/usr/include/c++"
   fi
 
   popd &>/dev/null
@@ -102,4 +126,4 @@ popd &>/dev/null
 popd &>/dev/null
 
 echo ""
-ls -l | grep MacOSX
+ls -lh | grep MacOSX

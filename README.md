@@ -22,7 +22,7 @@ Basically everything you can build on OS X with clang/gcc should build with this
 
 Move your packaged SDK to the tarballs/ directory.
 
-Then ensure you have the following installed on your Linux/FreeBSD box:
+Then ensure you have the following installed on your Linux/BSD box:
 
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`, `patch`,  
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
@@ -51,15 +51,35 @@ to install them.
 
 ### PACKAGING THE SDK: ###
 
-1. Boot into OS X
-2. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode) (used 5.1)]
-3. [Mount Xcode.dmg (Open With -> DiskImageMounter)]
-4. Run: ./tools/gen_sdk_package.sh (from the OSXCross package)
-5. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
-6. Reboot back into Linux
-7. Copy or move the SDK into the tarball/ directory of OSXCross
+If you need a recent SDK, then you must do the SDK packaging on OS X.  
+Recent Xcode images are compressed, but the Linux kernel does not  
+support HFS+ compression.
 
-Step 2. and 3. can be skipped if you have Xcode installed.
+##### Packaging the SDK on an OS X machine: #####
+
+1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%205.1.1) \*\*]
+2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
+3. Run: ./tools/gen\_sdk\_package.sh (from the OSXCross package)
+4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
+5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross
+
+\*\* Xcode 4.6, 5.0+, 6.0, and the 6.1 Betas are known to work.  
+\*\*\* If you get a dialog with a crossed circle, ignore it, you don't need to install Xcode.
+
+Step 1. and 2. can be skipped if you have Xcode installed.
+
+##### Packing the SDK on a Linux machine (does *NOT* work with Xcode 4.3 or later!): #####
+
+1. Download
+   [Xcode 4.2](https://startpage.com/do/search?q=stackoverflow+xcode+4.2+download+snow+leopard)
+   for Snow Leopard \*\*
+2. Ensure you are downloading the "Snow Leopard" version
+3. Install `dmg2img`
+4. Run (as root): ./tools/mount\_xcode\_image.sh /path/to/xcode.dmg
+5. Follow the instructions printed by ./tools/mount\_xcode\_image.sh
+6. Copy or move the SDK into the tarballs/ directory
+
+\*\* SHA1 Sum: 1a06882638996dfbff65ea6b4c6625842903ead3.
 
 ### USAGE EXAMPLES: ###
 
