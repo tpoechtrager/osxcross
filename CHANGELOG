@@ -7,7 +7,9 @@ changed:
 added:
  * support for new '-arch x86_64h' (requires clang 3.5+)
  * support for multiple '-arch' flags with gcc
+ * scripts to make sdk extraction possible on linux (xcode 4.2 only)
  * OS X 10.10 support (DP1)
+ * pkg-config wrapper
 
 /******************************* v0.7 *******************************/
 

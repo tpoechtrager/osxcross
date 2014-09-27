@@ -27,9 +27,6 @@
 
 extern char **environ;
 
-using namespace tools;
-using namespace target;
-
 namespace program {
 namespace osxcross {
 
