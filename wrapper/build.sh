@@ -15,29 +15,48 @@ EXESUFFIX=""
 
 function create_wrapper_link
 {
+  # arg 1:
+  #  program name
   # arg 2:
-  # 1: Create a standalone link and links with target triple prefix
-  # 2: Create links with target triple prefix and shorcut links such as o32, o64, ...
+  #  1: create a standalone link and links with the target triple prefix
+  #  2: create links with target triple prefix and shortcut links such
+  #     as o32, o64, ...
+  #
+  # example:
+  #  create_wrapper_link osxcross 1
+  # creates the following symlinks:
+  #  -> osxcross
+  #  -> i386-apple-darwinXX-osxcross
+  #  -> x86_64-apple-darwinXX-osxcross
+  #  -> x86_64h-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "${1}${EXESUFFIX}"
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+      "${1}${EXESUFFIX}"
   fi
 
-  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
-  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
-  if [[ $1 == *clang* ]] || ([ $# -ge 3 ] && [ $3 -eq 1 ]); then
-    # Do not create Haswell links for gcc
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+
+  if [[ $1 != gcc* ]] && [[ $1 != g++* ]]; then
+    # do not create Haswell links for gcc
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+      "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   fi
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "o32-${1}${EXESUFFIX}"
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "o64-${1}${EXESUFFIX}"
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+      "o32-${1}${EXESUFFIX}"
+    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+      "o64-${1}${EXESUFFIX}"
 
-    if [[ $1 == *clang* ]]; then
-      # Do not create Haswell links for gcc
-      verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" "o64h-${1}${EXESUFFIX}"
+    if [[ $1 != gcc* ]] && [[ $1 != g++* ]]; then
+      # do not create Haswell links for gcc
+      verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+        "o64h-${1}${EXESUFFIX}"
     fi
   fi
 }
@@ -125,7 +144,7 @@ create_wrapper_link osxcross 1
 create_wrapper_link osxcross-conf 1
 create_wrapper_link osxcross-env 1
 create_wrapper_link osxcross-cmp 1
-create_wrapper_link pkg-config 0 1
+create_wrapper_link pkg-config
 
 if [ "$PLATFORM" != "Darwin" ]; then
   create_wrapper_link sw_vers 1
