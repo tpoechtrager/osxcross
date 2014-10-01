@@ -12,8 +12,10 @@ source tools/tools.sh
 
 # GCC version to build
 # (<4.7 will not work properly with libc++)
-GCC_VERSION=4.9.1
-#GCC_VERSION=4.9-20140416 # snapshot
+if [ -z "$GCC_VERSION" ]; then
+  GCC_VERSION=4.9.1
+  #GCC_VERSION=5-20140928 # snapshot
+fi
 
 # GCC mirror
 GCC_MIRROR="ftp://ftp.fu-berlin.de/unix/languages/gcc"
@@ -70,11 +72,17 @@ if [ "$PLATFORM" != "Darwin" ]; then
   EXTRACONFFLAGS+="--with-as=$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-as "
 fi
 
+LANGS="c,c++,objc,obj-c++"
+
+if [ -n "$ENABLE_FORTRAN" ]; then
+  LANGS+=",fortran"
+fi
+
 ../configure \
   --target=x86_64-apple-$OSXCROSS_TARGET \
   --with-sysroot=$OSXCROSS_SDK \
   --disable-nls \
-  --enable-languages=c,c++,objc,obj-c++ \
+  --enable-languages=$LANGS \
   --without-headers \
   --enable-multilib \
   --with-multilib-list=m32,m64 \

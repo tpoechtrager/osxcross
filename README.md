@@ -40,7 +40,9 @@ That's it. See usage examples below.
 
 ##### Building GCC: #####
 
-If you want to build GCC as well, then you can do this by running `./build_gcc.sh`.  
+If you want to build GCC as well, then you can do this by running:  
+`[GCC_VERSION=4.9.1] [ENABLE_FORTRAN=1] ./build_gcc.sh`.  
+
 But before you do this, make sure you have got the GCC build depedencies installed on your system.  
 
 On debian like systems you can run:
