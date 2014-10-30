@@ -403,6 +403,12 @@ bool Target::setup() {
     return false;
   }
 
+  if (haveArch(Arch::x86_64h) && OSNum < OSVersion(10, 8)) {
+    std::cerr << getArchName(Arch::x86_64h) << " requires "
+              << "'-mmacosx-version-min=10.8' (or later)" << std::endl;
+    return false;
+  }
+
   if (stdlib == StdLib::unset) {
     if (libCXXIsDefaultCXXLib()) {
       stdlib = StdLib::libcxx;
