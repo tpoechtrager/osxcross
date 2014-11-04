@@ -175,8 +175,8 @@ bool Target::isCXX11orNewer() const {
                                   "c++1y", "gnu++1y", "c++14", "gnu++14",
                                   "c++1z", "gnu++1z" };
 
-  for (auto std : STD) {
-    if (!strcmp(langstd, std))
+  for (auto lstd : STD) {
+    if (!strcmp(langstd, lstd))
       return true;
   }
 
