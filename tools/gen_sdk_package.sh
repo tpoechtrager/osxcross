@@ -26,7 +26,7 @@ else
   fi
 fi
 
-if [ ! -d "$XCODEDIR" ]; then
+if [ ! -d $XCODEDIR ]; then
   echo "cannot find Xcode (XCODEDIR=$XCODEDIR)"
   exit 1
 fi
