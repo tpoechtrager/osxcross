@@ -167,7 +167,7 @@ However, there are several ways to override the default value:
 \>= 10.9 also defaults to `libc++` instead of `libstdc++`, this behavior  
 can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
-x86\_64h defaults to `Mac OS X 10.9` and requires clang 3.5+.  
+x86\_64h defaults to `Mac OS X 10.8` and requires clang 3.5+.  
 x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
 
 ### LICENSE: ####

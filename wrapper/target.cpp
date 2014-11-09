@@ -381,7 +381,7 @@ bool Target::setup() {
 
   if (!OSNum.Num()) {
     if (haveArch(Arch::x86_64h)) {
-      OSNum = OSVersion(10, 9); // Default to 10.9 for x86_64h
+      OSNum = OSVersion(10, 8); // Default to 10.8 for x86_64h
       if (SDKOSNum < OSNum) {
         std::cerr << getArchName(arch) << " requires the SDK from "
                   << OSNum.Str() << " (or later)" << std::endl;
