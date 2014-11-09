@@ -2,7 +2,7 @@
 
 changed:
  * updated cctools to 855 with ld64-236.3 (Xcode 5.1)
- * gcc 4.9.0 -> gcc 4.9.1
+ * gcc 4.9.0 -> gcc 4.9.2
 
 added:
  * support for new '-arch x86_64h' (requires clang 3.5+)
