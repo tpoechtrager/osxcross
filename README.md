@@ -27,8 +27,15 @@ Then ensure you have the following installed on your Linux/BSD box:
 `Clang 3.2+`, `llvm-devel`, `automake`, `autogen`, `libtool`, `patch`,  
 `libxml2-devel` (<=10.5 only), `uuid-devel`, `openssl-devel` and the `bash shell`.
 
-Hint 1: You can run 'sudo tools/get_dependencies.sh' to get these automatically.  
-Hint 2: On Ubuntu 12.04 LTS you can use [llvm.org/apt](http://llvm.org/apt) to get a newer version of clang.
+\--  
+You can run 'sudo tools/get\_dependencies.sh' to get these automatically.  
+
+'[INSTALLPREFIX=...] ./build_clang.sh' can be used to build a recent clang version  
+from source (requires gcc and g++).
+
+On debian like systems you can also use [llvm.org/apt](http://llvm.org/apt) to get a newer version of clang.  
+But be careful, that repository is known to cause [troubles](https://github.com/tpoechtrager/osxcross/issues/16).  
+\--
 
 Then run `./build.sh` to build the cross toolchain.  
 (It will search 'tarballs' for your SDK and then build in its own directory.)
