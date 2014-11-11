@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BASE_DIR=`pwd`
+BASE_DIR=$PWD
 
 export LC_ALL="C"
 
@@ -22,7 +22,7 @@ if [[ $PSCRIPT != *wrapper/build.sh ]]; then
   # how many concurrent jobs should be used for compiling?
   JOBS=${JOBS:=`tools/get_cpu_count.sh`}
 
-  if [ $PSCRIPT != "build.sh" ]; then
+  if [ $PSCRIPT != "build.sh" -a "$PSCRIPT" != "build_clang.sh" ]; then
     `tools/osxcross_conf.sh`
 
     if [ $? -ne 0 ]; then

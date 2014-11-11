@@ -7,8 +7,11 @@ USESYSTEMCOMPILER=1
 
 source tools/tools.sh
 
+TARBALL_DIR=$BASE_DIR/tarballs
+BUILD_DIR=$BASE_DIR/build
+
 if [ -z "$SKIP_GCC_CHECK" ]; then
-if [ $PLATFORM != "Darwin" -a "$PLATFORM" != "FreeBSD" ]; then
+if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
   which "g++${GCC_SUFFIX}" &>/dev/null && \
   {
     export CC="gcc${GCC_SUFFIX}"
@@ -72,7 +75,7 @@ function warn_if_installed()
   }
 }
 
-if [ $PLATFORM != "Darwin" -a "$PLATFORM" != "FreeBSD" ]; then
+if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
   warn_if_installed clang clang
   warn_if_installed llvm-config llvm
 fi
@@ -82,9 +85,7 @@ echo "Installation Prefix: $INSTALLPREFIX"
 read -p "Press enter to start building."
 echo ""
 
-pushd $OSXCROSS_BUILD_DIR &>/dev/null
-
-pushd $OSXCROSS_TARBALL_DIR &>/dev/null
+pushd $TARBALL_DIR &>/dev/null
 
 if [[ $MIRROR == *ubuntu* ]]; then
 
@@ -113,18 +114,21 @@ fi
 
 wget -c $LLVM_PKG
 wget -c $CLANG_PKG
+
 popd &>/dev/null
+
+pushd $BUILD_DIR &>/dev/null
 
 echo "cleaning up ..."
 
 rm -rf llvm* 2>/dev/null
 
-extract "$OSXCROSS_TARBALL_DIR/$(basename $LLVM_PKG)" 2 0
+extract "$TARBALL_DIR/$(basename $LLVM_PKG)" 2 0
 
 pushd llvm* &>/dev/null
 pushd tools &>/dev/null
 
-extract "$OSXCROSS_TARBALL_DIR/$(basename $CLANG_PKG)" 1
+extract "$TARBALL_DIR/$(basename $CLANG_PKG)" 1
 [ -e clang* ] && mv clang* clang
 [ -e cfe* ] && mv cfe* clang
 
@@ -143,8 +147,7 @@ function build()
 if [ -n "$DISABLE_BOOTSTRAP" ]; then
   build build
 else
-  CFLAGS="-O1" CXXFLAGS="-O1" \
-    build build_stage1 clang-only
+  build build_stage1 clang-only
 
   export CC=$PWD/build_stage1/Release/bin/clang
   export CXX=$PWD/build_stage1/Release/bin/clang++
