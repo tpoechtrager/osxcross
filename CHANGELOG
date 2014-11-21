@@ -1,7 +1,14 @@
+/******************************* v0.9 *******************************/
+
+changed:
+ * updated cctools to 862
+ * updated ld64 to 241.9
+
 /******************************* v0.8 *******************************/
 
 changed:
- * updated cctools to 855 with ld64-236.3 (Xcode 5.1)
+ * updated cctools to 855
+ * updated ld64 to 236.3
  * gcc 4.9.0 -> gcc 4.9.2
 
 added:

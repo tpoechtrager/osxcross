@@ -77,7 +77,7 @@ if [ -z "$OSX_VERSION_MIN" ]; then
 fi
 
 # Don't change this
-OSXCROSS_VERSION=0.8
+OSXCROSS_VERSION=0.9
 
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build
@@ -129,12 +129,6 @@ require sed
 require gunzip
 require cpio
 
-if [ "$PLATFORM" != "Darwin" ]; then
-  require autogen
-  require automake
-  require libtool
-fi
-
 pushd $BUILD_DIR &>/dev/null
 
 function remove_locks()
@@ -145,21 +139,29 @@ function remove_locks()
 source $BASE_DIR/tools/trap_exit.sh
 
 # CCTOOLS
-if [ "$PLATFORM" != "Darwin" ]; then
+if [ "$PLATFORM" == "Darwin" ]; then
+  PREVCXX=$CXX
+  CXX+=" -stdlib=libc++"
+fi
 
 res=`check_cxx_stdlib`
 
+if [ "$PLATFORM" == "Darwin" ]; then
+  CXX=$PREVCXX
+  unset PREVCXX
+fi
+
 if [ $res -ne 0 ]; then
-  echo "Your C++ standard library is either broken or too old to build ld64-236.3"
+  echo "Your C++ standard library is either broken or too old to build ld64-241.9"
   echo "Building ld64-134.9 instead"
   echo ""
   sleep 3
   LINKER_VERSION=134.9
 else
-  LINKER_VERSION=236.3
+  LINKER_VERSION=241.9
 fi
 
-CCTOOLS="cctools-855-ld64-$LINKER_VERSION"
+CCTOOLS="cctools-862-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=`ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1`
 CCTOOLS_REVHASH=`echo "$CCTOOLS_TARBALL" head -n1 | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
 
@@ -172,27 +174,14 @@ extract $CCTOOLS_TARBALL 1
 
 pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
-if [ $LINKER_VERSION != "134.9" ]; then
-  # fix compiling ld64 with libc++
-  patch -p0 < $PATCH_DIR/cctools-e3cbeaf.patch
-  # check for __cxa_demangle in -lstdc++
-  patch -p0 < $PATCH_DIR/cctools-499e470.patch
-else
-  # __cxa_demangle + 3.5 build fix
-  patch -p0 < $PATCH_DIR/cctools-a78597e.patch
-fi
-if [ "$PLATFORM" == "Linux" ]; then
-  patch -p0 < $PATCH_DIR/cctools-old-linux.patch
-fi
-# fix LD_LIBRARY_PATH
-patch -p0 < $PATCH_DIR/cctools-f7a5930.patch
-patch -p0 < $PATCH_DIR/cctools-cdefs.patch
+./tools/fix_unistd_issue.sh 1>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 echo ""
-./autogen.sh
-./configure --prefix=$TARGET_DIR --target=x86_64-apple-$TARGET
+CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
+[ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
+./configure $CONFFLAGS
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
 popd &>/dev/null
@@ -210,10 +199,6 @@ for CCTOOL in ${CCTOOLS[@]}; do
 done
 popd &>/dev/null
 
-fi
-else
-# Darwin
-LINKER_VERSION="`get_ld_version`"
 fi
 # CCTOOLS END
 
@@ -242,7 +227,6 @@ fi
 fi
 # XAR END
 
-if [ "$PLATFORM" != "Darwin" ]; then
 if [ ! -f "have_cctools_$TARGET" ]; then
 
 function check_cctools()
@@ -263,7 +247,6 @@ touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET"
 echo ""
 
 fi # HAVE_CCTOOLS
-fi
 
 set +e
 ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
@@ -316,8 +299,10 @@ export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
 
 if [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so
-  export OSXCROSS_LIBLTO_PATH=`cat $BUILD_DIR/cctools*/cctools/tmp/ldpath 2>/dev/null`
-  export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OSXCROSS_LIBLTO_PATH"
+  set +e
+  eval `cat $BUILD_DIR/cctools*/cctools/config.log | grep LLVM_LIB_DIR | head -n1`
+  set -e
+  export OSXCROSS_LIBLTO_PATH=$LLVM_LIB_DIR
 fi
 
 $BASE_DIR/wrapper/build.sh 1>/dev/null

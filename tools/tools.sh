@@ -89,11 +89,6 @@ function extract()
   fi
 }
 
-function get_ld_version()
-{
-  echo "`ld -v 2>&1 | tr "-" " " | awk '{print $3}' | head -n1`"
-}
-
 function verbose_cmd()
 {
   echo "$@"
