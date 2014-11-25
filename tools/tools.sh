@@ -16,17 +16,19 @@ fi
 test -n "$OCDEBUG" && set -x
 
 PLATFORM="`uname -s`"
-PSCRIPT="`basename $0`"
+SCRIPT="`basename $0`"
 
-if [[ $PSCRIPT != *wrapper/build.sh ]]; then 
+if [[ $SCRIPT != *wrapper/build.sh ]]; then
   # how many concurrent jobs should be used for compiling?
   JOBS=${JOBS:=`tools/get_cpu_count.sh`}
 
-  if [ $PSCRIPT != "build.sh" -a "$PSCRIPT" != "build_clang.sh" ]; then
+  if [ $SCRIPT != "build.sh" -a $SCRIPT != "build_clang.sh" -a \
+       $SCRIPT != "mount_xcode_image.sh" ]; then
     `tools/osxcross_conf.sh`
 
     if [ $? -ne 0 ]; then
-      echo "you need to complete ./build.sh first, before you can start building $DESC"
+      echo -n "you need to complete ./build.sh first, before you can start "
+      echo "building $DESC"
       exit 1
     fi
   fi
