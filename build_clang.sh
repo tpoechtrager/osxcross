@@ -12,6 +12,7 @@ BUILD_DIR=$BASE_DIR/build
 
 if [ -z "$SKIP_GCC_CHECK" ]; then
 if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
+  set +e
   which "g++${GCC_SUFFIX}" &>/dev/null && \
   {
     export CC="gcc${GCC_SUFFIX}"
@@ -39,6 +40,7 @@ if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
     echo "(i.e. GCC_SUFFIX=-4.7 $0)" 1>&2
     exit 1
   }
+  set -e
 fi
 fi
 
@@ -66,6 +68,7 @@ require wget
 
 function warn_if_installed()
 {
+  set +e
   which $1 &>/dev/null && \
   {
     echo ""
@@ -73,6 +76,7 @@ function warn_if_installed()
     echo "-> $(which $1 2>/dev/null)"
     echo ""
   }
+  set -e
 }
 
 if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
