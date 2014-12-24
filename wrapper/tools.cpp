@@ -202,7 +202,7 @@ std::string &fixPathDiv(std::string &path) {
 // Environment
 //
 
-void concatEnvVariable(const char *var, const std::string val) {
+void concatEnvVariable(const char *var, const std::string &val) {
   std::string nval = val;
   if (char *oldval = getenv(var)) {
     nval += ":";
@@ -451,6 +451,13 @@ int setenv(const char *name, const char *value, int overwrite) {
 }
 
 int unsetenv(const char *name) { return setenv(name, "", 1); }
+
+int execvp(const char *file, char *const argv[]) {
+  (void)file;
+  (void)argv;
+
+  return 1;
+}
 #endif
 
 } // namespace tools

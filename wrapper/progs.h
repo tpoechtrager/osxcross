@@ -81,7 +81,7 @@ int version();
 int env(int argc, char **argv);
 int conf(Target &target);
 int cmp(int argc, char **argv);
-int pkg_config(int argc, char **argv);
+int pkg_config(int argc, char **argv, Target &target);
 } // namespace osxcross
 
 static int dummy() { return 0; }

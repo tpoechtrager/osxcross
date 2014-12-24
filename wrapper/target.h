@@ -84,6 +84,13 @@ struct Target {
   OSVersion getSDKOSNum() const;
   bool getSDKPath(std::string &path) const;
 
+  bool getMacPortsDir(std::string &path) const;
+  bool getMacPortsSysRootDir(std::string &path) const;
+  bool getMacPortsPkgConfigDir(std::string &path) const;
+  bool getMacPortsIncludeDir(std::string &path) const;
+  bool getMacPortsLibDir(std::string &path) const;
+  bool getMacPortsFrameworksDir(std::string &path) const;
+
   void addArch(const Arch arch);
   bool haveArch(const Arch arch);
 

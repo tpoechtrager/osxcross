@@ -26,6 +26,7 @@
 #endif
 
 extern char **environ;
+using namespace tools;
 
 namespace program {
 namespace osxcross {
@@ -33,30 +34,67 @@ namespace osxcross {
 struct envvar {
   std::string name;
   std::string value;
+  envvar() {}
   envvar(std::string name, std::string value) : name(name), value(value) {}
 };
 
-int pkg_config(int argc, char **argv) {
+static envvar &var(const char *p, envvar &evar, const bool skipval = false) {
+  const char *value = strchr(p, '=') + 1; // find value offset
+  evar.name.assign(p, value - p - 1);
+  if (!skipval)
+    evar.value = value;
+  return evar;
+}
+
+int pkg_config(int argc, char **argv, Target &target) {
   (void)argc;
 
   std::vector<envvar> envvars;
+  std::vector<envvar> unset;
+  envvar evar;
 
-  // Map OSXCROSS_PKG_* to PKG_*
-  for (char **env = environ; *env; ++env) {
-     char *p = *env;
+  if (!getenv("OSXCROSS_PKG_CONFIG_NO_MP_INC")) {
+    std::string MacPortsSysRoot;
 
-     if (!strncmp(p, "OSXCROSS_PKG", 12)) {
-       p += 9; // skip OSXCROSS_
-       const char *val = strchr(p, '=') + 1; // find value offset
-       envvars.push_back(envvar(std::string(p, val - p - 1), val));
-     }
+    if (target.getMacPortsSysRootDir(MacPortsSysRoot)) {
+      concatEnvVariable("OSXCROSS_PKG_CONFIG_SYSROOT_DIR", MacPortsSysRoot);
+      std::string MacPortsPkgConfigPath;
+
+      if (target.getMacPortsPkgConfigDir(MacPortsPkgConfigPath))
+        concatEnvVariable("OSXCROSS_PKG_CONFIG_PATH", MacPortsPkgConfigPath);
+    }
+  } else {
+    unsetenv("OSXCROSS_PKG_CONFIG_NO_MP_INC");
   }
 
-  for (const envvar &evar : envvars)
-    setenv(evar.name.c_str(), evar.value.c_str(), 1);
+  // Map OSXCROSS_PKG_* to PKG_*.
+  for (char **env = environ; *env; ++env) {
+    char *p = *env;
 
-  if (!envvars.empty() && execvp("pkg-config", argv))
-    std::cerr << "cannot find or execute pkg-config" << std::endl;
+    if (!strncmp(p, "OSXCROSS_PKG_CONFIG", 19)) {
+      p += 9; // skip OSXCROSS_
+      envvars.push_back(var(p, evar));
+    } else if (!strncmp(p, "PKG_CONFIG", 10)) {
+      // Unset native pkg-config vars.
+      unset.push_back(var(p, evar, true));
+    }
+  }
+
+  if (!envvars.empty()) {
+    for (const envvar &evar : unset)
+      unsetenv(evar.name.c_str());
+
+    for (const envvar &evar : envvars)
+      setenv(evar.name.c_str(), evar.value.c_str(), 1);
+
+    // Prevent pkg-config from looking for *.pc files
+    // in pre-defined search paths, such as /usr.
+    if (!getenv("PKG_CONFIG_LIBDIR"))
+      setenv("PKG_CONFIG_LIBDIR", "", 1);
+
+    if (execvp("pkg-config", argv))
+      std::cerr << "cannot find or execute pkg-config" << std::endl;
+  }
 
   return 1;
 }

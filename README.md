@@ -18,6 +18,11 @@ If you want, then you can build an up-to-date vanilla GCC as well.
 
 Basically everything you can build on OS X with clang/gcc should build with this cross toolchain as well.
 
+### PACKET MANAGERS ###
+
+OSXCross comes with a minimalistic MacPorts Packet Manager.  
+Please see [README.MACPORTS](https://github.com/tpoechtrager/osxcross/blob/master/README.MACPORTS.md) for more.
+
 ### INSTALLATION: ###
 
 Move your packaged SDK to the tarballs/ directory.

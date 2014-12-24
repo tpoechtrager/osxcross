@@ -6,6 +6,7 @@ changed:
 
 added:
  * OSXCROSS_GCC_NO_STATIC_RUNTIME option (env)
+ * osxcross-macports: a minimalistic macports packet manager
 
 /******************************* v0.8 *******************************/
 

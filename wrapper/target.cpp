@@ -59,6 +59,52 @@ bool Target::getSDKPath(std::string &path) const {
   return dirExists(path);
 }
 
+bool Target::getMacPortsDir(std::string &path) const {
+  path = execpath;
+  path += "/../macports";
+  return dirExists(path);
+}
+
+bool Target::getMacPortsSysRootDir(std::string &path) const {
+  if (!getMacPortsDir(path))
+    return false;
+
+  path += "/pkgs";
+  return dirExists(path);
+}
+
+bool Target::getMacPortsPkgConfigDir(std::string &path) const {
+  if (!getMacPortsDir(path))
+    return false;
+
+  path += "/pkgs/opt/local/lib/pkgconfig";
+  return dirExists(path);
+}
+
+bool Target::getMacPortsIncludeDir(std::string &path) const {
+  if (!getMacPortsDir(path))
+    return false;
+
+  path += "/pkgs/opt/local/include";
+  return dirExists(path);
+}
+
+bool Target::getMacPortsLibDir(std::string &path) const {
+  if (!getMacPortsDir(path))
+    return false;
+
+  path += "/pkgs/opt/local/lib";
+  return dirExists(path);
+}
+
+bool Target::getMacPortsFrameworksDir(std::string &path) const {
+  if (!getMacPortsDir(path))
+    return false;
+
+  path += "/pkgs/opt/local/Library/Frameworks";
+  return dirExists(path);
+}
+
 void Target::addArch(const Arch arch) {
   auto &v = targetarch;
   for (size_t i = 0; i < v.size(); ++i) {
@@ -621,6 +667,33 @@ bool Target::setup() {
 
   for (auto &path : AdditionalCXXHeaderPaths)
     addCXXHeaderPath(path);
+
+  if (getenv("OSXCROSS_MP_INC")) {
+    std::string MacPortsIncludeDir;
+    std::string MacPortsLibraryDir;
+    std::string MacPortsFrameworksDir;
+
+    // Add them to args (instead of fargs),
+    // so the user's -I / -L / -F is prefered.
+
+    if (getMacPortsIncludeDir(MacPortsIncludeDir)) {
+      args.push_back("-isystem");
+      args.push_back(MacPortsIncludeDir);
+
+      if (getMacPortsLibDir(MacPortsLibraryDir)) {
+        if (isClang())
+          args.push_back("-Qunused-arguments");
+
+        args.push_back("-L");
+        args.push_back(MacPortsLibraryDir);
+      }
+
+      if (getMacPortsFrameworksDir(MacPortsFrameworksDir)) {
+        args.push_back("-iframework");
+        args.push_back(MacPortsFrameworksDir);
+      }
+    }
+  }
 
   if (langGiven() && !usegcclibs) {
     // usegcclibs: delay it to later

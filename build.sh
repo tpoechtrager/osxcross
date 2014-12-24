@@ -202,6 +202,13 @@ popd &>/dev/null
 fi
 # CCTOOLS END
 
+# MacPorts symlinks
+pushd $TARGET_DIR/bin &>/dev/null # The BSD ln command doesn't support '-r'
+ln -sf ../../tools/osxcross-macports osxcross-macports
+ln -sf ../../tools/osxcross-macports osxcross-mp
+ln -sf ../../tools/osxcross-macports omp
+popd &>/dev/null
+
 SDK=`ls $TARBALL_DIR/MacOSX$SDK_VERSION*`
 
 # XAR
