@@ -4,13 +4,13 @@
 
 Packages are installed to `target/macports/pkgs`.
 
-## Dependencies: ##
+### DEPENDENCIES: ###
 
 `bash`, `wget` and `openssl`
 
 Also ensure that you are using the 10.6 SDK (or later).
 
-## Installation: ##
+### INSTALLATION: ###
 
 Run OSXCross's `./build.sh`, then you should have `osxcross-macports` in PATH.
 
@@ -19,22 +19,13 @@ Run OSXCross's `./build.sh`, then you should have `osxcross-macports` in PATH.
 MacPorts doesn't support 10.5 anymore, so we need to change OSXCross's  
 default target to 10.6 (better 10.7, or later).
 
-\--
-
-It may be worth to mention that you should stay below 10.10, there aren't  
-a lot packages for 10.10 yet.
-
-You can of course use (for example) 10.6 libraries on 10.10. 
-
-\--
-
 To achive this, add the following to your bashrc (or similar):
 
-    export MACOSX_DEPLOYMENT_TARGET=10.7
+`export MACOSX_DEPLOYMENT_TARGET=10.7`
 
 Then run `osxcross-macports <cmd>`.
 
-## Things you should know: ##
+### THINGS YOU SHOULD KNOW: ###
 
 **shortcuts:**
 
@@ -79,7 +70,7 @@ This will simply re-install the latest  version of all your installed packages.
 
 `osxcross-macports search $`
 
-## Commands: ##
+### COMMANDS: ###
 
 osxcross-macports [...]
 
@@ -124,9 +115,9 @@ However, you can remove packages by hand. A simpler (and cleaner) way would
 be to remove the whole macports directory (target/macports) and to reinstall  
 all other packages again.
 
-## Example: ##
+### USAGE EXAMPLES: ###
 
-LIB INSTALLATION EXAMPLE:
+library installation:
 
     $ osxcross-macports install libsdl2
     searching package libsdl2 ...
@@ -134,7 +125,7 @@ LIB INSTALLATION EXAMPLE:
     installing libsdl2 ...
     installed libsdl2
 
-LIBFLAGS (osxcross-macports):
+print library flags (osxcross-macports):
 
     $ osxcross-macports --cflags sdl2
     -D_THREAD_SAFE -I/data/development/osxcross/target/bin/../macports/pkgs/opt/local/include/SDL2 
@@ -142,7 +133,7 @@ LIBFLAGS (osxcross-macports):
     $ osxcross-macports --ldflags sdl2
     -L/data/development/osxcross/target/bin/../macports/pkgs/opt/local/lib -lSDL2
 
-LIBFLAGS (pkg-config):
+print library flags (pkg-config):
 
     $ x86_64-apple-darwinXX-pkg-config --cflags sdl2
     -D_THREAD_SAFE -I/data/development/osxcross/target/bin/../macports/pkgs/opt/local/include/SDL2 
@@ -150,9 +141,8 @@ LIBFLAGS (pkg-config):
     $ x86_64-apple-darwinXX-pkg-config --libs sdl2
     -L/data/development/osxcross/target/bin/../macports/pkgs/opt/local/lib -lSDL2
 
-AUTOMATIC INCLUDES:
+automatic includes:
 
     OSXCROSS_MP_INC=1 o64-clang file.c -lSDL2
 
     OSXCROSS_MP_INC=1 make [...]
-
