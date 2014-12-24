@@ -448,6 +448,7 @@ upgrade()
 
   UPGRADE=1
   rm -rf $INSTALL
+  createDir "" $INSTALL 1>/dev/null
 
   for pkg in $PKGS; do
     installPkg $pkg
