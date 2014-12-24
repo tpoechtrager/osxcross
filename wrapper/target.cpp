@@ -306,29 +306,44 @@ void Target::setupGCCLibs(Arch arch) {
   std::stringstream GCCLibSTDCXXPath;
   std::stringstream GCCLibPath;
 
+  const bool dynamic = !!getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
+
   getSDKPath(SDKPath);
 
-  GCCLibSTDCXXPath << SDKPath << "/../../" << otriple << "/lib";
-  GCCLibPath << SDKPath << "/../../lib/gcc/" << otriple << "/"
-             << gccversion.Str();
+  GCCLibPath << SDKPath << "/../../lib/gcc/"
+             << otriple << "/" << gccversion.Str();
 
-  auto addLib = [&](const std::stringstream &path, const char *lib) {
-    static std::stringstream tmp;
-    clear(tmp);
-    tmp << path.str() << "/lib" << lib << ".a";
-    fargs.push_back(tmp.str());
-  };
+  GCCLibSTDCXXPath << SDKPath << "/../../" << otriple << "/lib";
 
   switch (arch) {
   case Arch::i386:
   case Arch::i486:
   case Arch::i586:
   case Arch::i686:
-    GCCLibSTDCXXPath << "/" << getArchName(i386);
     GCCLibPath << "/" << getArchName(Arch::i386);
+    GCCLibSTDCXXPath << "/" << getArchName(i386);
   default:
     ;
   }
+
+  if (dynamic) {
+    fargs.push_back("-L");
+    fargs.push_back(GCCLibPath.str());
+    fargs.push_back("-L");
+    fargs.push_back(GCCLibSTDCXXPath.str());
+  }
+
+  auto addLib = [&](const std::stringstream &path, const char *lib) {
+    if (dynamic) {
+      fargs.push_back("-l");
+      fargs.push_back(lib);
+    } else {
+      static std::stringstream tmp;
+      clear(tmp);
+      tmp << path.str() << "/lib" << lib << ".a";
+      fargs.push_back(tmp.str());
+    }
+  };
 
   fargs.push_back("-Qunused-arguments");
 
@@ -565,13 +580,11 @@ bool Target::setup() {
       }
     }
 
-    /* TODO: libgcc */
-
-    if (isCXX() && (/*!isCXX11orNewer() ||*/ isLibCXX())) {
+    if (isCXX() && isLibCXX()) {
       fargs.push_back("-nostdinc++");
       fargs.push_back("-nodefaultlibs");
 
-      if (haveSourceFile() && !isGCH()) {
+      if (!isGCH()) {
         std::string tmp;
 
         tmp = "-L";
@@ -584,17 +597,13 @@ bool Target::setup() {
         if (isLibCXX()) {
           fargs.push_back("-lc++");
           fargs.push_back("-lc++abi");
-        } else if (isLibSTDCXX()) {
-          // Hack: Use SDKs libstdc++ as long
-          // >= -std=c++11 is not given.
-
-          fargs.push_back("-lstdc++");
         }
 
         fargs.push_back(OSNum <= OSVersion(10, 4) ? "-lgcc_s.10.4"
                                                   : "-lgcc_s.10.5");
       }
-    } else if (!isLibCXX() /*&& isCXX11orNewer()*/ && !isGCH()) {
+    } else if (!isLibCXX() && !isGCH() &&
+               !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
       fargs.push_back("-static-libgcc");
       fargs.push_back("-static-libstdc++");
     }

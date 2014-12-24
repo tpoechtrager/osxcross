@@ -47,14 +47,13 @@ int env(int argc, char **argv) {
 
     const char *pp = p;
 
-    for (; *p; ++p) {
+    do {
       auto badChar = [&](const char *p) {
         std::cerr << desc << " should not contain '" << *p << "'" << std::endl;
 
-        const char *start =
-          p - std::min(static_cast<size_t>(p - pp), static_cast<size_t>(30));
+        const char *start = p - std::min<size_t>(p - pp, 30);
 
-        size_t len = std::min(strlen(start), static_cast<size_t>(60));
+        size_t len = std::min<size_t>(strlen(start), 60);
         std::cerr << std::string(start, len) << std::endl;
 
         while (start++ != p)
@@ -71,7 +70,7 @@ int env(int argc, char **argv) {
         badChar(p);
         return true;
       }
-    }
+    } while (*p && *++p);
     return false;
   };
 

@@ -4,6 +4,9 @@ changed:
  * updated cctools to 862
  * updated ld64 to 241.9
 
+added:
+ * OSXCROSS_GCC_NO_STATIC_RUNTIME option (env)
+
 /******************************* v0.8 *******************************/
 
 changed:

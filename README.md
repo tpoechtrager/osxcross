@@ -50,6 +50,8 @@ That's it. See usage examples below.
 If you want to build GCC as well, then you can do this by running:  
 `[GCC_VERSION=4.9.1] [ENABLE_FORTRAN=1] ./build_gcc.sh`.  
 
+\[A gfortran usage example can be found [here](https://github.com/tpoechtrager/osxcross/issues/28#issuecomment-67047134)]
+
 But before you do this, make sure you have got the GCC build depedencies installed on your system.  
 
 On debian like systems you can run:
@@ -57,6 +59,11 @@ On debian like systems you can run:
 `[sudo] apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev`  
 
 to install them.
+
+ATTENTION:
+
+OSXCross links libgcc and libstdc++ statically by default (this affects `-oc-use-gcc-libs` too).  
+You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ### PACKAGING THE SDK: ###
 
