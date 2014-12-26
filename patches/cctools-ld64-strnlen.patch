@@ -1,0 +1,67 @@
+diff --git cctools/include/foreign/i386/_types.h cctools/include/foreign/i386/_types.h
+index 601b196..8bffd6f 100644
+--- cctools/include/foreign/i386/_types.h
++++ cctools/include/foreign/i386/_types.h
+@@ -33,6 +33,15 @@
+  * flotaing point and other arithmetic types, as needed, later.
+  */
+ 
++/*
++ * Silence old glibc -Wtypedef-redefinition warnings.
++ * https://github.com/tpoechtrager/cctools-port/pull/8
++ */
++#ifdef __clang__
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wtypedef-redefinition"
++#endif
++
+ #ifdef __GNUC__
+ typedef __signed char		__int8_t;
+ #else	/* !__GNUC__ */
+@@ -121,4 +130,8 @@ typedef __uint32_t		__darwin_socklen_t;	/* socklen_t (duh) */
+ typedef long			__darwin_ssize_t;	/* byte count or error */
+ typedef long			__darwin_time_t;	/* time() */
+ 
++#ifdef __clang__
++#pragma clang diagnostic pop
++#endif
++
+ #endif	/* _BSD_I386__TYPES_H_ */
+diff --git cctools/ld64/src/3rd/strlcat.c cctools/ld64/src/3rd/strlcat.c
+index ef1a10a..faf09e3 100644
+--- cctools/ld64/src/3rd/strlcat.c
++++ cctools/ld64/src/3rd/strlcat.c
+@@ -23,6 +23,14 @@
+ 
+ #ifndef __APPLE__
+ 
++/*
++ * Otherwise string.h may hide strnlen().
++ * https://github.com/tpoechtrager/cctools-port/pull/8
++ */
++#ifndef _GNU_SOURCE
++#define _GNU_SOURCE
++#endif
++
+ #include <string.h>
+ 
+ size_t
+diff --git cctools/otool/ofile_print.c cctools/otool/ofile_print.c
+index 3eb6506..4e9493a 100644
+--- cctools/otool/ofile_print.c
++++ cctools/otool/ofile_print.c
+@@ -201,6 +201,14 @@
+ #define __dr6 dr6
+ #define __dr7 dr7
+ 
++/*
++ * Otherwise string.h may hide strnlen().
++ * https://github.com/tpoechtrager/cctools-port/pull/8
++ */
++#ifndef _GNU_SOURCE
++#define _GNU_SOURCE
++#endif
++
+ #include <stdlib.h>
+ #include <stddef.h>
+ #include <string.h>
