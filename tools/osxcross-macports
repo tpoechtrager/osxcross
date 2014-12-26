@@ -274,8 +274,9 @@ installPkg()
   local pkgfile=$(echo "$pkgurl" | awk -F'/' '{print $NF}')
 
   if [ -z "$pkgurl" ]; then
-    local oldpkgname=$pkgname  
-    pkgname=$(echo "$pkgname" | cut -f1 -d'-')
+    local oldpkgname=$pkgname
+    local tmp=$(echo "$pkgname" | awk -F'-'  '{print $NF}')
+    [ -n "$tmp" ] && pkgname=${pkgname/-$tmp/}
 
     if [ "$pkgname" != "$oldpkgname" ]; then
       echo "trying $pkgname instead ..."
