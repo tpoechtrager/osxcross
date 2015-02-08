@@ -225,7 +225,7 @@ if [ $NEED_XAR -ne 0 ]; then
 extract $TARBALL_DIR/xar*.tar.gz 2
 
 pushd xar* &>/dev/null
-test "`uname -s`" = "NetBSD" && patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
+[ $PLATFORM == "NetBSD" ] && patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
 CFLAGS+=" -w" ./configure --prefix=$TARGET_DIR
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
@@ -287,7 +287,8 @@ set +e
 ln -s \
   $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
   usr/include 2>/dev/null
-test ! -f "usr/include/float.h" && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
+[ ! -f "usr/include/float.h" ] && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
+[ $PLATFORM == "FreeBSD" ] && cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
 set -e
 popd &>/dev/null
 

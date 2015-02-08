@@ -24,6 +24,13 @@ PUBKEYURL+="macports/trunk/base/macports-pubkey.pem"
 PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
 PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 
+PLATFORM=$(uname -s)
+
+if [ $PLATFORM == "FreeBSD" ]; then
+  WGETOPTS="--ca-certificate="
+  WGETOPTS+="/usr/local/share/certs/ca-root-nss.crt"
+fi
+
 if [ -n "$OSXCROSS_MACPORTS_ENABLE_HTTPS" ]; then
   MIRROR=$(echo $MIRROR | sed 's/http:/https:/g')
 fi
@@ -61,8 +68,6 @@ require()
   fi
   set -e
 }
-
-PLATFORM=$(uname -s)
 
 if [ -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
   errorMsg "You must set MACOSX_DEPLOYMENT_TARGET first."
@@ -147,7 +152,7 @@ getFileStdout()
   verbosePlaceHolder
   local xargs=""
   [ -z "$VERBOSE" ] && xargs+="--quiet"
-  wget "$1" -O- $xargs
+  wget $WGETOPTS "$1" -O- $xargs
   #verbosePlaceHolder
 }
 
@@ -161,7 +166,7 @@ getFile()
     xargs+="-P $CACHE "
   fi
   [ -z "$VERBOSE" ] && xargs+="--quiet"
-  wget -c "$1" $xargs
+  wget $WGETOPTS -c "$1" $xargs
   #verbosePlaceHolder
 }
 
