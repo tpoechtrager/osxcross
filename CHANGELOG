@@ -5,6 +5,7 @@ changed:
  * updated ld64 to 241.9
 
 added:
+ * binutils / gdb build script
  * OSXCROSS_GCC_NO_STATIC_RUNTIME option (env)
  * osxcross-macports: a minimalistic macports packet manager
 
