@@ -399,9 +399,7 @@ void Target::setupGCCLibs(Arch arch) {
   addLib(GCCLibPath, "gcc_eh");
 
   fargs.push_back("-lc");
-
-  if (OSNum <= OSVersion(10, 5))
-    fargs.push_back("-Wl,-no_compact_unwind");
+  fargs.push_back("-Wl,-no_compact_unwind");
 }
 
 bool Target::setup() {
@@ -631,20 +629,8 @@ bool Target::setup() {
       fargs.push_back("-nodefaultlibs");
 
       if (!isGCH()) {
-        std::string tmp;
-
-        tmp = "-L";
-        tmp += SDKPath;
-        tmp += "/usr/lib";
-
-        fargs.push_back(tmp);
         fargs.push_back("-lc");
-
-        if (isLibCXX()) {
-          fargs.push_back("-lc++");
-          fargs.push_back("-lc++abi");
-        }
-
+        fargs.push_back("-lc++");
         fargs.push_back(OSNum <= OSVersion(10, 4) ? "-lgcc_s.10.4"
                                                   : "-lgcc_s.10.5");
       }
@@ -654,8 +640,7 @@ bool Target::setup() {
       fargs.push_back("-static-libstdc++");
     }
 
-    if (OSNum <= OSVersion(10, 5))
-      fargs.push_back("-Wl,-no_compact_unwind");
+    fargs.push_back("-Wl,-no_compact_unwind");
   }
 
   auto addCXXHeaderPath = [&](const std::string &path) {
