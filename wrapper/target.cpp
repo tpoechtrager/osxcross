@@ -246,7 +246,7 @@ const std::string Target::getFullCompilerName() const {
   return compiler;
 }
 
-bool Target::findClangIntrinsicHeaders(std::string &path) const {
+bool Target::findClangIntrinsicHeaders(std::string &path) {
   std::string clangbin;
   static std::stringstream dir;
 
@@ -257,11 +257,13 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
   if (clangbin.empty())
     return false;
 
-  static ClangVersion clangversion;
+  static ClangVersion *clangversion;
   static std::string pathtmp;
 
+  clangversion = &this->clangversion;
+
   clear(dir);
-  clangversion = ClangVersion();
+  *clangversion = ClangVersion();
   pathtmp.clear();
 
   auto check = []()->bool {
@@ -283,8 +285,8 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
             file << "/xmmintrin.h";
 
             if (fileExists(file.str())) {
-              if (cv > clangversion) {
-                clangversion = cv;
+              if (cv > *clangversion) {
+                *clangversion = cv;
                 pathtmp.swap(intrindir);
               }
               return true;
@@ -308,7 +310,7 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
       return true;
     });
 
-    return clangversion != ClangVersion();
+    return *clangversion != ClangVersion();
   };
 
   dir << clangbin << "/../lib/clang";
@@ -341,7 +343,7 @@ bool Target::findClangIntrinsicHeaders(std::string &path) const {
   }
 
   path.swap(pathtmp);
-  return clangversion != ClangVersion();
+  return *clangversion != ClangVersion();
 }
 
 void Target::setupGCCLibs(Arch arch) {
@@ -612,6 +614,19 @@ bool Target::setup() {
         // Use libs from './build_gcc' installation
         setupGCCLibs(targetarch[0]);
       }
+
+#ifndef __APPLE__
+      // TODO: Need a way to distinguish between vanilla and Xcode clang
+      // versions.
+
+      if (clangversion >= ClangVersion(3, 7, 0) &&
+          !getenv("OSXCROSS_NO_DEF_SIZED_DELETE")) {
+        // Will run into linker errors otherwise with not so recent libc++
+        // and libstdc++ versions.
+        if (!usegcclibs || gccversion < GCCVersion(5, 0, 0))
+          fargs.push_back("-fdef-sized-delete");
+      }
+#endif
     }
   } else if (isGCC()) {
 

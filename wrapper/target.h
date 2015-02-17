@@ -134,7 +134,7 @@ struct Target {
   const std::string &getTriple() const { return triple; }
 
   const std::string getFullCompilerName() const;
-  bool findClangIntrinsicHeaders(std::string &path) const;
+  bool findClangIntrinsicHeaders(std::string &path);
 
   void setupGCCLibs(Arch arch);
   bool setup();
@@ -145,8 +145,9 @@ struct Target {
   std::string target;
   OSVersion OSNum;
   StdLib stdlib;
-  bool usegcclibs;
+  ClangVersion clangversion;
   GCCVersion gccversion;
+  bool usegcclibs;
   bool nocodegen;
   std::string compiler;
   std::string triple;

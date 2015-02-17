@@ -179,6 +179,7 @@ popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p1 < $PATCH_DIR/cctools-ld64-strnlen.patch
+patch -p0 < $PATCH_DIR/cctools-ld64-llvm-3.7.patch
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
