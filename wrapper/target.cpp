@@ -620,11 +620,11 @@ bool Target::setup() {
       // versions.
 
       if (clangversion >= ClangVersion(3, 7, 0) &&
-          !getenv("OSXCROSS_NO_DEF_SIZED_DELETE")) {
+          !getenv("OSXCROSS_NO_DEFINE_SIZED_DEALLOCATION")) {
         // Will run into linker errors otherwise with not so recent libc++
         // and libstdc++ versions.
         if (!usegcclibs || gccversion < GCCVersion(5, 0, 0))
-          fargs.push_back("-fdef-sized-delete");
+          fargs.push_back("-fdefine-sized-deallocation");
       }
 #endif
     }
