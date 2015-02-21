@@ -623,8 +623,10 @@ bool Target::setup() {
           !getenv("OSXCROSS_NO_DEFINE_SIZED_DEALLOCATION")) {
         // Will run into linker errors otherwise with not so recent libc++
         // and libstdc++ versions.
-        if (!usegcclibs || gccversion < GCCVersion(5, 0, 0))
+        if (!usegcclibs || gccversion < GCCVersion(5, 0, 0)) {
+          fargs.push_back("-Xclang");
           fargs.push_back("-fdefine-sized-deallocation");
+        }
       }
 #endif
     }
