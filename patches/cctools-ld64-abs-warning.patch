@@ -1,0 +1,38 @@
+--- as/arm.c
++++ as/arm.c
+@@ -17839,7 +17839,7 @@
+        {
+          bfd_vma insn;
+          bfd_vma encoded_addend;
+-         bfd_vma addend_abs = abs (value);
++         bfd_vma addend_abs = abs ((int)value);
+ 
+          /* Check that the absolute value of the addend can be
+             expressed as an 8-bit constant plus a rotation.  */
+@@ -17884,7 +17884,7 @@
+ #endif
+         {
+           bfd_vma insn;
+-          bfd_vma addend_abs = abs (value);
++          bfd_vma addend_abs = abs ((int)value);
+ 
+           /* Check that the absolute value of the addend can be
+              encoded in 12 bits.  */
+@@ -17927,7 +17927,7 @@
+ #endif
+         {
+           bfd_vma insn;
+-          bfd_vma addend_abs = abs (value);
++          bfd_vma addend_abs = abs ((int)value);
+ 
+           /* Check that the absolute value of the addend can be
+              encoded in 8 bits.  */
+@@ -17971,7 +17971,7 @@
+ #endif
+         {
+           bfd_vma insn;
+-          bfd_vma addend_abs = abs (value);
++          bfd_vma addend_abs = abs ((int)value);
+ 
+           /* Check that the absolute value of the addend is a multiple of
+              four and, when divided by four, fits in 8 bits.  */
