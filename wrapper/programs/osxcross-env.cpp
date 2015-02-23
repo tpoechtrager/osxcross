@@ -31,8 +31,6 @@ namespace osxcross {
 int env(int argc, char **argv) {
   char epath[PATH_MAX + 1];
   char *oldpath = getenv("PATH");
-  char *oldlibpath = getenv("LD_LIBRARY_PATH");
-  constexpr const char *ltopath = getLibLTOPath();
 
   assert(oldpath);
 
@@ -81,9 +79,8 @@ int env(int argc, char **argv) {
       std::cerr << std::endl << "you are invoking this program from a C shell, "
                 << std::endl << "please use " << std::endl << std::endl
                 << "setenv PATH `" << epath << "/osxcross-env -v=PATH`"
-                << std::endl << "setenv LD_LIBRARY_PATH `" << epath
-                << "/osxcross-env -v=LD_LIBRARY_PATH`" << std::endl
-                << std::endl << "instead." << std::endl << std::endl;
+                << std::endl << std::endl << "instead." << std::endl
+                << std::endl;
     }
   }
 
@@ -126,9 +123,7 @@ int env(int argc, char **argv) {
     return ((hasPathSeparator && (check(0) || check(1))) || check(-1));
   };
 
-  if (containsBadChars(oldpath, "PATH") ||
-      containsBadChars(oldlibpath, "LD_LIBRARY_PATH") ||
-      containsBadChars(ltopath, "LIB LTO PATH"))
+  if (containsBadChars(oldpath, "PATH"))
     return 1;
 
   std::stringstream path;
@@ -140,17 +135,7 @@ int env(int argc, char **argv) {
   if (!hasPath(oldpath, epath, nullptr))
     path << ":" << epath;
 
-  if (oldlibpath)
-    librarypath << oldlibpath;
-
-  if (!hasPath(oldlibpath, epath, "/../lib"))
-    librarypath << ":" << epath << "/../lib";
-
-  if (ltopath && !hasPath(oldlibpath, ltopath, nullptr))
-    librarypath << ":" << ltopath;
-
   vars["PATH"] = path.str();
-  vars["LD_LIBRARY_PATH"] = librarypath.str();
 
   auto printVariable = [&](const std::string & var)->bool {
     auto it = vars.find(var);

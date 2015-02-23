@@ -375,7 +375,6 @@ if [ $HAVE_CSH -eq 1 ]; then
 echo "or in case of csh:"
 echo ""
 echo -e "\x1B[32msetenv PATH \`$OSXCROSS_ENV -v=PATH\`\x1B[0m"
-echo -e "\x1B[32msetenv LD_LIBRARY_PATH \`$OSXCROSS_ENV -v=LD_LIBRARY_PATH\`\x1B[0m"
 echo ""
 fi
 echo "to your ~/.bashrc${CSHRC} or ~/.profile (including the '\`')"
