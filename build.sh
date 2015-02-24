@@ -182,6 +182,10 @@ patch -p1 < $PATCH_DIR/cctools-ld64-strnlen.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-llvm-3.7.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-abs-warning.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-rpath.patch
+pushd .. &>/dev/null
+patch -p0 < $PATCH_DIR/cctools-ld64-otool-disasm.patch
+chmod +x tools/fix_liblto.sh
+popd &>/dev/null
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"

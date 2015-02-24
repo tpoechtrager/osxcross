@@ -45,7 +45,7 @@ But be careful, that repository is known to cause [troubles](https://github.com/
 Then run `./build.sh` to build the cross toolchain.  
 (It will search 'tarballs' for your SDK and then build in its own directory.)
 
-**Do not forget** to add the `<path>/target/bin` to your PATH variable.
+**Do not forget** to add `<path>/target/bin` to your PATH variable.
 
 That's it. See usage examples below.
 
