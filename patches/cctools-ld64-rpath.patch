@@ -1,15 +1,14 @@
 --- configure
 +++ configure
-@@ -16789,7 +16789,7 @@
+@@ -16789,7 +16789,6 @@
     LTO_LIB="-L${LLVM_LIB_DIR} -lLTO"
                 if test "x$rpathlink" = "xyes"; then
                     LTO_RPATH="-Wl,-rpath,$LLVM_LIB_DIR,--enable-new-dtags"
 -                   LTO_LIB="$LTO_RPATH $LTO_LIB"
-+                   LTO_LIB="$LTO_LIB"
                 fi
                 LTO_DEF=-DLTO_SUPPORT
                 # DO NOT include the LLVM include dir directly,
-@@ -16813,6 +16813,8 @@
+@@ -16813,6 +16812,8 @@
  
  
  
@@ -20,12 +19,11 @@
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether byte ordering is bigendian" >&5
 --- m4/llvm.m4
 +++ m4/llvm.m4
-@@ -27,7 +27,7 @@
+@@ -27,7 +27,6 @@
               [ LTO_LIB="-L${LLVM_LIB_DIR} -lLTO"
                 if test "x$rpathlink" = "xyes"; then
                     LTO_RPATH="-Wl,-rpath,$LLVM_LIB_DIR,--enable-new-dtags"
 -                   LTO_LIB="$LTO_RPATH $LTO_LIB"
-+                   LTO_LIB="$LTO_LIB"
                 fi
                 LTO_DEF=-DLTO_SUPPORT
                 # DO NOT include the LLVM include dir directly,

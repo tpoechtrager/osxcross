@@ -352,35 +352,15 @@ if [ `osxcross-cmp ${SDK_VERSION/u/} ">=" 10.7` -eq 1 ]; then
   test_compiler_cxx11 o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
 fi
 
-set +e
-HAVE_CSH=0
-which csh &>/dev/null
-[ $? -eq 0 ] && HAVE_CSH=1
-
-if [ $HAVE_CSH -eq 0 ]; then
-  which tcsh &>/dev/null
-  [ $? -eq 0 ] && HAVE_CSH=1
-fi
-
-CSHRC=""
-[ $HAVE_CSH -eq 1 ] && CSHRC=", ~/.cshrc"
-set -e
-
 echo ""
-echo "Now add"
+echo "Do not forget to add"
 echo ""
-echo -e "\x1B[32m\`$OSXCROSS_ENV\`\x1B[0m"
+echo -e "\x1B[32m${TARGET_DIR}/bin\x1B[0m"
 echo ""
-if [ $HAVE_CSH -eq 1 ]; then
-echo "or in case of csh:"
-echo ""
-echo -e "\x1B[32msetenv PATH \`$OSXCROSS_ENV -v=PATH\`\x1B[0m"
-echo ""
-fi
-echo "to your ~/.bashrc${CSHRC} or ~/.profile (including the '\`')"
+echo "to your PATH variable."
 echo ""
 
-echo "Done! Now you can use o32-clang(++) and o64-clang(++) like a normal compiler"
+echo "All done! Now you can use o32-clang(++) and o64-clang(++) like a normal compiler."
 echo ""
 echo "Example usage:"
 echo ""
