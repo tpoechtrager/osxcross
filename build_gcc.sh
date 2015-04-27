@@ -13,7 +13,7 @@ source tools/tools.sh
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=4.9.2
+  GCC_VERSION=5.1.0
   #GCC_VERSION=5-20140928 # snapshot
 fi
 
