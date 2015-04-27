@@ -50,8 +50,8 @@ MIRROR="http://llvm.org"
 #MIRROR="http://archive.ubuntu.com"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=3.5
-  CLANG_VERSION_PATCH=.1
+  CLANG_VERSION=3.6
+  CLANG_VERSION_PATCH=.0
 fi
 
 if [[ $MIRROR == *ubuntu* ]] && [ $CLANG_VERSION_PATCH == .0 ]; then
