@@ -93,7 +93,7 @@ int pkg_config(int argc, char **argv, Target &target) {
       setenv("PKG_CONFIG_LIBDIR", "", 1);
 
     if (execvp("pkg-config", argv))
-      std::cerr << "cannot find or execute pkg-config" << std::endl;
+      err << "cannot find or execute pkg-config" << err.endl();
   }
 
   return 1;

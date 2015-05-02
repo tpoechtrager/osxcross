@@ -77,7 +77,7 @@ if [ -z "$OSX_VERSION_MIN" ]; then
 fi
 
 # Don't change this
-OSXCROSS_VERSION=0.9
+OSXCROSS_VERSION=0.10
 
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build

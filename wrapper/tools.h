@@ -34,6 +34,85 @@ static inline void clear(std::stringstream &sstr)
 }
 
 //
+// Terminal text colors
+//
+
+bool isTerminal();
+
+// http://stackoverflow.com/a/17469726
+
+enum ColorCode {
+  FG_DEFAULT = 39,
+  FG_BLACK = 30,
+  FG_RED = 31,
+  FG_GREEN = 32,
+  FG_YELLOW = 33,
+  FG_BLUE = 34,
+  FG_MAGENTA = 35,
+  FG_CYAN = 36,
+  FG_LIGHT_GRAY = 37,
+  FG_DARK_GRAY = 90,
+  FG_LIGHT_RED = 91,
+  FG_LIGHT_GREEN = 92,
+  FG_LIGHT_YELLOW = 93,
+  FG_LIGHT_BLUE = 94,
+  FG_LIGHT_MAGENTA = 95,
+  FG_LIGHT_CYAN = 96,
+  FG_WHITE = 97,
+  BG_RED = 41,
+  BG_GREEN = 42,
+  BG_BLUE = 44,
+  BG_DEFAULT = 49
+};
+
+class Color {
+  ColorCode cc;
+public:
+  Color(ColorCode cc) : cc(cc) {}
+  friend std::ostream &
+  operator<<(std::ostream &os, const Color &color) {
+    if (isTerminal())
+      return os << "\033[" << color.cc << "m";
+    return os;
+  }
+};
+
+//
+// Error message helper
+//
+
+static class Message {
+private:
+  const char *msg;
+  Color color;
+  std::ostream &os;
+  bool printprefix;
+public:
+  static constexpr char endl() { return '\n'; }
+  bool isendl(char c) { return c == '\n'; }
+  template<typename T>
+  bool isendl(T&&) { return false; }
+  template<typename T>
+  Message &operator<<(T &&v) {
+    if (printprefix) {
+      os << Color(FG_DARK_GRAY) << "osxcross: " << color << msg << ": "
+         << Color(FG_DEFAULT);
+      printprefix = false;
+    }
+    if (isendl(v)) {
+      printprefix = true;
+      os << std::endl;
+    } else {
+      os << v;
+    }
+    return *this;
+  }
+  Message(const char *msg, Color color = FG_RED, std::ostream &os = std::cerr)
+      : msg(msg), color(color), os(os), printprefix(true) {}
+} warn("warning"), err("error"), dbg("debug", FG_LIGHT_MAGENTA),
+  info("info", FG_LIGHT_MAGENTA), warninfo("   info", FG_LIGHT_MAGENTA);
+
+//
 // Executable path
 //
 
@@ -95,7 +174,7 @@ public:
 
   ~benchmark() {
     time_type diff = getTime() - s;
-    std::cerr << "took: " << diff / 1000000.0 << " ms" << std::endl;
+    dbg << "took: " << diff / 1000000.0 << " ms" << dbg.endl();
   }
 
 private:

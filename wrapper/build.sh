@@ -75,8 +75,8 @@ if [ -n "$BWPLATFORM" ]; then
     #CXX=o32-g++
     FLAGS+="-fvisibility-inlines-hidden "
   elif [ $PLATFORM = "FreeBSD" -a $(uname -s) != "FreeBSD" ]; then
-    CXX=amd64-pc-freebsd10.0-clang++
-    #CXX=amd64-pc-freebsd10.0-g++
+    CXX=amd64-pc-freebsd10.1-clang++
+    #CXX=amd64-pc-freebsd10.1-g++
   elif [ $PLATFORM = "NetBSD" -a $(uname -s) != "NetBSD" ]; then
     CXX=amd64-pc-netbsd6.1.3-clang++
     #CXX=amd64-pc-netbsd6.1.3-g++

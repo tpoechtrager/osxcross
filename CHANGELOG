@@ -1,3 +1,14 @@
+/****************************** v0.10 ********************************/
+
+changed:
+* improved and colorized wrapper error/warning/debug/info messages
+
+added:
+* include path warnings for /usr/include and /usr/local/include
+  (can be switched off via 'OSXCROSS_NO_INCLUDE_PATH_WARNINGS=1')
+* an option to silence osxcross extension warnings
+  (OSXCROSS_NO_EXTENSION_WARNINGS=1)
+
 /******************************* v0.9 *******************************/
 
 changed:

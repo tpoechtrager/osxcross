@@ -28,12 +28,13 @@ namespace program {
 namespace osxcross {
 
 int conf(Target &target) {
-  std::string sdkpath;
+  std::string SDKPath;
   OSVersion OSXVersionMin = getDefaultMinTarget();
   const char *ltopath = getLibLTOPath();
 
-  if (!target.getSDKPath(sdkpath)) {
-    std::cerr << "cannot find Mac OS X SDK!" << std::endl;
+  if (!target.getSDKPath(SDKPath)) {
+    err << "cannot find Mac OS X SDK (expected in: " << SDKPath << ")"
+        << err.endl();
     return 1;
   }
 
@@ -47,10 +48,11 @@ int conf(Target &target) {
             << std::endl;
   std::cout << "export OSXCROSS_OSX_VERSION_MIN=" << OSXVersionMin.shortStr()
             << std::endl;
-  std::cout << "export OSXCROSS_TARGET=" << getDefaultTarget() << std::endl;
+  std::cout << "export OSXCROSS_TARGET=" << getDefaultTarget()
+            << std::endl;
   std::cout << "export OSXCROSS_SDK_VERSION=" << target.getSDKOSNum().shortStr()
             << std::endl;
-  std::cout << "export OSXCROSS_SDK=" << sdkpath
+  std::cout << "export OSXCROSS_SDK=" << SDKPath
             << std::endl;
   std::cout << "export OSXCROSS_TARBALL_DIR=" << target.execpath
             << "/../../tarballs"

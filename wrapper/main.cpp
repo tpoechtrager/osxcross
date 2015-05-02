@@ -54,8 +54,68 @@ namespace {
 //  detect target and setup invocation command
 //
 
+void checkIncludePath(const char *opt, const char *path) {
+#ifndef __APPLE__
+  constexpr const char *DangerousIncludePaths[] = { "/usr/include",
+                                                    "/usr/local/include" };
+  if (!path)
+    return;
+
+  static bool noinccheck = !!getenv("OSXCROSS_NO_INCLUDE_PATH_WARNINGS");
+
+  if (noinccheck)
+    return;
+
+  char buf[PATH_MAX + 1];
+  const char *rpath = realpath(path, buf);
+
+  if (!rpath)
+    rpath = path;
+
+  for (const char *dpath : DangerousIncludePaths) {
+    if (!strncmp(rpath, dpath, strlen(dpath))) {
+      warn << "possible dangerous include path specified: '" << opt << " "
+           << path << "'";
+
+      if (strcmp(path, rpath))
+        warn << " (" << rpath << ")";
+
+      warn << warn.endl();
+
+      warninfo << "you can silence this warning via "
+               << "'OSXCROSS_NO_INCLUDE_PATH_WARNINGS=1' (env)"
+               << warninfo.endl();
+    }
+  }
+#else
+  (void)opt;
+  (void)path;
+#endif
+}
+
+void warnExtension(const char *extension) {
+  static bool noextwarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
+  if (noextwarnings)
+    return;
+  warn << extension << " is an osxcross extension" << warn.endl();
+  warninfo << "you can silence this warning via "
+           << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warninfo.endl();
+}
+
 #define PABREAK                                                                \
   else target.args.push_back(arg);                                             \
+  break
+
+#define PAPUSHARG                                                              \
+  target.args.push_back(arg);                                                  \
+  break
+
+#define PAPUSHARGANDVAL(splitted)                                              \
+  do {                                                                         \
+    target.args.push_back(arg);                                                \
+    if (splitted && i < argc)                                                  \
+      target.args.push_back(argv[i]);                                          \
+  } while (0);                                                                 \
   break
 
 bool detectTarget(int argc, char **argv, Target &target) {
@@ -69,14 +129,17 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   target.args.reserve(static_cast<size_t>(argc));
 
-  auto warnExtension = [](const char *extension) {
-    std::cerr << "warning: '" << extension << "' is an OSXCross extension"
-              << std::endl;
-  };
-
   auto parseArgs = [&]()->bool {
     typedef bool (*delayedfun)(Target &);
     std::vector<delayedfun> delayedfuncs;
+
+    auto runLater = [&](delayedfun fun) {
+      for (auto dfun : delayedfuncs) {
+        if (dfun == fun)
+          return;
+      }
+      delayedfuncs.push_back(fun);
+    };
 
     auto getVal = [&](char * arg, const char * flag, int & i)->const char * {
       const char *val = arg + strlen(flag);
@@ -85,12 +148,20 @@ bool detectTarget(int argc, char **argv, Target &target) {
         val = argv[++i];
 
         if (i >= argc) {
-          std::cerr << "missing argument for '" << flag << "'" << std::endl;
+          err << "missing argument for '" << flag << "'" << err.endl();
           return nullptr;
         }
       }
 
       return val;
+    };
+
+    auto installGCCArchExtensionWarning = [&]() {
+      runLater([](Target &t) {
+        if (t.targetarch.size() > 1 && t.isGCC())
+          warnExtension("using multiple '-arch' flags with gcc");
+        return true;
+      });
     };
 
     if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
@@ -115,18 +186,18 @@ bool detectTarget(int argc, char **argv, Target &target) {
             Arch arch = parseArch(val);
 
             if (arch == Arch::unknown) {
-              std::cerr << "warning: '-arch': unknown architecture '" << val
-                        << "'" << std::endl;
+              warn << "'-arch': unknown architecture '" << val << "'"
+                   << warn.endl();
             }
 
             const char *name = getArchName(arch);
 
-            if (strcmp(val, name)) {
-              std::cerr << "warning: '-arch': " << val << " != " << name
-                        << std::endl;
-            }
+            if (strcmp(val, name))
+              warn << "'-arch': '" << val << "' != '" << name << "'"
+                   << warn.endl();
 
             target.addArch(arch);
+            installGCCArchExtensionWarning();
           }
 
           PABREAK;
@@ -137,10 +208,10 @@ bool detectTarget(int argc, char **argv, Target &target) {
           if (!strcmp(arg, "-E")) {
             target.nocodegen = true;
 
-            delayedfuncs.push_back([](Target &t) {
+            runLater([](Target &t) {
               if (t.targetarch.size() > 1) {
-                std::cerr << "cannot use '-E' with multiple -arch options"
-                          << std::endl;
+                err << "cannot use '-E' with multiple -arch options"
+                    << err.endl();
                 return false;
               }
               return true;
@@ -160,10 +231,10 @@ bool detectTarget(int argc, char **argv, Target &target) {
             if (target.isClang())
               continue;
 
-            delayedfuncs.push_back([](Target &t) {
+            runLater([](Target &t) {
               if (t.targetarch.size() > 1) {
-                std::cerr << "gcc does not support '-flto' with multiple "
-                          << "-arch flags" << std::endl;
+                err << "gcc does not support '-flto' with multiple "
+                    << "'-arch' flags" << err.endl();
                 return false;
               }
               return true;
@@ -171,6 +242,30 @@ bool detectTarget(int argc, char **argv, Target &target) {
           }
 
           PABREAK;
+        }
+        case 'c':
+        case 'i':
+        case 'I': {
+          // c
+          // i
+          // I
+
+          constexpr const char *OptsToCheck[] = {
+            "-isystem", "-icxx-isystem", "-cxx-isystem", "-I"
+          };
+
+          bool splitted = false;
+
+          for (const char *opt : OptsToCheck) {
+            if (!strncmp(arg, opt, strlen(opt))) {
+              int iold = i;
+              checkIncludePath(opt, getVal(arg, opt, i));
+              splitted = i > iold;
+              break;
+            }
+          }
+
+          PAPUSHARGANDVAL(splitted);
         }
         case 'm': {
           // -m
@@ -180,17 +275,18 @@ bool detectTarget(int argc, char **argv, Target &target) {
             target.OSNum = parseOSVersion(val);
 
             if (target.OSNum != val) {
-              std::cerr << "warning: '-mmacosx-version-min=' ("
-                        << target.OSNum.Str() << " != " << val << ")"
-                        << std::endl;
+              warn << "'-mmacosx-version-min=' (" << target.OSNum.Str()
+                   << " != " << val << ")" << warn.endl();
             }
           } else if (!strcmp(arg, "-m16") || !strcmp(arg, "-mx32")) {
-            std::cerr << "'" << arg << "' not supported" << std::endl;
+            err << "'" << arg << "' is not supported" << err.endl();
             return false;
           } else if (!strcmp(arg, "-m32")) {
             target.addArch(Arch::i386);
+            installGCCArchExtensionWarning();
           } else if (!strcmp(arg, "-m64")) {
             target.addArch(Arch::x86_64);
+            installGCCArchExtensionWarning();
           }
 
           PABREAK;
@@ -200,8 +296,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
           if (!strcmp(arg, "-oc-use-gcc-libs")) {
             if (target.isGCC()) {
-              std::cerr << "warning: '" << arg << "' has no effect"
-                        << std::endl;
+              warn << arg << "' has no effect" << warn.endl();
               break;
             }
             target.stdlib = StdLib::libstdcxx;
@@ -219,8 +314,12 @@ bool detectTarget(int argc, char **argv, Target &target) {
             const char *val = arg + 8;
             size_t i = 0;
 
-            if (target.isGCC())
-              warnExtension("-stdlib=");
+            if (target.isGCC()) {
+              runLater([](Target &) {
+                warnExtension("'-stdlib='");
+                return true;
+              });
+            }
 
             for (auto stdlibname : StdLibNames) {
               if (!strcmp(val, stdlibname)) {
@@ -231,18 +330,17 @@ bool detectTarget(int argc, char **argv, Target &target) {
             }
 
             if (i == (sizeof(StdLibNames) / sizeof(StdLibNames[0]))) {
-              std::cerr << "value of '-stdlib=' must be ";
+              err << "value of '-stdlib=' must be ";
 
               for (size_t j = 0; j < i; ++j) {
-                std::cerr << "'" << StdLibNames[j] << "'";
-                if (j == i - 2) {
-                  std::cerr << " or ";
-                } else if (j < i - 2) {
-                  std::cerr << ", ";
-                }
+                err << "'" << StdLibNames[j] << "'";
+                if (j == i - 2)
+                  err << " or ";
+                else if (j < i - 2)
+                  err << ", ";
               }
 
-              std::cerr << std::endl;
+              err << err.endl();
               return false;
             }
 
@@ -254,9 +352,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
           PABREAK;
         }
         case 'x': {
-          if (!strncmp(arg, "-x", 2)) {
+          if (!strncmp(arg, "-x", 2))
             target.lang = getVal(arg, "-x", i);
-          }
 
           PABREAK;
         }
@@ -311,8 +408,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
     if (target.compiler.rfind("-libc++") == (target.compiler.size() - 7)) {
       if (target.stdlib != StdLib::unset && target.stdlib != StdLib::libcxx) {
-        std::cerr << "warning: '-stdlib=" << getStdLibString(target.stdlib)
-                  << "' will be ignored" << std::endl;
+        warn << "'-stdlib=" << getStdLibString(target.stdlib)
+             << "' will be ignored" << warn.endl();
       }
 
       target.compiler.resize(target.compiler.size() - 7);
@@ -359,8 +456,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
         (*prog)(argc, argv, target);
 
       if (target.target != getDefaultTarget()) {
-        std::cerr << "warning: target mismatch (" << target.target
-                  << " != " << getDefaultTarget() << ")" << std::endl;
+        warn << "target mismatch (" << target.target
+             << " != " << getDefaultTarget() << ")" << warn.endl();
       }
 
       if (!parseArgs())
@@ -396,8 +493,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
 //  and clang + -oc-use-gcc-libs
 //
 
-void generateMultiArchObjectFile(int &rc, int argc, char **argv,
-                                 Target &target, int debug) {
+void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
+                                 int debug) {
 #ifndef _WIN32
   std::string stdintmpfile;
   string_vector objs;
@@ -469,10 +566,8 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv,
 
       target.outputname = outputname.c_str() + pos;
     } else {
-      if (f) {
-        std::cerr << "source filename detection failed" << std::endl;
-        std::cerr << "using a.out" << std::endl;
-      }
+      if (f)
+        warn << "source filename detection failed (using a.out)" << warn.endl();
       target.outputname = "a.out";
     }
   }
@@ -499,7 +594,7 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv,
       int status = 1;
 
       if (wait(&status) == -1) {
-        std::cerr << "wait() failed" << std::endl;
+        err << "wait() failed" << err.endl();
         cleanup();
         rc = 1;
         break;
@@ -558,15 +653,14 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv,
       }
 
       if (debug) {
-        std::cerr << "[d] "
-                  << "[" << num << "/" << target.targetarch.size()
-                  << "] [compiling] " << archname << std::endl;
+        dbg << "[" << num << "/" << target.targetarch.size() << "] [compiling] "
+            << archname << dbg.endl();
       }
 
       compile = true;
       break;
     } else {
-      std::cerr << "fork() failed" << std::endl;
+      err << "fork() failed" << err.endl();
       rc = 1;
       break;
     }
@@ -585,7 +679,7 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv,
       lipo = "lipo";
 
       if (getPathOfCommand(lipo.c_str(), path).empty()) {
-        std::cerr << "cannot find lipo binary" << std::endl;
+        err << "cannot find lipo binary" << err.endl();
         rc = 1;
       }
     }
@@ -604,9 +698,8 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv,
       cmd += "-output ";
       cmd += target.outputname;
 
-      if (debug) {
-        std::cerr << "[d] [lipo] <-- " << cmd << std::endl;
-      }
+      if (debug)
+        dbg << "[lipo] <-- " << cmd << dbg.endl();
 
       rc = system(cmd.c_str());
       rc = WEXITSTATUS(rc);
@@ -621,7 +714,7 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv,
   (void)argv;
   (void)target;
   (void)debug;
-  std::cerr << __func__ << " not supported" << std::endl;
+  err << __func__ << " not supported" << err.endl();
   rc = 1;
 #endif
 }
@@ -641,31 +734,28 @@ int main(int argc, char **argv) {
   int rc = -1;
 
   if (!detectTarget(argc, argv, target)) {
-    std::cerr << "cannot detect target" << std::endl;
+    err << "while detecting target" << err.endl();
     return 1;
   }
 
-  if (char *p = getenv("OCDEBUG")) {
+  if (char *p = getenv("OCDEBUG"))
     debug = ((*p >= '1' && *p <= '9') ? *p - '0' + 0 : 0);
-  }
 
   if (debug) {
     b->halt();
 
     if (debug >= 2) {
-      std::cerr << "[d] detected target triple: " << target.getTriple()
-                << std::endl;
-      std::cerr << "[d] detected compiler: " << target.compiler << std::endl;
+      dbg << "detected target triple: " << target.getTriple() << dbg.endl();
+      dbg << "detected compiler: " << target.compiler << dbg.endl();
 
-      std::cerr << "[d] detected stdlib: " << getStdLibString(target.stdlib)
-                << std::endl;
+      dbg << "detected stdlib: " << getStdLibString(target.stdlib)
+          << dbg.endl();
 
       if (debug >= 3) {
-        std::cerr << "[d] detected source file: "
-                  << (target.sourcefile ? target.sourcefile : "-") << std::endl;
+        dbg << "detected source file: "
+            << (target.sourcefile ? target.sourcefile : "-") << dbg.endl();
 
-        std::cerr << "[d] detected language: " << target.getLangName()
-                  << std::endl;
+        dbg << "detected language: " << target.getLangName() << dbg.endl();
       }
 
       b->resume();
@@ -696,8 +786,8 @@ int main(int argc, char **argv) {
       out += " ";
     }
 
-    std::cerr << "[d] --> " << in << std::endl;
-    std::cerr << "[d] <-- " << out << std::endl;
+    dbg << "--> " << in << dbg.endl();
+    dbg << "<-- " << out << dbg.endl();
   };
 
   if (rc == -1) {
@@ -719,12 +809,12 @@ int main(int argc, char **argv) {
     if (rc == -1)
       printCommand();
 
-    std::cerr << "[d] === time spent in wrapper: " << diff / 1000000.0 << " ms"
-              << std::endl;
+    dbg << "=== time spent in wrapper: " << diff / 1000000.0 << " ms"
+        << dbg.endl();
   }
 
   if (rc == -1 && execvp(cargs[0], cargs)) {
-    std::cerr << "invoking compiler failed" << std::endl;
+    err << "invoking compiler failed" << err.endl();
 
     if (!debug)
       printCommand();

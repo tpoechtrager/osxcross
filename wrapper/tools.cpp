@@ -31,11 +31,11 @@
 #include <cstring>
 #include <climits>
 #include <cassert>
-#include <unistd.h>
 #include <sys/time.h>
 #include <sys/stat.h>
 
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dirent.h>
@@ -62,6 +62,30 @@
 #include "tools.h"
 
 namespace tools {
+
+//
+// Terminal text colors
+//
+
+bool isTerminal() {
+#ifndef _WIN32
+  static bool first = false;
+  static bool val;
+
+  if (!first) {
+    val = !!isatty(fileno(stderr));
+    first = true;
+  }
+
+  return val;
+#else
+  return false;
+#endif
+}
+
+//
+// Executable path
+//
 
 char *getExecutablePath(char *buf, size_t len) {
   char *p;

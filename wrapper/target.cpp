@@ -358,8 +358,8 @@ void Target::setupGCCLibs(Arch arch) {
 
   getSDKPath(SDKPath);
 
-  GCCLibPath << SDKPath << "/../../lib/gcc/"
-             << otriple << "/" << gccversion.Str();
+  GCCLibPath << SDKPath << "/../../lib/gcc/" << otriple << "/"
+             << gccversion.Str();
 
   GCCLibSTDCXXPath << SDKPath << "/../../" << otriple << "/lib";
 
@@ -408,13 +408,12 @@ bool Target::setup() {
   std::string SDKPath;
   OSVersion SDKOSNum = getSDKOSNum();
 
-  if (!isKnownCompiler()) {
-    std::cerr << "warning: unknown compiler '" << compiler << "'" << std::endl;
-  }
+  if (!isKnownCompiler())
+    warn << "unknown compiler '" << compiler << "'" << warn.endl();
 
   if (!getSDKPath(SDKPath)) {
-    std::cerr << "cannot find Mac OS X SDK (expected in: " << SDKPath << ")"
-              << std::endl;
+    err << "cannot find Mac OS X SDK (expected in: " << SDKPath << ")"
+        << err.endl();
     return false;
   }
 
@@ -444,8 +443,8 @@ bool Target::setup() {
     if (haveArch(Arch::x86_64h)) {
       OSNum = OSVersion(10, 8); // Default to 10.8 for x86_64h
       if (SDKOSNum < OSNum) {
-        std::cerr << getArchName(arch) << " requires the SDK from "
-                  << OSNum.Str() << " (or later)" << std::endl;
+        err << "'" << getArchName(arch) << "' requires the SDK from "
+            << OSNum.Str() << " (or later)" << err.endl();
         return false;
       }
     } else if (stdlib == StdLib::libcxx) {
@@ -456,17 +455,17 @@ bool Target::setup() {
   }
 
   if (OSNum > SDKOSNum) {
-    std::cerr << "targeted OS X Version must be <= " << SDKOSNum.Str()
-              << " (SDK)" << std::endl;
+    err << "targeted OS X version must be <= " << SDKOSNum.Str() << " (SDK)"
+        << err.endl();
     return false;
   } else if (OSNum < OSVersion(10, 4)) {
-    std::cerr << "targeted OS X Version must be >= 10.4" << std::endl;
+    err << "targeted OS X version must be >= 10.4" << err.endl();
     return false;
   }
 
   if (haveArch(Arch::x86_64h) && OSNum < OSVersion(10, 8)) {
-    std::cerr << getArchName(Arch::x86_64h) << " requires "
-              << "'-mmacosx-version-min=10.8' (or later)" << std::endl;
+    err << "'" << getArchName(Arch::x86_64h) << "' requires "
+        << "'-mmacosx-version-min=10.8' (or later)" << err.endl();
     return false;
   }
 
@@ -478,13 +477,13 @@ bool Target::setup() {
     }
   } else if (stdlib == StdLib::libcxx) {
     if (!hasLibCXX()) {
-      std::cerr << "libc++ requires the SDK from 10.7 (or later)" << std::endl;
+      err << "libc++ requires the SDK from 10.7 (or later)" << err.endl();
       return false;
     }
 
     if (OSNum.Num() && OSNum < OSVersion(10, 7)) {
-      std::cerr << "libc++ requires '-mmacosx-version-min=10.7' (or later)"
-                << std::endl;
+      err << "libc++ requires '-mmacosx-version-min=10.7' (or later)"
+          << err.endl();
       return false;
     }
   }
@@ -504,8 +503,8 @@ bool Target::setup() {
   case StdLib::libcxx: {
     CXXHeaderPath += "/usr/include/c++/v1";
     if (!dirExists(CXXHeaderPath)) {
-      std::cerr << "cannot find " << getStdLibString(stdlib) << " headers"
-                << std::endl;
+      err << "cannot find " << getStdLibString(stdlib) << " headers"
+          << err.endl();
       return false;
     }
     break;
@@ -531,8 +530,8 @@ bool Target::setup() {
       });
 
       if (v.empty()) {
-        std::cerr << "'-oc-use-gcc-libs' requires gcc to be installed "
-                     "(./build_gcc.sh)" << std::endl;
+        err << "'-oc-use-gcc-libs' requires gcc to be installed "
+               "(./build_gcc.sh)" << err.endl();
         return false;
       }
 
@@ -559,8 +558,8 @@ bool Target::setup() {
     }
 
     if (!dirExists(CXXHeaderPath)) {
-      std::cerr << "cannot find " << getStdLibString(stdlib) << " headers"
-                << std::endl;
+      err << "cannot find " << getStdLibString(stdlib) << " headers"
+          << err.endl();
       return false;
     }
 
@@ -586,8 +585,8 @@ bool Target::setup() {
 
 #ifndef __APPLE__
     if (!findClangIntrinsicHeaders(tmp)) {
-      std::cerr << "cannot find clang intrinsic headers, please report this "
-                   "issue to the OSXCross project" << std::endl;
+      warn << "cannot find clang intrinsic headers, please report this "
+              "issue to the OSXCross project" << warn.endl();
     } else {
       fargs.push_back("-isystem");
       fargs.push_back(tmp);
@@ -620,10 +619,8 @@ bool Target::setup() {
     if (isLibCXX()) {
       if (!langStdGiven())
         langstd = "c++0x";
-      else if (!isCXX11orNewer()) {
-        std::cerr << "warning: libc++ requires -std=c++11 (or later) with gcc"
-                  << std::endl;
-      }
+      else if (!isCXX11orNewer())
+        warn << "libc++ requires -std=c++11 (or later) with gcc" << warn.endl();
     }
 
     if (isCXX() && isLibCXX()) {
@@ -720,7 +717,7 @@ bool Target::setup() {
         fargs.push_back(is32bit ? "-m32" : "-m64");
 
         if (arch == Arch::x86_64h) {
-          std::cerr << getArchName(arch) << " requires clang" << std::endl;
+          err << "'" << getArchName(arch) << "' requires clang" << err.endl();
           return false;
           // fargs.push_back("-march=core-avx2");
           // fargs.push_back("-Wl,-arch,x86_64h");
@@ -733,8 +730,8 @@ bool Target::setup() {
       }
       break;
     default:
-      std::cerr << "unsupported architecture " << getArchName(arch) << ""
-                << std::endl;
+      err << "unsupported architecture: '" << getArchName(arch) << "'"
+          << err.endl();
       return false;
     }
   }

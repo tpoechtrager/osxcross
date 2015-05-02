@@ -47,11 +47,13 @@ int env(int argc, char **argv) {
 
     do {
       auto badChar = [&](const char *p) {
-        std::cerr << desc << " should not contain '" << *p << "'" << std::endl;
+        err << desc << " should not contain '" << *p << "'" << warn.endl();
 
         const char *start = p - std::min<size_t>(p - pp, 30);
 
         size_t len = std::min<size_t>(strlen(start), 60);
+
+        std::cerr << std::endl;
         std::cerr << std::string(start, len) << std::endl;
 
         while (start++ != p)
