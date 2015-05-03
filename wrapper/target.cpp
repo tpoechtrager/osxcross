@@ -711,17 +711,16 @@ bool Target::setup() {
     case Arch::x86_64:
     case Arch::x86_64h:
       if (isGCC()) {
+        if (arch == Arch::x86_64h) {
+          err << "gcc does not support architecture '" << getArchName(arch)
+              << "'" << err.endl();
+          return false;
+        }
+
         if (targetarch.size() > 1)
           break;
 
         fargs.push_back(is32bit ? "-m32" : "-m64");
-
-        if (arch == Arch::x86_64h) {
-          err << "'" << getArchName(arch) << "' requires clang" << err.endl();
-          return false;
-          // fargs.push_back("-march=core-avx2");
-          // fargs.push_back("-Wl,-arch,x86_64h");
-        }
       } else if (isClang()) {
         if (usegcclibs && targetarch.size() > 1)
           break;

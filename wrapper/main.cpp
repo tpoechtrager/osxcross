@@ -49,6 +49,8 @@ using namespace target;
 
 namespace {
 
+int unittest = 0;
+
 //
 // detectTarget():
 //  detect target and setup invocation command
@@ -66,15 +68,19 @@ void checkIncludePath(const char *opt, const char *path) {
   if (noinccheck)
     return;
 
+#ifndef _WIN32
   char buf[PATH_MAX + 1];
   const char *rpath = realpath(path, buf);
 
   if (!rpath)
     rpath = path;
+#else
+  const char *rpath = path;
+#endif
 
   for (const char *dpath : DangerousIncludePaths) {
     if (!strncmp(rpath, dpath, strlen(dpath))) {
-      warn << "possible dangerous include path specified: '" << opt << " "
+      warn << "possibly dangerous include path specified: '" << opt << " "
            << path << "'";
 
       if (strcmp(path, rpath))
@@ -296,7 +302,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
           if (!strcmp(arg, "-oc-use-gcc-libs")) {
             if (target.isGCC()) {
-              warn << arg << "' has no effect" << warn.endl();
+              warn << "'" << arg << "' has no effect" << warn.endl();
               break;
             }
             target.stdlib = StdLib::libstdcxx;
@@ -701,8 +707,12 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
       if (debug)
         dbg << "[lipo] <-- " << cmd << dbg.endl();
 
-      rc = system(cmd.c_str());
-      rc = WEXITSTATUS(rc);
+      if (unittest == 2) {
+        rc = 0;
+      } else {
+        rc = system(cmd.c_str());
+        rc = WEXITSTATUS(rc);
+      }
     }
   }
 
@@ -733,13 +743,16 @@ int main(int argc, char **argv) {
   int debug = 0;
   int rc = -1;
 
+  if (char *p = getenv("OCDEBUG"))
+    debug = atoi(p);
+
+  if (char *p = getenv("OSXCROSS_UNIT_TEST"))
+    unittest = atoi(p);
+
   if (!detectTarget(argc, argv, target)) {
     err << "while detecting target" << err.endl();
     return 1;
   }
-
-  if (char *p = getenv("OCDEBUG"))
-    debug = ((*p >= '1' && *p <= '9') ? *p - '0' + 0 : 0);
 
   if (debug) {
     b->halt();
@@ -786,7 +799,9 @@ int main(int argc, char **argv) {
       out += " ";
     }
 
-    dbg << "--> " << in << dbg.endl();
+    if (!unittest)
+      dbg << "--> " << in << dbg.endl();
+
     dbg << "<-- " << out << dbg.endl();
   };
 
@@ -812,6 +827,9 @@ int main(int argc, char **argv) {
     dbg << "=== time spent in wrapper: " << diff / 1000000.0 << " ms"
         << dbg.endl();
   }
+
+  if (unittest == 2)
+    return 0;
 
   if (rc == -1 && execvp(cargs[0], cargs)) {
     err << "invoking compiler failed" << err.endl();

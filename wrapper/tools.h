@@ -280,7 +280,6 @@ typedef OSVersion ClangVersion;
 #ifdef _WIN32
 int setenv(const char *name, const char *value, int overwrite);
 int unsetenv(const char *name);
-int execvp(const char *file, char *const argv[]);
 constexpr char PATHDIV = '\\';
 #else
 constexpr char PATHDIV = '/';
