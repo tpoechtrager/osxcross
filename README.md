@@ -75,11 +75,11 @@ If you need a recent SDK, then you must do the SDK packaging on OS X.
 Recent Xcode images are compressed, but the Linux kernel does not  
 support HFS+ compression.
 
-##### Packaging the SDK on an OS X machine: #####
+##### Packaging the SDK on Mac OS X: #####
 
 1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%205.1.1) \*\*]
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
-3. Run: ./tools/gen\_sdk\_package.sh (from the OSXCross package)
+3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross
 
@@ -88,18 +88,32 @@ support HFS+ compression.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on a Linux machine (does *NOT* work with Xcode 4.3 or later!): #####
+##### Packing the SDK on Linux, Method 1 (does *NOT* work with Xcode 4.3 or later!): #####
 
 1. Download
    [Xcode 4.2](https://startpage.com/do/search?q=stackoverflow+xcode+4.2+download+snow+leopard)
    for Snow Leopard \*\*
 2. Ensure you are downloading the "Snow Leopard" version
 3. Install `dmg2img`
-4. Run (as root): ./tools/mount\_xcode\_image.sh /path/to/xcode.dmg
-5. Follow the instructions printed by ./tools/mount\_xcode\_image.sh
+4. Run (as root): `./tools/mount_xcode_image.sh /path/to/xcode.dmg`
+5. Follow the instructions printed by `./tools/mount_xcode_image.sh`
 6. Copy or move the SDK into the tarballs/ directory
 
 \*\* SHA1 Sum: 1a06882638996dfbff65ea6b4c6625842903ead3.
+
+##### Packing the SDK on Linux, Method 2 (*UNSUPPORTED* - but works with Xcode >= 4.3): #####
+
+1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+2. Download and build [HFSExplorer](http://www.catacombae.org/hfsexplorer/)
+   (you will need `openjdk` and `ant`)
+3. Open the HFSExplorer GUI (do *NOT* use the command line utility)
+4. Open the Xcode image
+5. Right click on the Xcode (not Xcode.app) folder and choose 'extract data'
+6. Answer the 'Follow Symlinks' dialog with 'No'
+7. Click on '>>' and choose 'Quiet mode'
+8. Click away all the annoying Java errors
+9. Run: `XCODEDIR=/path/to/extracted-xcode/Xcode ./tools/gen_sdk_package.sh`
+10. Copy or move the SDK into the tarballs/ directory
 
 ### USAGE EXAMPLES: ###
 
