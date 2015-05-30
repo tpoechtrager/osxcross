@@ -9,6 +9,10 @@ if [ $(uname -s) != "Darwin" ]; then
     echo "... Or with XCODEDIR=... on Linux"
     exit 1
   else
+    case $XCODEDIR in
+      /*) ;;
+      *) XCODEDIR="$PWD/$XCODEDIR" ;;
+    esac
     XCODEDIR+="/$(ls "$XCODEDIR" | grep "^Xcode.*" | head -n1)"
   fi
 else
@@ -27,7 +31,7 @@ else
 fi
 
 if [ ! -d $XCODEDIR ]; then
-  echo "cannot find Xcode (XCODEDIR=$XCODEDIR)"
+  echo "cannot find Xcode (XCODEDIR=$XCODEDIR)" 1>&2
   exit 1
 fi
 
@@ -62,10 +66,12 @@ if [ -d "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" ]; then
 else
   if [ -d "../Packages" ]; then
     pushd "../Packages" &>/dev/null
+  elif [ -d "Packages" ]; then
+    pushd "Packages" &>/dev/null
   else
     if [ $? -ne 0 ]; then
-      echo "Xcode (or this script) is out of date"
-      echo "trying some magic to find the SDKs anyway ..."
+      echo "Xcode (or this script) is out of date" 1>&2
+      echo "trying some magic to find the SDKs anyway ..." 1>&2
 
       SDKDIR=$(find . -name SDKs -type d | grep MacOSX | head -n1)
 
@@ -82,7 +88,7 @@ fi
 SDKS=$(ls | grep "^MacOSX10.*" | grep -v "Patch")
 
 if [ -z "$SDKS" ]; then
-    echo "No SDK found"
+    echo "No SDK found" 1>&2
     exit 1
 fi
 

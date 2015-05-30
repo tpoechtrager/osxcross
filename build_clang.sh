@@ -7,9 +7,6 @@ USESYSTEMCOMPILER=1
 
 source tools/tools.sh
 
-TARBALL_DIR=$BASE_DIR/tarballs
-BUILD_DIR=$BASE_DIR/build
-
 mkdir -p $BUILD_DIR
 
 if [ -z "$SKIP_GCC_CHECK" ]; then

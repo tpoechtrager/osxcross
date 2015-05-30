@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
+export LC_ALL="C"
+
 BASE_DIR=$PWD
 
-export LC_ALL="C"
+TARBALL_DIR=$BASE_DIR/tarballs
+BUILD_DIR=$BASE_DIR/build
+TARGET_DIR=$BASE_DIR/target
+PATCH_DIR=$BASE_DIR/patches
+SDK_DIR=$TARGET_DIR/SDK
 
 if [ -z "$USESYSTEMCOMPILER" ]; then
   export CC=clang
@@ -23,7 +29,9 @@ if [[ $SCRIPT != *wrapper/build.sh ]]; then
   JOBS=${JOBS:=`tools/get_cpu_count.sh`}
 
   if [ $SCRIPT != "build.sh" -a $SCRIPT != "build_clang.sh" -a \
-       $SCRIPT != "mount_xcode_image.sh" ]; then
+       $SCRIPT != "mount_xcode_image.sh" -a \
+       $SCRIPT != "gen_sdk_package_darling_dmg.sh" -a \
+       $SCRIPT != "gen_sdk_package_p7zip.sh" ]; then
     `tools/osxcross_conf.sh`
 
     if [ $? -ne 0 ]; then

@@ -76,14 +76,7 @@ if [ -z "$OSX_VERSION_MIN" ]; then
   fi
 fi
 
-# Don't change this
 OSXCROSS_VERSION=0.10
-
-TARBALL_DIR=$BASE_DIR/tarballs
-BUILD_DIR=$BASE_DIR/build
-TARGET_DIR=$BASE_DIR/target
-PATCH_DIR=$BASE_DIR/patches
-SDK_DIR=$TARGET_DIR/SDK
 
 if [ -z "$OSX_VERSION_MIN" ]; then
   OSX_VERSION_MIN="default"

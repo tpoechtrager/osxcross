@@ -71,10 +71,6 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ### PACKAGING THE SDK: ###
 
-If you need a recent SDK, then you must do the SDK packaging on OS X.  
-Recent Xcode images are compressed, but the Linux kernel does not  
-support HFS+ compression.
-
 ##### Packaging the SDK on Mac OS X: #####
 
 1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%205.1.1) \*\*]
@@ -101,19 +97,12 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 
 \*\* SHA1 Sum: 1a06882638996dfbff65ea6b4c6625842903ead3.
 
-##### Packing the SDK on Linux, Method 2 (*UNSUPPORTED* - but works with Xcode >= 4.3): #####
+##### Packing the SDK on Linux, Method 2 (works with Xcode >= 4.3): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
-2. Download and build [HFSExplorer](http://www.catacombae.org/hfsexplorer/)
-   (you will need `openjdk` and `ant`)
-3. Open the HFSExplorer GUI (do *NOT* use the command line utility)
-4. Open the Xcode image
-5. Right click on the Xcode (not Xcode.app) folder and choose 'extract data'
-6. Answer the 'Follow Symlinks' dialog with 'No'
-7. Click on '>>' and choose 'Quiet mode'
-8. Click away all the annoying Java errors
-9. Run: `XCODEDIR=/path/to/extracted-xcode/Xcode ./tools/gen_sdk_package.sh`
-10. Copy or move the SDK into the tarballs/ directory
+2. Install `cmake`, `libxml2-dev` and `fuse`
+3. run `./gen_sdk_package_darling_dmg.sh <xcode>.dmg`
+4. Copy or move the SDK into the tarballs/ directory
 
 ### USAGE EXAMPLES: ###
 
