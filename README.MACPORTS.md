@@ -12,11 +12,11 @@ Also ensure that you are using the 10.6 SDK (or later).
 
 ### INSTALLATION: ###
 
-Run OSXCross's `./build.sh`, then you should have `osxcross-macports` in PATH.
+Run OSXCross' `./build.sh`, then you should have `osxcross-macports` in PATH.
 
 **Setting up osxcross-macports:**
 
-MacPorts doesn't support 10.5 anymore, so we need to change OSXCross's  
+MacPorts doesn't support 10.5 anymore, so we need to change OSXCross'  
 default target to 10.6 (better 10.7, or later).
 
 To achive this, add the following to your bashrc (or similar):
@@ -35,7 +35,7 @@ Then run `osxcross-macports <cmd>`.
 
 **pkg-config:**
 
-OSXCross's `pkg-config` (`<arch>-apple-darwinXX-pkg-config`)  
+OSXCross' `pkg-config` (`<arch>-apple-darwinXX-pkg-config`)  
 is automatically aware of MacPorts packages.  
 
 If you want `pkg-config` to be unaware of MacPorts packages  

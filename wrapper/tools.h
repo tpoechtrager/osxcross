@@ -19,6 +19,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
+struct stat;
+
 namespace tools {
 
 //
@@ -142,8 +144,13 @@ bool listFiles(const char *dir, std::vector<std::string> *files,
 
 typedef bool (*realpathcmp)(const char *file, const struct stat &st);
 bool isExecutable(const char *f, const struct stat &);
-std::string &realPath(const char *file, std::string &result, realpathcmp cmp);
-std::string &getPathOfCommand(const char *command, std::string &result);
+bool ignoreCCACHE(const char *f, const struct stat &);
+bool realPath(const char *file, std::string &result,
+              realpathcmp cmp1 = nullptr, realpathcmp cmp2 = nullptr);
+bool getPathOfCommand(const char *command, std::string &result,
+                      realpathcmp cmp = nullptr);
+
+void stripFileName(std::string &path);
 
 const char *getFileName(const char *file);
 const char *getFileExtension(const char *file);

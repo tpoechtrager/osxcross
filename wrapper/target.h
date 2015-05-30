@@ -75,7 +75,7 @@ struct Target {
   Target()
       : vendor(getDefaultVendor()), target(getDefaultTarget()),
         stdlib(StdLib::unset), usegcclibs(), nocodegen(),
-        compiler(getDefaultCompiler()), lang(), langstd(), sourcefile(),
+        compilername(getDefaultCompiler()), lang(), langstd(), sourcefile(),
         outputname() {
     if (!getExecutablePath(execpath, sizeof(execpath)))
       abort();
@@ -115,11 +115,11 @@ struct Target {
   }
 
   bool isClang() const {
-    return !strncmp(getFileName(compiler.c_str()), "clang", 5);
+    return !strncmp(getFileName(compilername.c_str()), "clang", 5);
   }
 
   bool isGCC() const {
-    const char *c = getFileName(compiler.c_str());
+    const char *c = getFileName(compilername.c_str());
     return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
   }
 
@@ -133,7 +133,7 @@ struct Target {
 
   const std::string &getTriple() const { return triple; }
 
-  const std::string getFullCompilerName() const;
+  void setCompilerPath();
   bool findClangIntrinsicHeaders(std::string &path);
 
   void setupGCCLibs(Arch arch);
@@ -149,7 +149,9 @@ struct Target {
   GCCVersion gccversion;
   bool usegcclibs;
   bool nocodegen;
-  std::string compiler;
+  std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
+  std::string compilername;     // clang | gcc
+  std::string compilerexecname; // clang | *-apple-darwin-gcc
   std::string triple;
   std::string otriple;
   const char *lang;

@@ -144,7 +144,6 @@ const std::string &getParentProcessName() {
 
     if (Process32First(h, &pe)) {
       do {
-        std::cout << pe.szExeFile << " " << pe.th32ProcessID << std::endl;
         if (pe.th32ProcessID == ppid) {
           ppe = &pe;
           break;
@@ -336,54 +335,92 @@ bool isExecutable(const char *f, const struct stat &) {
   return !access(f, F_OK | X_OK);
 }
 
-std::string &realPath(const char *file, std::string &result, realpathcmp cmp) {
+bool ignoreCCACHE(const char *f, const struct stat &) {
+  const char *name = getFileName(f);
+  return name && strstr(name, "ccache") != name;
+}
+
+bool realPath(const char *file, std::string &result,
+              realpathcmp cmp1, realpathcmp cmp2) {
   char *PATH = getenv("PATH");
   const char *p = PATH ? PATH : "";
-  std::string sfile;
   struct stat st;
+
+  result.clear();
 
   do {
     if (*p == ':')
       ++p;
 
     while (*p && *p != ':')
-      sfile += *p++;
+      result += *p++;
 
-    sfile += "/";
-    sfile += file;
+    result += "/";
+    result += file;
 
-    if (!stat(sfile.c_str(), &st) && (!cmp || cmp(sfile.c_str(), st)))
-      break;
-
-    sfile.clear();
-  } while (*p);
-
+    if (!stat(result.c_str(), &st)) {
 #ifndef _WIN32
-  if (!sfile.empty()) {
-    char buf[PATH_MAX + 1];
-    ssize_t len;
+      char buf[PATH_MAX + 1];
 
-    if ((len = readlink(sfile.c_str(), buf, PATH_MAX)) != -1)
-      result.assign(buf, len);
-  }
+      if (realpath(result.c_str(), buf)) {
+        result.assign(buf);
+      } else {
+        ssize_t len;
+        char path[PATH_MAX];
+        size_t pathlen;
+        size_t n = 0;
+
+        pathlen = result.find_last_of(PATHDIV);
+
+        if (pathlen == std::string::npos)
+          pathlen = result.length();
+        else
+          ++pathlen; // PATHDIV
+
+        memcpy(path, result.c_str(), pathlen); // not null terminated
+
+        while ((len = readlink(result.c_str(), buf, PATH_MAX)) != -1) {
+          if (buf[0] != PATHDIV) {
+            result.assign(path, pathlen);
+            result.append(buf, len);
+          } else {
+            result.assign(buf, len);
+            pathlen = strrchr(buf, PATHDIV) - buf + 1; // + 1: PATHDIV
+            memcpy(path, buf, pathlen);
+          }
+          if (++n >= 1000) {
+            err << result << ": too many levels of symbolic links"
+                << err.endl();
+            result.clear();
+            break;
+          }
+        }
+      }
 #endif
 
-  result.swap(sfile);
-  return result;
+      if ((!cmp1 || cmp1(result.c_str(), st)) &&
+          (!cmp2 || cmp2(result.c_str(), st)))
+        break;
+    }
+
+    result.clear();
+  } while (*p);
+
+  return !result.empty();
 }
 
-std::string &getPathOfCommand(const char *command, std::string &result) {
-  realPath(command, result, isExecutable);
+bool getPathOfCommand(const char *command, std::string &result,
+                              realpathcmp cmp) {
+  if (realPath(command, result, isExecutable, cmp))
+    stripFileName(result);
 
-  const size_t len = strlen(command) + 1;
+  return !result.empty();
+}
 
-  if (result.size() < len) {
-    result.clear();
-    return result;
-  }
-
-  result.resize(result.size() - len);
-  return result;
+void stripFileName(std::string &path) {
+  size_t lastpathdiv = path.find_last_of(PATHDIV);
+  if (lastpathdiv != 0 && lastpathdiv != std::string::npos)
+    path.resize(lastpathdiv);
 }
 
 const char *getFileName(const char *file) {

@@ -51,15 +51,11 @@ namespace {
 
 int unittest = 0;
 
-//
-// detectTarget():
-//  detect target and setup invocation command
-//
-
 void checkIncludePath(const char *opt, const char *path) {
 #ifndef __APPLE__
   constexpr const char *DangerousIncludePaths[] = { "/usr/include",
                                                     "/usr/local/include" };
+
   if (!path)
     return;
 
@@ -107,6 +103,11 @@ void warnExtension(const char *extension) {
   warninfo << "you can silence this warning via "
            << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warninfo.endl();
 }
+
+//
+// detectTarget():
+//  detect target and setup invocation command
+//
 
 #define PABREAK                                                                \
   else target.args.push_back(arg);                                             \
@@ -409,16 +410,17 @@ bool detectTarget(int argc, char **argv, Target &target) {
   };
 
   auto checkCXXLib = [&]() {
-    if (target.compiler.size() <= 7)
+    if (target.compilername.size() <= 7)
       return;
 
-    if (target.compiler.rfind("-libc++") == (target.compiler.size() - 7)) {
+    if (target.compilername.rfind("-libc++") ==
+        (target.compilername.size() - 7)) {
       if (target.stdlib != StdLib::unset && target.stdlib != StdLib::libcxx) {
         warn << "'-stdlib=" << getStdLibString(target.stdlib)
              << "' will be ignored" << warn.endl();
       }
 
-      target.compiler.resize(target.compiler.size() - 7);
+      target.compilername.resize(target.compilername.size() - 7);
       target.stdlib = StdLib::libcxx;
     }
   };
@@ -452,13 +454,13 @@ bool detectTarget(int argc, char **argv, Target &target) {
         return false;
 
       target.target = std::string(cmd, p - cmd);
-      target.compiler = &p[1];
+      target.compilername = &p[1];
 
-      if (target.compiler == "cc")
-        target.compiler = getDefaultCompiler();
-      else if (target.compiler == "c++")
-        target.compiler = getDefaultCXXCompiler();
-      else if (auto *prog = program::getprog(target.compiler))
+      if (target.compilername == "cc")
+        target.compilername = getDefaultCompiler();
+      else if (target.compilername == "c++")
+        target.compilername = getDefaultCXXCompiler();
+      else if (auto *prog = program::getprog(target.compilername))
         (*prog)(argc, argv, target);
 
       if (target.target != getDefaultTarget()) {
@@ -484,7 +486,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
     return false;
 
   if (const char *p = strchr(cmd, '-'))
-    target.compiler = &cmd[p - cmd + 1];
+    target.compilername = &cmd[p - cmd + 1];
 
   if (!parseArgs())
     return false;
@@ -681,10 +683,10 @@ void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
     lipo += getDefaultTarget();
     lipo += "-lipo";
 
-    if (getPathOfCommand(lipo.c_str(), path).empty()) {
+    if (!getPathOfCommand(lipo.c_str(), path)) {
       lipo = "lipo";
 
-      if (getPathOfCommand(lipo.c_str(), path).empty()) {
+      if (!getPathOfCommand(lipo.c_str(), path)) {
         err << "cannot find lipo binary" << err.endl();
         rc = 1;
       }
@@ -759,7 +761,7 @@ int main(int argc, char **argv) {
 
     if (debug >= 2) {
       dbg << "detected target triple: " << target.getTriple() << dbg.endl();
-      dbg << "detected compiler: " << target.compiler << dbg.endl();
+      dbg << "detected compiler: " << target.compilername << dbg.endl();
 
       dbg << "detected stdlib: " << getStdLibString(target.stdlib)
           << dbg.endl();
@@ -789,8 +791,18 @@ int main(int argc, char **argv) {
       in += " ";
     }
 
-    for (auto &arg : target.fargs) {
-      out += arg;
+    out += target.compilerpath;
+
+    if (target.compilerpath != target.fargs[0]) {
+      out += " (";
+      out += target.fargs[0];
+      out += ") ";
+    } else {
+      out += " ";
+    }
+
+    for (size_t i = 1; i < target.fargs.size(); ++i) {
+      out += target.fargs[i];
       out += " ";
     }
 
@@ -831,7 +843,7 @@ int main(int argc, char **argv) {
   if (unittest == 2)
     return 0;
 
-  if (rc == -1 && execvp(cargs[0], cargs)) {
+  if (rc == -1 && execvp(target.compilerpath.c_str(), cargs)) {
     err << "invoking compiler failed" << err.endl();
 
     if (!debug)

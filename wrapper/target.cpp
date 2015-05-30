@@ -156,11 +156,11 @@ bool Target::isC(bool r) {
       return true;
   }
 
-  return compiler.find("++") == std::string::npos && !isObjC(true);
+  return compilername.find("++") == std::string::npos && !isObjC(true);
 }
 
 bool Target::isCXX() {
-  bool CXXCompiler = compiler.find("++") != std::string::npos;
+  bool CXXCompiler = compilername.find("++") != std::string::npos;
 
   if (!langGiven() && CXXCompiler && !isObjC(true))
     return true;
@@ -229,33 +229,36 @@ bool Target::isCXX11orNewer() const {
   return false;
 }
 
-const std::string Target::getFullCompilerName() const {
-  std::string compiler;
-
+void Target::setCompilerPath() {
   if (isGCC()) {
-    compiler = execpath;
-    compiler += "/";
-    compiler += getTriple();
-    compiler += "-";
+    compilerpath = execpath;
+    compilerpath += "/";
+    compilerpath += getTriple();
+    compilerpath += "-";
+    compilerpath += "base-";
+    compilerpath += compilername;
+
+    compilerexecname = getTriple();
+    compilerexecname += "-";
+    compilerexecname += compilername;
+  } else {
+    if (!realPath(compilername.c_str(), compilerpath, ignoreCCACHE))
+      compilerpath = compilername;
+
+    compilerexecname += compilername;
   }
-
-  if (isGCC())
-    compiler += "base-";
-
-  compiler += this->compiler;
-  return compiler;
 }
 
 bool Target::findClangIntrinsicHeaders(std::string &path) {
-  std::string clangbin;
   static std::stringstream dir;
 
   assert(isClang());
 
-  getPathOfCommand(compiler.c_str(), clangbin);
-
-  if (clangbin.empty())
+  if (compilerpath.empty())
     return false;
+
+  std::string clangbindir = compilerpath;
+  stripFileName(clangbindir);
 
   static ClangVersion *clangversion;
   static std::string pathtmp;
@@ -266,10 +269,8 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
   *clangversion = ClangVersion();
   pathtmp.clear();
 
-  auto check = []()->bool {
-
+  auto tryDir = [&]()->bool {
     listFiles(dir.str().c_str(), nullptr, [](const char *file) {
-
       if (file[0] != '.' && isDirectory(file, dir.str().c_str())) {
         ClangVersion cv = parseClangVersion(file);
 
@@ -303,47 +304,55 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
             checkDir(tmp);
           }
         }
-
         return true;
       }
-
       return true;
     });
-
     return *clangversion != ClangVersion();
   };
 
-  dir << clangbin << "/../lib/clang";
+#define TRYDIR(basedir, subdir)                                                \
+do {                                                                           \
+  dir << basedir << subdir;                                                    \
+  if (tryDir()) {                                                              \
+    path.swap(pathtmp);                                                        \
+    return true;                                                               \
+  }                                                                            \
+  clear(dir);                                                                  \
+} while (0)
 
-  if (!check()) {
-    clear(dir);
+#define TRYDIR2(libdir) TRYDIR(clangbindir, libdir)
+#define TRYDIR3(libdir) TRYDIR(std::string(), libdir)
 
-#ifdef __APPLE__
-    constexpr const char *OSXIntrinDirs[] = {
-      "/Library/Developer/CommandLineTools/usr/lib/clang",
-      "/Applications/Contents/Developer/Toolchains/"
-      "XcodeDefault.xctoolchain/usr/lib/clang"
-    };
+  TRYDIR2("/../lib/clang");
 
-    for (auto intrindir : OSXIntrinDirs) {
-      dir << intrindir;
-      if (check()) {
-        break;
-      }
-      clear(dir);
-    }
+#ifdef __linux__
+#ifdef __x86_64__
+  // opensuse uses lib64 instead of lib on x86_64
+  TRYDIR2("/../lib64/clang");
+#elif __i386__
+  TRYDIR2("/../lib32/clang");
+#endif
 #endif
 
-    if (!dir.rdbuf()->in_avail()) {
-      dir << clangbin << "/../include/clang";
+#ifdef __APPLE__
+  constexpr const char *OSXIntrinDirs[] = {
+    "/Library/Developer/CommandLineTools/usr/lib/clang",
+    "/Applications/Contents/Developer/Toolchains/"
+    "XcodeDefault.xctoolchain/usr/lib/clang"
+  };
 
-      if (!check())
-        return false;
-    }
-  }
+  for (auto intrindir : OSXIntrinDirs)
+    TRYDIR3(intrindir);
+#endif
 
-  path.swap(pathtmp);
-  return *clangversion != ClangVersion();
+  TRYDIR2("/../include/clang");
+  TRYDIR2("/usr/include/clang");
+
+  return false;
+#undef TRYDIR
+#undef TRYDIR2
+#undef TRYDIR3
 }
 
 void Target::setupGCCLibs(Arch arch) {
@@ -409,7 +418,7 @@ bool Target::setup() {
   OSVersion SDKOSNum = getSDKOSNum();
 
   if (!isKnownCompiler())
-    warn << "unknown compiler '" << compiler << "'" << warn.endl();
+    warn << "unknown compiler '" << compilername << "'" << warn.endl();
 
   if (!getSDKPath(SDKPath)) {
     err << "cannot find Mac OS X SDK (expected in: " << SDKPath << ")"
@@ -438,6 +447,8 @@ bool Target::setup() {
   otriple += vendor;
   otriple += "-";
   otriple += target;
+
+  setCompilerPath();
 
   if (!OSNum.Num()) {
     if (haveArch(Arch::x86_64h)) {
@@ -569,7 +580,7 @@ bool Target::setup() {
     abort();
   }
 
-  fargs.push_back(getFullCompilerName());
+  fargs.push_back(compilerexecname);
 
   if (isClang()) {
     std::string tmp;
@@ -585,7 +596,7 @@ bool Target::setup() {
 
 #ifndef __APPLE__
     if (!findClangIntrinsicHeaders(tmp)) {
-      warn << "cannot find clang intrinsic headers, please report this "
+      warn << "cannot find clang intrinsic headers; please report this "
               "issue to the OSXCross project" << warn.endl();
     } else {
       fargs.push_back("-isystem");
