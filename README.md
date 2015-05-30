@@ -101,7 +101,7 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Install `cmake`, `libxml2-dev` and `fuse`
-3. run `./gen_sdk_package_darling_dmg.sh <xcode>.dmg`
+3. Run `./gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
 ### USAGE EXAMPLES: ###
