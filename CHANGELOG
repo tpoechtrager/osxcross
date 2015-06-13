@@ -2,6 +2,7 @@
 
 changed:
 * improved and colorized wrapper error/warning/debug/info messages
+* dsymutil is now wrapped to llvm-dsymutil (LLVM >= 3.7 only)
 
 added:
 * support for ccache symlinks
