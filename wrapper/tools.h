@@ -164,14 +164,6 @@ inline const char *getFileExtension(const std::string &file) {
 }
 
 //
-// Shell Commands
-//
-
-constexpr size_t RUNCOMMAND_ERROR = -1;
-
-size_t runcommand(const char *command, char *buf, size_t len);
-
-//
 // Time
 //
 
@@ -283,13 +275,10 @@ static_assert(OSVersion(10, 6) != OSVersion(10, 5), "");
 OSVersion parseOSVersion(const char *OSVer);
 
 typedef OSVersion GCCVersion;
-static const auto &parseGCCVersion = parseOSVersion;
+#define parseGCCVersion parseOSVersion
 
 typedef OSVersion ClangVersion;
-static const auto &parseClangVersion = parseOSVersion;
-
-typedef OSVersion LLVMVersion;
-static const auto &parseLLVMVersion = parseOSVersion;
+#define parseClangVersion parseOSVersion
 
 //
 // OS Compat
