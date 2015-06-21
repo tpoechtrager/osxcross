@@ -18,14 +18,14 @@ function guess_sdk_version()
     echo no SDK found in 'tarballs/'. please see README.md
     exit 1
   elif [ $sdkcount -gt 1 ]; then
-    sdks=`find tarballs/ | grep MacOSX`
+    sdks=`find tarballs/ -type f | grep MacOSX`
     for sdk in $sdks; do echo $sdk; done
     echo 'more than one MacOSX SDK tarball found. please set'
     echo 'SDK_VERSION environment variable for the one you want'
     echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] ./build.sh)'
     exit 1
   else
-    sdk=`find tarballs/ | grep MacOSX`
+    sdk=`find tarballs/ -type f | grep MacOSX`
     tmp2=`echo ${sdk/bz2/} | sed s/[^0-9.]//g`
     tmp3=`echo $tmp2 | sed s/\\\.*$//g`
     guess_sdk_version_result=$tmp3
@@ -44,7 +44,7 @@ function verify_sdk_version()
 {
   sdkv=$1
   for file in tarballs/*; do
-    if [ `echo $file | grep OSX.*$sdkv` ]; then
+    if [ -f "$file" ] && [ `echo $file | grep OSX.*$sdkv` ]; then
       echo "verified at "$file
       sdk=$file
     fi
@@ -104,8 +104,10 @@ echo "Tarball Directory: $TARBALL_DIR"
 echo "Build Directory: $BUILD_DIR"
 echo "Install Directory: $TARGET_DIR"
 echo "SDK Install Directory: $SDK_DIR"
-echo ""
-read -p "Press enter to start building"
+if [ -z "$UNATTENDED" ]; then
+  echo ""
+  read -p "Press enter to start building"
+fi
 echo ""
 
 export PATH=$TARGET_DIR/bin:$PATH
@@ -267,7 +269,9 @@ do
   echo "You can press ctrl-c to break the build process,"
   echo "if you restart ./build.sh then we will continue from here"
   echo ""
-  read -p "Press enter to continue"
+  if [ -z "$UNATTENDED" ]; then
+    read -p "Press enter to continue"
+  fi
   ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
 done
 set -e

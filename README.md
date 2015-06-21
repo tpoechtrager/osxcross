@@ -42,7 +42,7 @@ On debian like systems you can also use [llvm.org/apt](http://llvm.org/apt) to g
 But be careful, that repository is known to cause [troubles](https://github.com/tpoechtrager/osxcross/issues/16).  
 \--
 
-Then run `./build.sh` to build the cross toolchain.  
+Then run `[UNATTENDED=1] ./build.sh` to build the cross toolchain.  
 (It will search 'tarballs' for your SDK and then build in its own directory.)
 
 **Do not forget** to add `<path>/target/bin` to your PATH variable.

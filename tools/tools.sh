@@ -48,8 +48,13 @@ function require()
   which $1 &>/dev/null
   while [ $? -ne 0 ]
   do
-    echo ""
-    read -p "Please install $1 then press enter"
+    if [ -z "$UNATTENDED" ]; then
+      echo ""
+      read -p "Please install '$1' then press enter"
+    else
+      echo "Required dependency '$1' is not installed" 1>&2
+      exit 1
+    fi
     which $1 &>/dev/null
   done
   set -e

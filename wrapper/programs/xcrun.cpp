@@ -29,8 +29,9 @@ using namespace tools;
 using namespace target;
 
 namespace program {
+namespace {
 
-static bool showCommand = false;
+bool showCommand = false;
 
 bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
   toolpath = target.execpath;
@@ -129,6 +130,8 @@ int showSDKVersion(Target &target, char **) {
   std::cout << target.getSDKOSNum().shortStr() << std::endl;
   return 0;
 }
+
+} // anonymous namespace
 
 int xcrun(int argc, char **argv, Target &target) {
   if (getenv("xcrun_log"))
