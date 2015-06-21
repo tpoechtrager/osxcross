@@ -271,6 +271,8 @@ do
   echo ""
   if [ -z "$UNATTENDED" ]; then
     read -p "Press enter to continue"
+  else
+    exit 1
   fi
   ls $TARBALL_DIR/MacOSX$SDK_VERSION* &>/dev/null
 done
