@@ -46,6 +46,7 @@ else
 fi
 $MAKE install DEST_HOME=$TARGET_DIR/SDK/tools
 find $TARGET_DIR/SDK/tools/share -type f -exec chmod 0664 {} \;
+find $TARGET_DIR/SDK/tools/share -type d -exec chmod 0775 {} \;
 popd &>/dev/null
 
 touch "have_p7zip"
