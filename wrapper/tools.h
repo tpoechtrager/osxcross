@@ -164,6 +164,43 @@ inline const char *getFileExtension(const std::string &file) {
 }
 
 //
+// Argument Parsing
+//
+
+template <typename T, size_t size = 0> struct ArgParser {
+  const struct Bind {
+    const char *name;
+    T fun;
+    int numArgs;
+  } binds[size];
+
+  const Bind *parseArg(int argc, char **argv, const int numArg = 1) {
+    const char *arg = argv[numArg];
+
+    if (*arg != '-')
+      return nullptr;
+
+    while (*arg && *arg == '-')
+      ++arg;
+
+    for (size_t i = 0; i < size; ++i) {
+      const Bind &bind = binds[i];
+
+      if (!strcmp(arg, bind.name)) {
+        if (argc - numArg <= bind.numArgs) {
+          err << "too few arguments for '-" << bind.name << "'" << err.endl();
+          return nullptr;
+        }
+
+        return &bind;
+      }
+    }
+
+    return nullptr;
+  }
+};
+
+//
 // Time
 //
 

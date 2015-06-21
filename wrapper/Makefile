@@ -9,7 +9,9 @@ OSXCROSS_LINKER_VERSION ?= 134.9
 OSXCROSS_LIBLTO_PATH ?=
 OSXCROSS_CXXFLAGS ?= 
 
-override CXXFLAGS=-std=c++0x -Wall -Wextra -pedantic -I. -O$(OPTIMIZE) -g
+override CXXFLAGS=-std=c++0x -Wall -Wextra -pedantic
+override CXXFLAGS+=-Wno-missing-field-initializers
+override CXXFLAGS+=-I. -O$(OPTIMIZE) -g
 
 ifeq ($(LTO), 1)
   override CXXFLAGS+=-flto
@@ -43,7 +45,8 @@ SRCS= \
  programs/osxcross-conf.cpp \
  programs/osxcross-cmp.cpp \
  programs/sw_vers.cpp \
- programs/pkg-config.cpp
+ programs/pkg-config.cpp \
+ programs/xcrun.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
 

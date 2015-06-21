@@ -73,9 +73,10 @@ constexpr OSVersion getDefaultMinTarget() { return OSVersion(); }
 
 struct Target {
   Target()
-      : vendor(getDefaultVendor()), target(getDefaultTarget()),
-        stdlib(StdLib::unset), usegcclibs(), nocodegen(),
-        compilername(getDefaultCompiler()), lang(), langstd(), sourcefile(),
+      : vendor(getDefaultVendor()), arch(Arch::x86_64),
+        target(getDefaultTarget()), stdlib(StdLib::unset), usegcclibs(),
+        nocodegen(), compilername(getDefaultCompiler()), lang(), langstd(),
+        sourcefile(),
         outputname() {
     if (!getExecutablePath(execpath, sizeof(execpath)))
       abort();
@@ -131,6 +132,7 @@ struct Target {
   const char *getLangName();
   bool isCXX11orNewer() const;
 
+  const std::string &getDefaultTriple(std::string &triple) const;
   const std::string &getTriple() const { return triple; }
 
   void setCompilerPath();

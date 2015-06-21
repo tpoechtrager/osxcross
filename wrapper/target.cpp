@@ -229,6 +229,15 @@ bool Target::isCXX11orNewer() const {
   return false;
 }
 
+const std::string &Target::getDefaultTriple(std::string &triple) const {
+  triple = getArchName(Arch::x86_64);
+  triple += "-";
+  triple += getDefaultVendor();
+  triple += "-";
+  triple += getDefaultTarget();
+  return triple;
+}
+
 void Target::setCompilerPath() {
   if (isGCC()) {
     compilerpath = execpath;
