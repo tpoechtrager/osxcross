@@ -4,6 +4,8 @@ changed:
 * improved and colorized wrapper error/warning/debug/info messages
 
 added:
+* p7zip sdk packaging script
+* a minimalistic xcrun tool
 * support for ccache symlinks
 * darling-dmg sdk packaging script
 * include path warnings for /usr/include and /usr/local/include

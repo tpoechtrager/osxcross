@@ -17,8 +17,12 @@ mkdir -p $BUILD_DIR
 
 require git
 require cmake
+require $MAKE
 require modinfo
 require fusermount
+
+[ -n "$CC" ] && require $CC
+[ -n "$CXX" ] && require $CXX
 
 set +e
 
@@ -34,7 +38,7 @@ set -e
 
 pushd $BUILD_DIR &>/dev/null
 
-if [ ! -f $TARGET_DIR/bin/darling-dmg ]; then
+if [ ! -f $TARGET_DIR/SDK/tools/bin/darling-dmg ]; then
   rm -f have_darling_dmg
 fi
 
@@ -45,8 +49,8 @@ git clone https://github.com/LubosD/darling-dmg.git
 pushd darling-dmg &>/dev/null
 mkdir -p build
 pushd build &>/dev/null
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$TARGET_DIR
-make -j $JOBS install
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$TARGET_DIR/SDK/tools
+$MAKE -j $JOBS install
 popd &>/dev/null
 popd &>/dev/null
 
@@ -65,5 +69,5 @@ function cleanup() {
 
 trap cleanup EXIT
 
-$TARGET_DIR/bin/darling-dmg $1 $TMP
+$TARGET_DIR/SDK/tools/bin/darling-dmg $1 $TMP
 XCODEDIR=$TMP ./tools/gen_sdk_package.sh
