@@ -33,22 +33,54 @@ namespace osxcross {
 
 int man(int argc, char **argv, Target &target) {
   std::string SDKPath;
-  target.getSDKPath(SDKPath);
-  std::string manpath = SDKPath + "/usr/share/man";
 
-  if (!dirExists(manpath)) {
-    err << "directory '" << manpath << "' does not exist" << err.endl();
+  if (!target.getSDKPath(SDKPath))
+    return 1;
+
+  std::vector<std::string> manpaths;
+
+  manpaths.push_back(SDKPath + "/usr/share/man");
+  manpaths.push_back(std::string(target.execpath) + "/../share/man");
+
+  unsetenv("MANPATH");
+
+  for (const std::string &manpath : manpaths)
+    if (dirExists(manpath))
+      concatEnvVariable("MANPATH", manpath);
+
+  if (!getenv("MANPATH")) {
+    err << "cannot find man pages!" << err.endl();
     return 1;
   }
 
   std::vector<char *> args;
 
-  args.push_back(const_cast<char *>("man"));
-  args.push_back(const_cast<char *>("--manpath"));
-  args.push_back(const_cast<char *>(manpath.c_str()));
+  // All the const violation here doesn't matter,
+  // the arguments won't be modified
 
-  for (int i = 1; i < argc; ++i)
-    args.push_back(argv[i]);
+  args.push_back(const_cast<char *>("man"));
+
+  for (int i = 1; i < argc; ++i) {
+    char *arg = argv[i];
+
+    // Rewrite gcc to <triple>-gcc for compatibility
+    // with other man pages
+
+    constexpr const char *GCCManPages[] = { "gcc", "g++", "cpp", "gcov" };
+
+    for (const char *mp : GCCManPages) {
+      if (!strcmp(mp, arg)) {
+        std::string *str = new std::string; // Intentionally "leaked"
+        target.getDefaultTriple(*str);
+        str->append("-");
+        str->append(arg);
+        arg = const_cast<char *>(str->c_str());
+        break;
+      }
+    }
+
+    args.push_back(arg);
+  }
 
   args.push_back(nullptr);
 
