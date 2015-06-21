@@ -18,14 +18,14 @@ function guess_sdk_version()
     echo no SDK found in 'tarballs/'. please see README.md
     exit 1
   elif [ $sdkcount -gt 1 ]; then
-    sdks=`find tarballs/ -type f | grep MacOSX`
+    sdks=`find -L tarballs/ -type f | grep MacOSX`
     for sdk in $sdks; do echo $sdk; done
     echo 'more than one MacOSX SDK tarball found. please set'
     echo 'SDK_VERSION environment variable for the one you want'
     echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] ./build.sh)'
     exit 1
   else
-    sdk=`find tarballs/ -type f | grep MacOSX`
+    sdk=`find -L tarballs/ -type f | grep MacOSX`
     tmp2=`echo ${sdk/bz2/} | sed s/[^0-9.]//g`
     tmp3=`echo $tmp2 | sed s/\\\.*$//g`
     guess_sdk_version_result=$tmp3
