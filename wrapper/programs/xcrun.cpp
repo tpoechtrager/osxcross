@@ -32,14 +32,6 @@ namespace program {
 
 static bool showCommand = false;
 
-bool getSDKPath(Target &target, std::string &SDKPath) {
-  if (!target.getSDKPath(SDKPath)) {
-    err << "xcrun: cannot find MacOSX SDK" << err.endl();
-    return false;
-  }
-  return true;
-}
-
 bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
   toolpath = target.execpath;
   toolpath += "/";
@@ -127,7 +119,7 @@ int run(Target &target, char **argv) {
 
 int showSDKPath(Target &target, char **) {
   std::string SDKPath;
-  if (!getSDKPath(target, SDKPath))
+  if (!target.getSDKPath(SDKPath))
     return 1;
   std::cout << SDKPath << std::endl;
   return 0;

@@ -4,6 +4,7 @@ changed:
 * improved and colorized wrapper error/warning/debug/info messages
 
 added:
+* 'osxcross-man' man page tool
 * p7zip sdk packaging script
 * a minimalistic xcrun tool
 * support for ccache symlinks

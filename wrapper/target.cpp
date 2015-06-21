@@ -56,7 +56,14 @@ bool Target::getSDKPath(std::string &path) const {
     path += "u";
 
   path += ".sdk";
-  return dirExists(path);
+
+  if (!dirExists(path)) {
+    err << "cannot find Mac OS X SDK (expected in: " << path << ")"
+        << err.endl();
+    return false;
+  }
+
+  return true;
 }
 
 bool Target::getMacPortsDir(std::string &path) const {
@@ -429,11 +436,8 @@ bool Target::setup() {
   if (!isKnownCompiler())
     warn << "unknown compiler '" << compilername << "'" << warn.endl();
 
-  if (!getSDKPath(SDKPath)) {
-    err << "cannot find Mac OS X SDK (expected in: " << SDKPath << ")"
-        << err.endl();
+  if (!getSDKPath(SDKPath))
     return false;
-  }
 
   if (targetarch.empty())
     targetarch.push_back(arch);

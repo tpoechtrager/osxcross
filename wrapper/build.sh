@@ -144,6 +144,7 @@ create_wrapper_link osxcross 1
 create_wrapper_link osxcross-conf 1
 create_wrapper_link osxcross-env 1
 create_wrapper_link osxcross-cmp 1
+create_wrapper_link osxcross-man 1
 create_wrapper_link pkg-config
 
 if [ "$PLATFORM" != "Darwin" ]; then

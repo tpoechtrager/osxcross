@@ -21,54 +21,40 @@
 
 #include "proginc.h"
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 using namespace tools;
 using namespace target;
 
 namespace program {
 namespace osxcross {
 
-int conf(Target &target) {
+int man(int argc, char **argv, Target &target) {
   std::string SDKPath;
-  OSVersion OSXVersionMin = getDefaultMinTarget();
-  const char *ltopath = getLibLTOPath();
+  target.getSDKPath(SDKPath);
+  std::string manpath = SDKPath + "/usr/share/man";
 
-  if (!target.getSDKPath(SDKPath))
+  if (!dirExists(manpath)) {
+    err << "directory '" << manpath << "' does not exist" << err.endl();
     return 1;
+  }
 
-  if (!OSXVersionMin.Num())
-    OSXVersionMin = target.getSDKOSNum();
+  std::vector<char *> args;
 
-  if (!ltopath)
-    ltopath = "";
+  args.push_back(const_cast<char *>("man"));
+  args.push_back(const_cast<char *>("--manpath"));
+  args.push_back(const_cast<char *>(manpath.c_str()));
 
-  std::cout << "export OSXCROSS_VERSION=" << getOSXCrossVersion()
-            << std::endl;
-  std::cout << "export OSXCROSS_OSX_VERSION_MIN=" << OSXVersionMin.shortStr()
-            << std::endl;
-  std::cout << "export OSXCROSS_TARGET=" << getDefaultTarget()
-            << std::endl;
-  std::cout << "export OSXCROSS_SDK_VERSION=" << target.getSDKOSNum().shortStr()
-            << std::endl;
-  std::cout << "export OSXCROSS_SDK=" << SDKPath
-            << std::endl;
-  std::cout << "export OSXCROSS_TARBALL_DIR=" << target.execpath
-            << "/../../tarballs"
-            << std::endl;
-  std::cout << "export OSXCROSS_PATCH_DIR=" << target.execpath
-            << "/../../patches"
-            << std::endl;
-  std::cout << "export OSXCROSS_TARGET_DIR=" << target.execpath << "/.."
-            << std::endl;
-  std::cout << "export OSXCROSS_BUILD_DIR=" << target.execpath << "/../../build"
-            << std::endl;
-  std::cout << "export OSXCROSS_CCTOOLS_PATH=" << target.execpath
-            << std::endl;
-  std::cout << "export OSXCROSS_LIBLTO_PATH=" << ltopath
-            << std::endl;
-  std::cout << "export OSXCROSS_LINKER_VERSION=" << getLinkerVersion()
-            << std::endl;
+  for (int i = 1; i < argc; ++i)
+    args.push_back(argv[i]);
 
-  return 0;
+  args.push_back(nullptr);
+
+  execvp(args[0], args.data());
+  err << "cannot execute '" << args[0] << "'" << err.endl();
+  return 1;
 }
 
 } // namespace osxcross

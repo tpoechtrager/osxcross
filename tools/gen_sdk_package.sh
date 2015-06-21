@@ -98,6 +98,9 @@ LIBCXXDIR1="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/c++/v
 # Xcode 6
 LIBCXXDIR2="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"
 
+# Manual directory
+MANDIR="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man"
+
 for SDK in $SDKS; do
   echo -n "packaging $(echo "$SDK" | sed -E "s/(.sdk|.pkg)//g") SDK "
   echo "(this may take several minutes) ..."
@@ -117,6 +120,11 @@ for SDK in $SDKS; do
     cp -rf $LIBCXXDIR1 "$TMP/$SDK/usr/include/c++"
   elif [ -d $LIBCXXDIR2 ]; then
     cp -rf $LIBCXXDIR2 "$TMP/$SDK/usr/include/c++"
+  fi
+
+  if [ -d $MANDIR ]; then
+    mkdir -p $TMP/$SDK/usr/share/man
+    cp -rf $MANDIR/* $TMP/$SDK/usr/share/man
   fi
 
   popd &>/dev/null
