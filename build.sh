@@ -76,14 +76,16 @@ fi
 
 OSXCROSS_VERSION=0.10
 
+X86_64H_SUPPORTED=0
+
 case $SDK_VERSION in
   10.4*) TARGET=darwin8 ;;
   10.5*) TARGET=darwin9 ;;
   10.6*) TARGET=darwin10 ;;
   10.7*) TARGET=darwin11 ;;
-  10.8*) TARGET=darwin12 ;;
-  10.9*) TARGET=darwin13 ;;
-  10.10*) TARGET=darwin14 ;;
+  10.8*) TARGET=darwin12; X86_64H_SUPPORTED=1; ;;
+  10.9*) TARGET=darwin13; X86_64H_SUPPORTED=1; ;;
+  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; ;;
   *) echo "Invalid SDK Version" && exit 1 ;;
 esac
 
@@ -186,10 +188,12 @@ popd &>/dev/null
 pushd $TARGET_DIR/bin &>/dev/null
 CCTOOLS=`find . -name "x86_64-apple-darwin*"`
 CCTOOLS=($CCTOOLS)
-for CCTOOL in ${CCTOOLS[@]}; do
-  CCTOOL_X86_64H=`echo "$CCTOOL" | sed 's/x86_64/x86_64h/g'`
-  ln -sf $CCTOOL $CCTOOL_X86_64H
-done
+if [ $X86_64H_SUPPORTED -eq 1 ]; then
+  for CCTOOL in ${CCTOOLS[@]}; do
+    CCTOOL_X86_64H=`echo "$CCTOOL" | sed 's/x86_64/x86_64h/g'`
+    ln -sf $CCTOOL $CCTOOL_X86_64H
+  done
+fi
 for CCTOOL in ${CCTOOLS[@]}; do
   CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
   ln -sf $CCTOOL $CCTOOL_I386
@@ -300,6 +304,8 @@ OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
 rm -f $OSXCROSS_CONF $OSXCROSS_ENV
 
 echo "compiling wrapper ..."
+
+export X86_64H_SUPPORTED
 
 export OSXCROSS_VERSION
 export OSXCROSS_TARGET=$TARGET
