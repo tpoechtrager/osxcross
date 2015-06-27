@@ -66,6 +66,13 @@ else
   MAKE=make
 fi
 
+if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "Darwin" ]; then
+  READLINK=greadlink
+else
+  READLINK=readlink
+fi
+
+
 require $MAKE
 
 function extract()

@@ -464,8 +464,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
         (*prog)(argc, argv, target);
 
       if (target.target != getDefaultTarget()) {
-        warn << "target mismatch (" << target.target
-             << " != " << getDefaultTarget() << ")" << warn.endl();
+        warn << "this wrapper was built for target "
+             << "'" << getDefaultTarget() << "'" << warn.endl();
       }
 
       if (!parseArgs())

@@ -66,8 +66,6 @@ verify_sdk_version $SDK_VERSION
 
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
-# You can comment this variable out,
-# if you want to use the compiler's default value
 if [ -z "$OSX_VERSION_MIN" ]; then
   if [ $SDK_VERSION = 10.4u ]; then
     OSX_VERSION_MIN=10.4
@@ -77,10 +75,6 @@ if [ -z "$OSX_VERSION_MIN" ]; then
 fi
 
 OSXCROSS_VERSION=0.10
-
-if [ -z "$OSX_VERSION_MIN" ]; then
-  OSX_VERSION_MIN="default"
-fi
 
 case $SDK_VERSION in
   10.4*) TARGET=darwin8 ;;
@@ -324,17 +318,17 @@ $BASE_DIR/wrapper/build.sh 1>/dev/null
 
 echo ""
 
-if [ "$OSX_VERSION_MIN" != "default" ]; then
-  if [ `osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN` -eq 1 ]; then
-    echo "OSX_VERSION_MIN must be <= SDK_VERSION"
-    trap "" EXIT
-    exit 1
-  elif [ `osxcross-cmp $OSX_VERSION_MIN "<" 10.4` -eq 1  ]; then
-    echo "OSX_VERSION_MIN must be >= 10.4"
-    trap "" EXIT
-    exit 1
-  fi
+if [ `osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN` -eq 1 ]; then
+  echo "OSX_VERSION_MIN must be <= SDK_VERSION"
+  trap "" EXIT
+  exit 1
+elif [ `osxcross-cmp $OSX_VERSION_MIN "<" 10.4` -eq 1  ]; then
+  echo "OSX_VERSION_MIN must be >= 10.4"
+  trap "" EXIT
+  exit 1
 fi
+
+unset MACOSX_DEPLOYMENT_TARGET
 
 test_compiler o32-clang $BASE_DIR/oclang/test.c
 test_compiler o64-clang $BASE_DIR/oclang/test.c

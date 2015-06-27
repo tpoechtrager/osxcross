@@ -73,11 +73,10 @@ constexpr OSVersion getDefaultMinTarget() { return OSVersion(); }
 
 struct Target {
   Target()
-      : vendor(getDefaultVendor()), arch(Arch::x86_64),
-        target(getDefaultTarget()), stdlib(StdLib::unset), usegcclibs(),
-        nocodegen(), compilername(getDefaultCompiler()), lang(), langstd(),
-        sourcefile(),
-        outputname() {
+      : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
+        arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
+        usegcclibs(), nocodegen(), compilername(getDefaultCompiler()), lang(),
+        langstd(), sourcefile(), outputname() {
     if (!getExecutablePath(execpath, sizeof(execpath)))
       abort();
   }
@@ -142,6 +141,7 @@ struct Target {
   bool setup();
 
   const char *vendor;
+  const char *SDK;
   Arch arch;
   std::vector<Arch> targetarch;
   std::string target;

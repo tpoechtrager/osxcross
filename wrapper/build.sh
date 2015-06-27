@@ -8,6 +8,11 @@ popd &>/dev/null
 set +e
 if [ -z "$OSXCROSS_VERSION" ]; then
   `../target/bin/osxcross-conf 2>/dev/null`
+
+  if [ -n "$OSXCROSS_SDK_VERSION" ] ||
+     [ `osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8` -eq 1 ]; then
+    X86_64H_SUPPORTED=1
+  fi
 fi
 set -e
 
@@ -41,8 +46,8 @@ function create_wrapper_link
   verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
     "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
-  if [[ $1 != gcc* ]] && [[ $1 != g++* ]]; then
-    # do not create Haswell links for gcc
+  if [ -n "$X86_64H_SUPPORTED" ] &&
+     ([[ $1 != gcc* ]] && [[ $1 != g++* ]]); then
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   fi
@@ -53,8 +58,8 @@ function create_wrapper_link
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "o64-${1}${EXESUFFIX}"
 
-    if [[ $1 != gcc* ]] && [[ $1 != g++* ]]; then
-      # do not create Haswell links for gcc
+    if [ -n "$X86_64H_SUPPORTED" ] &&
+       ([[ $1 != gcc* ]] && [[ $1 != g++* ]]); then
       verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
         "o64h-${1}${EXESUFFIX}"
     fi
@@ -93,7 +98,7 @@ if [ -n "$BWPLATFORM" ]; then
   [ -z "$BWCOMPILEONLY" ] && BWCOMPILEONLY=1
 else
   PLATFORM=$(uname -s)
-  FLAGS="-march=native $CXXFLAGS "
+  [ -z "$PORTABLE"] && FLAGS="-march=native $CXXFLAGS "
 fi
 
 if [ -n "$BWCXX" ]; then

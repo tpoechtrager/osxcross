@@ -112,7 +112,7 @@ public:
   Message(const char *msg, Color color = FG_RED, std::ostream &os = std::cerr)
       : msg(msg), color(color), os(os), printprefix(true) {}
 } warn("warning"), err("error"), dbg("debug", FG_LIGHT_MAGENTA),
-  info("info", FG_LIGHT_MAGENTA), warninfo("   info", FG_LIGHT_MAGENTA);
+  info("info", FG_LIGHT_MAGENTA), warninfo("info", FG_LIGHT_MAGENTA);
 
 //
 // Executable path

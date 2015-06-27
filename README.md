@@ -71,6 +71,9 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ### PACKAGING THE SDK: ###
 
+** [Please ensure you have read and understood the Xcode license
+   terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf) **
+
 ##### Packaging the SDK on Mac OS X: #####
 
 1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%205.1.1) \*\*]
@@ -84,18 +87,12 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on Linux, Method 1 (does *NOT* work with Xcode 4.3 or later!): #####
+##### Packing the SDK on Linux (and others), Method 1 (works with Xcode >= 4.3): #####
 
-1. Download
-   [Xcode 4.2](https://startpage.com/do/search?q=stackoverflow+xcode+4.2+download+snow+leopard)
-   for Snow Leopard \*\*
-2. Ensure you are downloading the "Snow Leopard" version
-3. Install `dmg2img`
-4. Run (as root): `./tools/mount_xcode_image.sh /path/to/xcode.dmg`
-5. Follow the instructions printed by `./tools/mount_xcode_image.sh`
-6. Copy or move the SDK into the tarballs/ directory
-
-\*\* SHA1 Sum: 1a06882638996dfbff65ea6b4c6625842903ead3.
+1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+2. Ensure you have `clang` and `make` installed
+3. Run `./gen_sdk_package_p7zip.sh <xcode>.dmg`
+4. Copy or move the SDK into the tarballs/ directory
 
 ##### Packing the SDK on Linux, Method 2 (works with Xcode >= 4.3): #####
 
@@ -104,12 +101,15 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 3. Run `./gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux (and others), Method 3 (works with Xcode >= 4.3): #####
+##### Packing the SDK on Linux, Method 3 (does *NOT* work with Xcode 4.3 or later!): #####
 
-1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
-2. Ensure you have `clang` and `make` installed
-3. Run `./gen_sdk_package_darling_p7zip.sh <xcode>.dmg`
-4. Copy or move the SDK into the tarballs/ directory
+1. Download Xcode 4.2 for Snow Leopard
+2. Ensure you are downloading the "Snow Leopard" version
+3. Install `dmg2img`
+4. Run (as root): `./tools/mount_xcode_image.sh /path/to/xcode.dmg`
+5. Follow the instructions printed by `./tools/mount_xcode_image.sh`
+6. Copy or move the SDK into the tarballs/ directory
+
 
 ### USAGE EXAMPLES: ###
 

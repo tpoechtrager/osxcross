@@ -85,8 +85,11 @@ fi
 
 echo "Building Clang/LLVM $CLANG_VERSION may take a long time."
 echo "Installation Prefix: $INSTALLPREFIX"
-read -p "Press enter to start building."
-echo ""
+
+if [ -z "$UNATTENDED" ]; then
+  read -p "Press enter to start building."
+  echo ""
+fi
 
 pushd $TARBALL_DIR &>/dev/null
 

@@ -33,22 +33,52 @@ namespace {
 
 bool showCommand = false;
 
+bool isXcodeTool(const char *tool) {
+  constexpr const char *XcodeTools[] = {
+    "ar", "as", "c89", "c99", "c11", "c++", "cc", "checksyms", "clang",
+    "dsymutil", "codesign_allocate", "dyldinfo", "gcc", "g++", "gcov",
+    "gprof", "indr", "install_name_tool", "ld", "libtool", "lipo",
+    "machocheck", "nm", "nmedit", "ObjectDump", "objdump", "otool",
+    "pagestuff", "pkg-config", "ranlib", "redo_prebinding",
+    "seg_addr_table", "seg_hack", "size", "strings", "strip", "sw_vers",
+    "unwinddump", "xcodebuild", "xcrun"
+  };
+
+  for (const char *xctool : XcodeTools)
+    if (!strncmp(tool, xctool, strlen(xctool)))
+      return true;
+
+  return false;
+}
+
 bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
-  toolpath = target.execpath;
-  toolpath += "/";
-  toolpath += getArchName(target.arch);
-  toolpath += "-";
-  toolpath += getDefaultVendor();
-  toolpath += "-";
-  toolpath += getDefaultTarget();
-  toolpath += "-";
-  toolpath += tool;
+  const char *filename = getFileName(tool);
+  bool isxcodetool = isXcodeTool(filename);
+
+  toolpath.clear();
+
+  if (tool[0] == PATHDIV) {
+    if (isxcodetool)
+      tool = filename; // map /usr/bin/clang (etc.) to <triple>-clang
+    else
+      toolpath = tool;
+  }
+
+  if (toolpath.empty()) {
+    toolpath = target.execpath;
+    toolpath += PATHDIV;
+    toolpath += getArchName(target.arch);
+    toolpath += "-";
+    toolpath += getDefaultVendor();
+    toolpath += "-";
+    toolpath += getDefaultTarget();
+    toolpath += "-";
+    toolpath += tool;
+  }
 
   if (!fileExists(toolpath.c_str())) {
     // Fall back to system executables so 'xcrun git status' etc. works.
-    toolpath.clear();
-
-    if (realPath(tool, toolpath))
+    if (!isxcodetool && realPath(tool, toolpath))
       return true;
 
     err << "xcrun: cannot find '" << tool << "' executable" << err.endl();
@@ -58,22 +88,52 @@ bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
   return true;
 }
 
-int help(Target&, char **) {
+int help(Target&, char**) {
   std::cerr << "https://developer.apple.com/library/mac/documentation/Darwin/"
                "Reference/ManPages/man1/xcrun.1.html" << std::endl;
   return 0;
 }
 
-int version(Target&, char **) {
+int version(Target&, char**) {
   std::cout << "xcrun version: 0." << std::endl;
   return 0;
 }
 
 int sdk(Target&, char **argv) {
-  if (strcmp(argv[0], "macosx")) {
-    err << "xcrun: expected 'macosx' for '-sdk'" << err.endl();
+  const char *SDK = argv[0];
+
+  if (!strcmp(SDK, "macosx") || !strcmp(SDK, "macosx.internal"))
+    return 0;
+
+  // Ignore '/'.
+  if (SDK[0] == PATHDIV && !SDK[1])
+    return 0;
+
+  std::string SDKPath = SDK;
+
+  while (SDKPath.size() && SDKPath[SDKPath.size() - 1] == PATHDIV)
+    SDKPath.erase(SDKPath.size() - 1, 1);
+
+  const char *SDKName = getFileName(SDKPath);
+
+  if (!strncasecmp(SDKName, "MacOSX", 6)) {
+    if (!dirExists(SDK)) {
+      err << "xcrun: '-sdk': directory '" << SDK << "' does not exist"
+          << err.endl();
+      return 1;
+    }
+
+    setenv("OSXCROSS_SDKROOT", SDK, 1);
+
+    return 0;
+  }
+
+  // Ignore empty argument.
+  if (SDK[0]) {
+    err << "xcrun: '-sdk': expected Mac OS X SDK" << err.endl();
     return 1;
   }
+
   return 0;
 }
 
@@ -95,13 +155,18 @@ int find(Target &target, char **argv) {
 int run(Target &target, char **argv) {
   std::string toolpath;
   std::string command;
+
   if (!getToolPath(target, toolpath, argv[0]))
-    exit(1); // Should never return.
+    exit(1);
+
   std::vector<char *> args;
   args.push_back(const_cast<char *>(toolpath.c_str()));
+
   for (char **arg = &argv[1]; *arg; ++arg)
     args.push_back(*arg);
+
   args.push_back(nullptr);
+
   if (showCommand) {
     for (size_t i = 0; i < args.size() - 1; ++i) {
       std::cout << args[i];
@@ -110,15 +175,17 @@ int run(Target &target, char **argv) {
     }
     std::cout << std::endl;
   }
+
   execvp(args[0], args.data());
   err << "xcrun: cannot execute '" << args[0] << "'" << err.endl();
   exit(1);
+
   // Silence -Wreturn-type warnings in case exit() is not marked as
   // "no-return" for whatever reason.
   __builtin_unreachable();
 }
 
-int showSDKPath(Target &target, char **) {
+int showSDKPath(Target &target, char**) {
   std::string SDKPath;
   if (!target.getSDKPath(SDKPath))
     return 1;
@@ -126,7 +193,7 @@ int showSDKPath(Target &target, char **) {
   return 0;
 }
 
-int showSDKVersion(Target &target, char **) {
+int showSDKVersion(Target &target, char**) {
   std::cout << target.getSDKOSNum().shortStr() << std::endl;
   return 0;
 }
@@ -138,15 +205,20 @@ int xcrun(int argc, char **argv, Target &target) {
     showCommand = true;
 
   constexpr const char *ENVVARS[] = {
-    "DEVELOPER_DIR", "SDKROOT", "TOOLCHAINS",
-    "xcrun_verbose"
+    "DEVELOPER_DIR", "TOOLCHAINS", "xcrun_verbose"
   };
 
   for (const char *evar : ENVVARS) {
     if (getenv(evar)) {
-      warn << "xcrun: ignoring environment variable '" << evar << "'"
-           << warn.endl();
+      warn << "xcrun: ignoring environment variable "
+           << "'" << evar << "'" << warn.endl();
     }
+  }
+
+  if (char *SDK = getenv("SDKROOT")) {
+    unsetenv("OSXCROSS_SDKROOT");
+    char *argv[1] = { SDK };
+    sdk(target, argv);
   }
 
   auto dummy = [](Target&, char**) { return 0; };

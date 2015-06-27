@@ -28,6 +28,7 @@
 #include <map>
 #include <algorithm>
 #include <cstring>
+#include <strings.h>
 #include <cstdlib>
 #include <climits>
 #include <cassert>
@@ -38,24 +39,42 @@
 namespace target {
 
 OSVersion Target::getSDKOSNum() const {
-  if (target.size() < 7)
-    return OSVersion();
+  if (SDK) {
+    std::string SDKPath = SDK;
 
-  int n = atoi(target.c_str() + 6);
-  return OSVersion(10, 4 + (n - 8));
+    while (SDKPath.size() && SDKPath[SDKPath.size() - 1] == PATHDIV)
+      SDKPath.erase(SDKPath.size() - 1, 1);
+
+    const char *SDKName = getFileName(SDKPath);
+
+    if (strncasecmp(SDKName, "MacOSX", 6))
+      return OSVersion();
+
+    return parseOSVersion(SDKName + 6);
+  } else {
+    if (target.size() < 7)
+      return OSVersion();
+
+    int n = atoi(target.c_str() + 6);
+    return OSVersion(10, 4 + (n - 8));
+  }
 }
 
 bool Target::getSDKPath(std::string &path) const {
-  OSVersion SDKVer = getSDKOSNum();
+  if (SDK) {
+    path = SDK;
+  } else {
+    OSVersion SDKVer = getSDKOSNum();
 
-  path = execpath;
-  path += "/../SDK/MacOSX";
-  path += SDKVer.shortStr();
+    path = execpath;
+    path += "/../SDK/MacOSX";
+    path += SDKVer.shortStr();
 
-  if (SDKVer <= OSVersion(10, 4))
-    path += "u";
+    if (SDKVer <= OSVersion(10, 4))
+      path += "u";
 
-  path += ".sdk";
+    path += ".sdk";
+  }
 
   if (!dirExists(path)) {
     err << "cannot find Mac OS X SDK (expected in: " << path << ")"
@@ -467,8 +486,8 @@ bool Target::setup() {
     if (haveArch(Arch::x86_64h)) {
       OSNum = OSVersion(10, 8); // Default to 10.8 for x86_64h
       if (SDKOSNum < OSNum) {
-        err << "'" << getArchName(arch) << "' requires the SDK from "
-            << OSNum.Str() << " (or later)" << err.endl();
+        err << "'" << getArchName(arch) << "' requires Mac OS X SDK "
+            << OSNum.shortStr() << " (or later)" << err.endl();
         return false;
       }
     } else if (stdlib == StdLib::libcxx) {
@@ -488,9 +507,15 @@ bool Target::setup() {
   }
 
   if (haveArch(Arch::x86_64h) && OSNum < OSVersion(10, 8)) {
-    err << "'" << getArchName(Arch::x86_64h) << "' requires "
-        << "'-mmacosx-version-min=10.8' (or later)" << err.endl();
-    return false;
+    // -mmacosx-version-min= < 10.8 in combination with '-arch x86_64h'
+    // may cause linker errors.
+
+    // Erroring here is really annoying, better risk linking errors instead
+    // of enforcing '-mmacosx-version-min= >= 10.8'.
+
+    if (!getenv("OSXCROSS_NO_X86_64H_DEPLOYMENT_TARGET_WARNING"))
+      warn << "'-mmacosx-version-min=' should be '>= 10.8' for architecture "
+           << "'" << getArchName(Arch::x86_64h) << "'" << warn.endl();
   }
 
   if (stdlib == StdLib::unset) {
@@ -501,7 +526,7 @@ bool Target::setup() {
     }
   } else if (stdlib == StdLib::libcxx) {
     if (!hasLibCXX()) {
-      err << "libc++ requires the SDK from 10.7 (or later)" << err.endl();
+      err << "libc++ requires Mac OS X SDK 10.7 (or later)" << err.endl();
       return false;
     }
 
@@ -612,6 +637,12 @@ bool Target::setup() {
       warn << "cannot find clang intrinsic headers; please report this "
               "issue to the OSXCross project" << warn.endl();
     } else {
+      if (haveArch(Arch::x86_64h) && clangversion < ClangVersion(3, 5)) {
+        err << "'" << getArchName(Arch::x86_64h) << "' requires clang 3.5 "
+            << "(or later)" << err.endl();
+        return false;
+      }
+
       fargs.push_back("-isystem");
       fargs.push_back(tmp);
     }
