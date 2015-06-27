@@ -71,8 +71,8 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ### PACKAGING THE SDK: ###
 
-** [Please ensure you have read and understood the Xcode license
-   terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf) **
+**[Please ensure you have read and understood the Xcode license
+   terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf)**
 
 ##### Packaging the SDK on Mac OS X: #####
 
