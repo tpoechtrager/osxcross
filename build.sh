@@ -153,8 +153,8 @@ else
 fi
 
 CCTOOLS="cctools-862-ld64-$LINKER_VERSION"
-CCTOOLS_TARBALL=`ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1`
-CCTOOLS_REVHASH=`echo "$CCTOOLS_TARBALL" head -n1 | tr '_' ' ' | tr '.' ' ' | awk '{print $3}'`
+CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
+CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' ' ' | tr '.' ' ' | awk '{print $3}')
 
 if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
@@ -235,7 +235,7 @@ fi
 fi
 # XAR END
 
-if [ ! -f "have_cctools_$TARGET" ]; then
+if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
 function check_cctools()
 {
