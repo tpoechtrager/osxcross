@@ -63,8 +63,9 @@ case $CLANG_VERSION in
   3.4*) BRANCH=release_34 ;;
   3.5*) BRANCH=release_35 ;;
   3.6*) BRANCH=release_36 ;;
-  3.7*) BRANCH=master ;;
-  * ) echo "Unsupported Clang version, must be >= 3.2 and <= 3.7" 1>&2; exit 1;
+  3.7*) BRANCH=release_37 ;;
+  3.8*) BRANCH=master ;;
+  * ) echo "Unsupported Clang version, must be >= 3.2 and <= 3.8" 1>&2; exit 1;
 esac
 
 pushd $OSXCROSS_BUILD_DIR &>/dev/null
