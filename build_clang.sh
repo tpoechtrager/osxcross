@@ -46,18 +46,10 @@ fi
 source $BASE_DIR/tools/trap_exit.sh
 
 MIRROR="http://llvm.org"
-#MIRROR="http://archive.ubuntu.com"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=3.6
-  CLANG_VERSION_PATCH=.1
+  CLANG_VERSION=3.6.2
 fi
-
-if [[ $MIRROR == *ubuntu* ]] && [ $CLANG_VERSION_PATCH == .0 ]; then
-  CLANG_VERSION_PATCH=
-fi
-
-CLANG_VERSION_MMP="${CLANG_VERSION}${CLANG_VERSION_PATCH}"
 
 if [ -z "$INSTALLPREFIX" ]; then
   INSTALLPREFIX="/usr/local"
@@ -93,30 +85,16 @@ fi
 
 pushd $TARBALL_DIR &>/dev/null
 
-if [[ $MIRROR == *ubuntu* ]]; then
-
-  LLVM_PKG="$MIRROR/ubuntu/pool/main/l/llvm-toolchain-${CLANG_VERSION}/"
-  LLVM_PKG+="llvm-toolchain-${CLANG_VERSION}_${CLANG_VERSION_MMP}"
-  LLVM_PKG+=".orig.tar.bz2"
-
-  CLANG_PKG="$MIRROR/ubuntu/pool/main/l/llvm-toolchain-${CLANG_VERSION}/"
-  CLANG_PKG+="llvm-toolchain-${CLANG_VERSION}_${CLANG_VERSION_MMP}"
-  CLANG_PKG+=".orig-clang.tar.bz2"
-
-else
-
-  if [ -z "$PKGCOMPRESSOR" ]; then
-    PKGCOMPRESSOR="tar.xz"
-    [ $CLANG_VERSION == "3.4" ] && PKGCOMPRESSOR="tar.gz"
-  fi
-
-  LLVM_PKG="$MIRROR/releases/${CLANG_VERSION_MMP}/"
-  LLVM_PKG+="llvm-${CLANG_VERSION_MMP}.src.${PKGCOMPRESSOR}"
- 
-  CLANG_PKG="$MIRROR/releases/${CLANG_VERSION_MMP}/"
-  CLANG_PKG+="cfe-${CLANG_VERSION_MMP}.src.${PKGCOMPRESSOR}"
-
+if [ -z "$PKGCOMPRESSOR" ]; then
+  PKGCOMPRESSOR="tar.xz"
+  [ $CLANG_VERSION == "3.4" ] && PKGCOMPRESSOR="tar.gz"
 fi
+
+LLVM_PKG="$MIRROR/releases/${CLANG_VERSION}/"
+LLVM_PKG+="llvm-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
+ 
+CLANG_PKG="$MIRROR/releases/${CLANG_VERSION}/"
+CLANG_PKG+="cfe-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
 
 wget -c $LLVM_PKG
 wget -c $CLANG_PKG
