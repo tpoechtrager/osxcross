@@ -114,6 +114,7 @@ mkdir -p $SDK_DIR
 
 require $CC
 require $CXX
+
 require clang
 require patch
 require sed
@@ -135,7 +136,7 @@ if [ "$PLATFORM" == "Darwin" ]; then
   CXX+=" -stdlib=libc++"
 fi
 
-res=`check_cxx_stdlib`
+res=$(check_cxx_stdlib)
 
 if [ "$PLATFORM" == "Darwin" ]; then
   CXX=$PREVCXX
@@ -143,18 +144,19 @@ if [ "$PLATFORM" == "Darwin" ]; then
 fi
 
 if [ $res -ne 0 ]; then
-  echo "Your C++ standard library is either broken or too old to build ld64-241.9"
-  echo "Building ld64-134.9 instead"
-  echo ""
+  echo "Your C++ standard library is either broken or too old to build ld64-241.9" 1>&2
+  echo "Building ld64-134.9 instead" 1>&2
+  echo "" 1>&2
   sleep 3
   LINKER_VERSION=134.9
 else
-  LINKER_VERSION=241.9
+  LINKER_VERSION=242
 fi
 
-CCTOOLS="cctools-862-ld64-$LINKER_VERSION"
+CCTOOLS="cctools-870-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
-CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' ' ' | tr '.' ' ' | awk '{print $3}')
+CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' '\n' | \
+                  tr '.' '\n' | tail -n3 | head -n1)
 
 if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
@@ -169,14 +171,6 @@ pushd .. &>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
-patch -p1 < $PATCH_DIR/cctools-ld64-strnlen.patch
-patch -p0 < $PATCH_DIR/cctools-ld64-llvm-3.7.patch
-patch -p0 < $PATCH_DIR/cctools-ld64-abs-warning.patch
-patch -p0 < $PATCH_DIR/cctools-ld64-rpath.patch
-pushd .. &>/dev/null
-patch -p0 < $PATCH_DIR/cctools-ld64-otool-disasm.patch
-chmod +x tools/fix_liblto.sh
-popd &>/dev/null
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"

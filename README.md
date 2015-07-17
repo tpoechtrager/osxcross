@@ -29,8 +29,12 @@ Move your packaged SDK to the tarballs/ directory.
 
 Then ensure you have the following installed on your Linux/BSD box:
 
-`Clang 3.2+`, `llvm-devel`, `patch`, `libxml2-devel` (<=10.5 only),  
-`uuid-devel`,   `openssl-devel` and the `bash shell`.
+`Clang 3.2+`, `patch`, `libxml2-devel` (<=10.6 only) and the `bash shell`.
+
+Optional:
+
+`llvm-devel`: For Link Time Optimization support  
+`uuid-devel`: For ld64 `-random_uuid` support
 
 \--  
 You can run 'sudo tools/get\_dependencies.sh' to get these automatically.  
@@ -197,6 +201,14 @@ can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
 x86\_64h defaults to `Mac OS X 10.8` and requires clang 3.5+.  
 x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
+
+### BUILDING OSXCROSS WITH GCC: ###
+
+You can build OSXCross with GCC this way:
+
+`CC=gcc CXX=g++ ./build.sh`
+
+You will need gcc/g++/gcc-objc 4.6+.
 
 ### LICENSE: ####
   * scripts/wrapper: GPLv2

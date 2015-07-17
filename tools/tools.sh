@@ -11,12 +11,44 @@ PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
 
 if [ -z "$USESYSTEMCOMPILER" ]; then
-  export CC=clang
-  export CXX=clang++
+  # Default to gcc on some OSs rather than clang due to either
+  # libstdc++ issues (clang uses an outdated version on those)
+  # or some other incompatibilities
+
+  case "$PLATFORM" in
+    CYGWIN* | DragonFly )
+      cc=gcc
+      cxx=g++
+    ;;
+    OpenBSD )
+      cc=egcc
+      cxx=eg++
+    ;;
+    Darwin )
+      cc=clang
+      cxx=clang++
+    ;;
+    * )
+      case "$ARCH" in
+        arm* )
+          cc=gcc
+          cxx=g++
+        ;;
+        * )
+          cc=clang
+          cxx=clang++
+        ;;
+      esac
+    ;;
+  esac
+
+  [ -z "$CC" ] && export CC=$cc
+  [ -z "$CXX" ] && export CXX=$cxx
 elif [ -n "$CC" -o -n "$CXX" ]; then
   echo "CC/CXX should not be set, continuing in 5 seconds..." 1>&2
   sleep 5
 fi
+
 
 # enable debug messages
 test -n "$OCDEBUG" && set -x
