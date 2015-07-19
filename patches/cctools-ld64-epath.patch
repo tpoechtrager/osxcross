@@ -1,8 +1,8 @@
 diff --git cctools/ld64/src/3rd/helper.c cctools/ld64/src/3rd/helper.c
-index ef33219..540e009 100644
+index 2bed724..3a8d4b9 100644
 --- cctools/ld64/src/3rd/helper.c
 +++ cctools/ld64/src/3rd/helper.c
-@@ -17,11 +17,17 @@ const char ldVersionString[] = "134.9\n";
+@@ -17,11 +17,17 @@ const char ldVersionString[] = "242\n";
  #include <mach/host_info.h>
  #include <sys/time.h>
  #include <assert.h>
@@ -236,7 +236,7 @@ index 1aa355c..633c9dc 100644
  #endif
  }
 diff --git usage_examples/ios_toolchain/wrapper.c usage_examples/ios_toolchain/wrapper.c
-index ed536b2..2ebd188 100644
+index a55bd41..5764c92 100644
 --- usage_examples/ios_toolchain/wrapper.c
 +++ usage_examples/ios_toolchain/wrapper.c
 @@ -19,30 +19,79 @@
