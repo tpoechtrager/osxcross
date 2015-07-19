@@ -9,10 +9,10 @@ prog="cpucount"
 pushd "${0%/*}" >/dev/null 2>&1
 
 case "$(uname -s)" in
-  *NT*)
+  *NT* | CYGWIN*)
     prog="${prog}.exe" ;;
 esac
 
-test ! -f $prog && cc cpucount.c -o cpucount &>/dev/null
+[ ! -f $prog ] && cc cpucount.c -o cpucount &>/dev/null
 
 eval "./${prog}"

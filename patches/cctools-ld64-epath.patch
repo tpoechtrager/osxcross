@@ -1,5 +1,5 @@
 diff --git cctools/ld64/src/3rd/helper.c cctools/ld64/src/3rd/helper.c
-index ef33219..6983e52 100644
+index ef33219..540e009 100644
 --- cctools/ld64/src/3rd/helper.c
 +++ cctools/ld64/src/3rd/helper.c
 @@ -17,11 +17,17 @@ const char ldVersionString[] = "134.9\n";
@@ -70,7 +70,7 @@ index ef33219..6983e52 100644
 +    if (*comm == '/' || *comm == '.') {
 +        char *rpath;
 +        if ((rpath = realpath(comm, NULL))) {
-+          snprintf(epath, *size, "%s", rpath);
++          strlcpy(epath, rpath, *size);
 +          free(rpath);
 +          ok = 1;
 +        }
@@ -112,7 +112,7 @@ index ef33219..6983e52 100644
      }
      else
 diff --git cctools/libstuff/emulated.c cctools/libstuff/emulated.c
-index 1aa355c..b8c52e4 100644
+index 1aa355c..633c9dc 100644
 --- cctools/libstuff/emulated.c
 +++ cctools/libstuff/emulated.c
 @@ -14,46 +14,88 @@
@@ -185,7 +185,7 @@ index 1aa355c..b8c52e4 100644
 +  if (*comm == '/' || *comm == '.') {
 +    char *rpath;
 +    if ((rpath = realpath(comm, NULL))) {
-+      snprintf(epath, *size, "%s", rpath);
++      strlcpy(epath, rpath, *size);
 +      free(rpath);
 +      ok = 1;
 +    }
@@ -236,7 +236,7 @@ index 1aa355c..b8c52e4 100644
  #endif
  }
 diff --git usage_examples/ios_toolchain/wrapper.c usage_examples/ios_toolchain/wrapper.c
-index ed536b2..438032f 100644
+index ed536b2..2ebd188 100644
 --- usage_examples/ios_toolchain/wrapper.c
 +++ usage_examples/ios_toolchain/wrapper.c
 @@ -19,30 +19,79 @@
@@ -293,7 +293,7 @@ index ed536b2..438032f 100644
 +    if (*comm == '/' || *comm == '.') {
 +        char *rpath;
 +        if ((rpath = realpath(comm, NULL))) {
-+          snprintf(epath, buflen, "%s", rpath);
++          strlcpy(epath, rpath, buflen);
 +          free(rpath);
 +          ok = 1;
 +        }

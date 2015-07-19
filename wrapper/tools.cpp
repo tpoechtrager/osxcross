@@ -114,8 +114,12 @@ char *getExecutablePath(char *buf, size_t len) {
     abort();
   comm = argv[0];
   if (*comm == '/' || *comm == '.') {
-    if (realpath(comm, buf))
+    char *rpath;
+    if ((rpath = realpath(comm, NULL))) {
+      strlcpy(buf, rpath, len);
+      free(rpath);
       ok = 1;
+    }
   } else {
     char *sp;
     char *xpath = strdup(getenv("PATH"));
