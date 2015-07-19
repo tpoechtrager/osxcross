@@ -10,6 +10,10 @@ TARGET_DIR=$BASE_DIR/target
 PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
 
+PLATFORM=$(uname -s)
+SCRIPT=$(basename $0)
+ARCH=$(uname -m)
+
 if [ -z "$USESYSTEMCOMPILER" ]; then
   # Default to gcc on some OSs rather than clang due to either
   # libstdc++ issues (clang uses an outdated version on those)
@@ -53,18 +57,15 @@ fi
 # enable debug messages
 test -n "$OCDEBUG" && set -x
 
-PLATFORM="`uname -s`"
-SCRIPT="`basename $0`"
-
 if [[ $SCRIPT != *wrapper/build.sh ]]; then
   # how many concurrent jobs should be used for compiling?
-  JOBS=${JOBS:=`tools/get_cpu_count.sh`}
+  JOBS=${JOBS:=$(tools/get_cpu_count.sh)}
 
   if [ $SCRIPT != "build.sh" -a $SCRIPT != "build_clang.sh" -a \
        $SCRIPT != "mount_xcode_image.sh" -a \
        $SCRIPT != "gen_sdk_package_darling_dmg.sh" -a \
        $SCRIPT != "gen_sdk_package_p7zip.sh" ]; then
-    `tools/osxcross_conf.sh`
+    eval $(tools/osxcross_conf.sh)
 
     if [ $? -ne 0 ]; then
       echo -n "you need to complete ./build.sh first, before you can start "
@@ -92,10 +93,16 @@ function require()
   set -e
 }
 
-if [[ $PLATFORM == *BSD ]]; then
+if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "DragonFly" ]; then
   MAKE=gmake
 else
   MAKE=make
+fi
+
+if [[ $PLATFORM == OpenBSD ]]; then
+  SED=gsed
+else
+  SED=sed
 fi
 
 if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "Darwin" ]; then
@@ -104,13 +111,13 @@ else
   READLINK=readlink
 fi
 
-
+require $SED
 require $MAKE
 
 function extract()
 {
   test $# -ge 2 -a $# -lt 4 && test $2 -eq 2 && echo ""
-  echo "extracting `basename $1` ..."
+  echo "extracting $(basename $1) ..."
 
   local tarflags
 
@@ -119,6 +126,7 @@ function extract()
 
   case $1 in
     *.pkg)
+      require cpio
       which xar &>/dev/null || exit 1
       xar -xf $1
       cat Payload | gunzip -dc | cpio -i 2>/dev/null && rm Payload
@@ -142,6 +150,17 @@ function extract()
     echo ""
   fi
 }
+
+if [[ $PLATFORM == CYGWIN* ]]; then
+
+# Work around Cygwin brokenness.
+function ln() {
+  [[ $1 == -* ]] && rm -f $3
+  $(which ln) $@
+}
+export -f ln
+
+fi
 
 function verbose_cmd()
 {

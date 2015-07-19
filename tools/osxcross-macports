@@ -306,7 +306,8 @@ installPkg()
 
   echo "installing $pkgname ..."
   verboseMsg " extracting $pkgfile ..."
-  tar xf "$CACHE/$pkgfile"
+
+  bzip2 -dc "$CACHE/$pkgfile" | tar xf -
 
   if [ -d opt/local ]; then
     verboseMsg " fixing permissions ..."

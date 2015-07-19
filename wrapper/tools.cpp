@@ -52,10 +52,13 @@
 #include <libproc.h>
 #endif
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #include <sys/user.h>
+#endif
+
+#ifdef __FreeBSD__
 #include <libutil.h>
 #endif
 
@@ -93,23 +96,60 @@ char *getExecutablePath(char *buf, size_t len) {
   unsigned int l = len;
   if (_NSGetExecutablePath(buf, &l) != 0)
     return nullptr;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
   int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
   size_t l = len;
   if (sysctl(mib, 4, buf, &l, nullptr, 0) != 0)
     return nullptr;
+#elif defined(__OpenBSD__)
+  int mib[4] = {CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV};
+  char **argv;
+  size_t l;
+  const char *comm;
+  int ok = 0;
+  if (sysctl(mib, 4, NULL, &l, NULL, 0) < 0)
+    abort();
+  argv = new char *[l];
+  if (sysctl(mib, 4, argv, &l, NULL, 0) < 0)
+    abort();
+  comm = argv[0];
+  if (*comm == '/' || *comm == '.') {
+    if (realpath(comm, buf))
+      ok = 1;
+  } else {
+    char *sp;
+    char *xpath = strdup(getenv("PATH"));
+    char *path = strtok_r(xpath, ":", &sp);
+    struct stat st;
+    if (!xpath)
+      abort();
+    while (path) {
+      snprintf(buf, len, "%s/%s", path, comm);
+      if (!stat(buf, &st) && (st.st_mode & S_IXUSR)) {
+        ok = 1;
+        break;
+      }
+      path = strtok_r(NULL, ":", &sp);
+    }
+    free(xpath);
+  }
+  if (ok)
+    l = strlen(buf);
+  else
+    l = 0;
+  delete[] argv;
 #elif defined(_WIN32)
   size_t l = GetModuleFileName(nullptr, buf, (DWORD)len);
 #else
   ssize_t l = readlink("/proc/self/exe", buf, len);
+  assert(l > 0 && "/proc not mounted?");
 #endif
   if (l <= 0)
     return nullptr;
   buf[len - 1] = '\0';
   p = strrchr(buf, PATHDIV);
-  if (p) {
+  if (p)
     *p = '\0';
-  }
   return buf;
 }
 
@@ -232,6 +272,57 @@ void concatEnvVariable(const char *var, const std::string &val) {
     nval += oldval;
   }
   setenv(var, nval.c_str(), 1);
+}
+
+std::string &escapePath(const std::string &path, std::string &escapedpath) {
+  for (const char *p = path.c_str(); *p; ++p) {
+    switch (*p) {
+    case '"':
+    case '\'':
+    case '\\':
+    case '$':
+    case '(':
+    case ')':
+    case ' ':
+    case ';':
+    case ':':
+      escapedpath += '\\';
+    }
+    escapedpath += *p;
+  }
+  return escapedpath;
+}
+
+void splitPath(const char *path, std::vector<std::string> &result) {
+  char *sp;
+  char *xpath = strdup(path);
+  char *p = strtok_r(xpath, ":", &sp);
+  if (!xpath)
+    abort();
+  while (p) {
+    result.push_back(p);
+    p = strtok_r(NULL, ":", &sp);
+  }
+  free(xpath);
+}
+
+std::string joinPath(const std::vector<std::string> &path) {
+  std::string tmp;
+  std::string escaped;
+  for (size_t i = 0; i < path.size(); ++i) {
+    escaped.clear();
+    tmp += escapePath(path[i], escaped);
+    if (i != path.size() - 1)
+      tmp += ":";
+  }
+  return tmp;
+}
+
+bool hasPath(const std::vector<std::string> &path, const char *find) {
+  for (const std::string &p : path)
+    if (p == find)
+      return true;
+  return false;
 }
 
 //

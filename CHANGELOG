@@ -2,8 +2,15 @@
 
 changed:
 * improved and colorized wrapper error/warning/debug/info messages
+* updated cctools to 870
+* updated ld64 to 242
 
 added:
+* Windows support via Cygwin
+* OpenBSD and DragonFlyBSD support
+* Linux ARM support
+* Linux PPC/PPC64 support: Totally untested, but compiles
+* gcc compiler support: OSXCross can now be built with gcc
 * 'osxcross-man' man page tool
 * p7zip sdk packaging script
 * a minimalistic xcrun tool
@@ -86,7 +93,7 @@ fixed:
 /******************************* v0.4 *******************************/
 
 added:
-  * gcc support
+  * gcc build script
   * a workaround for buggy unistd.h headers
 
 /******************************* v0.3 *******************************/

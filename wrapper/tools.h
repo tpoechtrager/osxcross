@@ -127,6 +127,10 @@ std::string &fixPathDiv(std::string &path);
 //
 
 void concatEnvVariable(const char *var, const std::string &val);
+std::string &escapePath(const std::string &path, std::string &escapedpath);
+void splitPath(const char *path, std::vector<std::string> &result);
+std::string joinPath(const std::vector<std::string> &path);
+bool hasPath(const std::vector<std::string> &path, const char *find);
 
 //
 // Files and directories

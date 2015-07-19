@@ -30,8 +30,17 @@ ifneq (,$(findstring FreeBSD, $(PLATFORM)))
 else ifneq (,$(findstring Darwin, $(PLATFORM)))
   override CXXFLAGS+=-Wno-deprecated
   override LDFLAGS+=-framework CoreServices -Wno-deprecated
-else ifeq (,$(findstring Windows, $(PLATFORM)))
+else ifneq (,$(findstring CYGWIN, $(PLATFORM)))
+  # -std=gnu++0x doesn't work, so work around...
+  override CXXFLAGS+=-U__STRICT_ANSI__
+else
+
+ifeq (,$(findstring Windows, $(PLATFORM)))
+ifeq (,$(findstring OpenBSD, $(PLATFORM)))
   override LDFLAGS+=-lrt
+endif
+endif
+
 endif
 
 BIN=wrapper

@@ -13,23 +13,23 @@ function guess_sdk_version()
   file=
   sdk=
   guess_sdk_version_result=
-  sdkcount=`find -L tarballs/ -type f | grep MacOSX | wc -l`
+  sdkcount=$(find -L tarballs/ -type f | grep MacOSX | wc -l)
   if [ $sdkcount -eq 0 ]; then
     echo no SDK found in 'tarballs/'. please see README.md
     exit 1
   elif [ $sdkcount -gt 1 ]; then
-    sdks=`find -L tarballs/ -type f | grep MacOSX`
+    sdks=$(find -L tarballs/ -type f | grep MacOSX)
     for sdk in $sdks; do echo $sdk; done
     echo 'more than one MacOSX SDK tarball found. please set'
     echo 'SDK_VERSION environment variable for the one you want'
     echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] ./build.sh)'
     exit 1
   else
-    sdk=`find -L tarballs/ -type f | grep MacOSX`
-    tmp2=`echo ${sdk/bz2/} | sed s/[^0-9.]//g`
-    tmp3=`echo $tmp2 | sed s/\\\.*$//g`
+    sdk=$(find -L tarballs/ -type f | grep MacOSX)
+    tmp2=$(echo ${sdk/bz2/} | sed s/[^0-9.]//g)
+    tmp3=$(echo $tmp2 | sed s/\\\.*$//g)
     guess_sdk_version_result=$tmp3
-    echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'`basename $sdk`
+    echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$(basename $sdk)
   fi
   if [ $guess_sdk_version_result ]; then
     if [ $guess_sdk_version_result = 10.4 ]; then
@@ -44,7 +44,7 @@ function verify_sdk_version()
 {
   sdkv=$1
   for file in tarballs/*; do
-    if [ -f "$file" ] && [ `echo $file | grep OSX.*$sdkv` ]; then
+    if [ -f "$file" ] && [ $(echo $file | grep OSX.*$sdkv) ]; then
       echo "verified at "$file
       sdk=$file
     fi
@@ -119,7 +119,6 @@ require clang
 require patch
 require sed
 require gunzip
-require cpio
 
 pushd $BUILD_DIR &>/dev/null
 
@@ -171,6 +170,11 @@ pushd .. &>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
+if [ $PLATFORM == "OpenBSD" ] || [ $PLATFORM == "DragonFly" ]; then
+  pushd .. &>/dev/null
+  patch -p0 < $PATCH_DIR/cctools-ld64-epath.patch
+  popd &>/dev/null
+fi
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
@@ -180,16 +184,16 @@ $MAKE install -j$JOBS
 popd &>/dev/null
 
 pushd $TARGET_DIR/bin &>/dev/null
-CCTOOLS=`find . -name "x86_64-apple-darwin*"`
+CCTOOLS=$(find . -name "x86_64-apple-darwin*")
 CCTOOLS=($CCTOOLS)
 if [ $X86_64H_SUPPORTED -eq 1 ]; then
   for CCTOOL in ${CCTOOLS[@]}; do
-    CCTOOL_X86_64H=`echo "$CCTOOL" | sed 's/x86_64/x86_64h/g'`
+    CCTOOL_X86_64H=$(echo "$CCTOOL" | sed 's/x86_64/x86_64h/g')
     ln -sf $CCTOOL $CCTOOL_X86_64H
   done
 fi
 for CCTOOL in ${CCTOOLS[@]}; do
-  CCTOOL_I386=`echo "$CCTOOL" | sed 's/x86_64/i386/g'`
+  CCTOOL_I386=$(echo "$CCTOOL" | sed 's/x86_64/i386/g')
   ln -sf $CCTOOL $CCTOOL_I386
 done
 popd &>/dev/null
@@ -204,7 +208,7 @@ ln -sf ../../tools/osxcross-macports osxcross-mp
 ln -sf ../../tools/osxcross-macports omp
 popd &>/dev/null
 
-SDK=`ls $TARBALL_DIR/MacOSX$SDK_VERSION*`
+SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION*)
 
 # XAR
 if [[ $SDK == *.pkg ]]; then
@@ -233,12 +237,12 @@ if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
 
 function check_cctools()
 {
-  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-lipo" ] || exit 1
-  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ld" ] || exit 1
-  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-nm" ] || exit 1
-  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ar" ] || exit 1
-  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-ranlib" ] || exit 1
-  [ -f "/$TARGET_DIR/bin/$1-apple-$TARGET-strip" ] || exit 1
+  [ -f "$TARGET_DIR/bin/$1-apple-$TARGET-lipo" ] || exit 1
+  [ -f "$TARGET_DIR/bin/$1-apple-$TARGET-ld" ] || exit 1
+  [ -f "$TARGET_DIR/bin/$1-apple-$TARGET-nm" ] || exit 1
+  [ -f "$TARGET_DIR/bin/$1-apple-$TARGET-ar" ] || exit 1
+  [ -f "$TARGET_DIR/bin/$1-apple-$TARGET-ranlib" ] || exit 1
+  [ -f "$TARGET_DIR/bin/$1-apple-$TARGET-strip" ] || exit 1
 }
 
 check_cctools i386
@@ -274,7 +278,7 @@ extract $SDK 1 1
 
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
 
-if [ "`ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' '`" != "0" ]; then
+if [ "$(ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then
   mv -f SDKs/*$SDK_VERSION* $SDK_DIR
 else
   mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
@@ -309,7 +313,7 @@ export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
 if [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so
   set +e
-  eval `cat $BUILD_DIR/cctools*/cctools/config.log | grep LLVM_LIB_DIR | head -n1`
+  eval $(cat $BUILD_DIR/cctools*/cctools/config.log | grep LLVM_LIB_DIR | head -n1)
   set -e
   export OSXCROSS_LIBLTO_PATH=$LLVM_LIB_DIR
 fi
@@ -318,11 +322,11 @@ $BASE_DIR/wrapper/build.sh 1>/dev/null
 
 echo ""
 
-if [ `osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN` -eq 1 ]; then
+if [ $(osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN) -eq 1 ]; then
   echo "OSX_VERSION_MIN must be <= SDK_VERSION"
   trap "" EXIT
   exit 1
-elif [ `osxcross-cmp $OSX_VERSION_MIN "<" 10.4` -eq 1  ]; then
+elif [ $(osxcross-cmp $OSX_VERSION_MIN "<" 10.4) -eq 1  ]; then
   echo "OSX_VERSION_MIN must be >= 10.4"
   trap "" EXIT
   exit 1
@@ -336,7 +340,7 @@ test_compiler o64-clang $BASE_DIR/oclang/test.c
 test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
 test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
 
-if [ `osxcross-cmp ${SDK_VERSION/u/} ">=" 10.7` -eq 1 ]; then
+if [ $(osxcross-cmp ${SDK_VERSION/u/} ">=" 10.7) -eq 1 ]; then
   if [ ! -d "$SDK_DIR/MacOSX$SDK_VERSION.sdk/usr/include/c++/v1" ]; then
     echo ""
     echo -n "Given SDK does not contain libc++ headers "

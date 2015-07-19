@@ -777,7 +777,14 @@ int main(int argc, char **argv) {
     }
   }
 
+#ifdef __DragonFly__
+  // Escape DragonFlyBSD's weird PFS paths.
+  std::string escapedexecpath;
+  escapePath(target.execpath, escapedexecpath);
+  concatEnvVariable("COMPILER_PATH", escapedexecpath);
+#else
   concatEnvVariable("COMPILER_PATH", target.execpath);
+#endif
 
   if (target.targetarch.size() > 1 && (target.usegcclibs || target.isGCC()))
     generateMultiArchObjectFile(rc, argc, argv, target, debug);

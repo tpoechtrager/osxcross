@@ -359,6 +359,14 @@ do {                                                                           \
 #define TRYDIR2(libdir) TRYDIR(clangbindir, libdir)
 #define TRYDIR3(libdir) TRYDIR(std::string(), libdir)
 
+#ifdef __CYGWIN__
+#ifdef __x86_64__
+  TRYDIR2("/../lib/clang/x86_64-pc-cygwin");
+#else
+  TRYDIR2("/../lib/clang/i686-pc-cygwin");
+#endif
+#endif
+
   TRYDIR2("/../lib/clang");
 
 #ifdef __linux__

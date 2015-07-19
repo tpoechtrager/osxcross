@@ -1,8 +1,8 @@
-## OS X Cross toolchain for Linux, FreeBSD and NetBSD ##
+## OS X Cross toolchain for Linux, *BSD and Cygwin ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to provide a well working OS X cross toolchain for Linux, FreeBSD and NetBSD.
+The goal of OSXCross is to provide a well working OS X cross toolchain for Linux, *BSD and Cygwin.
 
 ### HOW DOES IT WORK? ###
 
@@ -27,7 +27,7 @@ Please see [README.MACPORTS](https://github.com/tpoechtrager/osxcross/blob/maste
 
 Move your packaged SDK to the tarballs/ directory.
 
-Then ensure you have the following installed on your Linux/BSD box:
+Then ensure you have the following installed on your system:
 
 `Clang 3.2+`, `patch`, `libxml2-devel` (<=10.6 only) and the `bash shell`.
 
@@ -56,7 +56,7 @@ That's it. See usage examples below.
 ##### Building GCC: #####
 
 If you want to build GCC as well, then you can do this by running:  
-`[GCC_VERSION=5.1.0] [ENABLE_FORTRAN=1] ./build_gcc.sh`.  
+`[GCC_VERSION=5.2.0] [ENABLE_FORTRAN=1] ./build_gcc.sh`.  
 
 \[A gfortran usage example can be found [here](https://github.com/tpoechtrager/osxcross/issues/28#issuecomment-67047134)]
 
@@ -91,7 +91,7 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on Linux (and others), Method 1 (works with Xcode >= 4.3): #####
+##### Packing the SDK on Linux, Cygwin (and others), Method 1 (works with Xcode >= 4.3): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Ensure you have `clang` and `make` installed

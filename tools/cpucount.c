@@ -37,7 +37,8 @@
 #endif /* __linux__ */
 
 #if defined(__FreeBSD__) || defined(__NetBSD__) || \
-    defined(__OpenBSD__) || defined(__APPLE__)
+    defined(__OpenBSD__) || defined(__DragonFly__) || \
+    defined(__APPLE__)
 #include <unistd.h>
 #include <sys/param.h>
 #include <sys/types.h>
@@ -70,7 +71,8 @@ int getcpucount() {
   return cpucount ? cpucount : 1;
 #else
 #if defined(__FreeBSD__) || defined(__NetBSD__) || \
-    defined(__OpenBSD__) || defined(__APPLE__)
+    defined(__OpenBSD__) || defined(__DragonFly__) || \
+    defined(__APPLE__)
   int cpucount = 0;
   int mib[4];
   size_t len = sizeof(cpucount);

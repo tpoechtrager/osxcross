@@ -102,7 +102,7 @@ pushd $OSXCROSS_TARGET_DIR/x86_64-apple-$OSXCROSS_TARGET/include &>/dev/null
 pushd c++/${GCC_VERSION}* &>/dev/null
 
 cat $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch | \
-  sed "s/darwin13/$OSXCROSS_TARGET/g" | \
+  $SED "s/darwin13/$OSXCROSS_TARGET/g" | \
   patch -p0 -l &>/dev/null || true
 
 popd &>/dev/null

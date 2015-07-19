@@ -37,43 +37,6 @@ int env(int argc, char **argv) {
   if (!getExecutablePath(epath, sizeof(epath)))
     exit(EXIT_FAILURE);
 
-  // TODO: escape?
-
-  auto containsBadChars = [](const char * p, const char * desc)->bool {
-    if (!p)
-      return false;
-
-    const char *pp = p;
-
-    do {
-      auto badChar = [&](const char *p) {
-        err << desc << " should not contain '" << *p << "'" << warn.endl();
-
-        const char *start = p - std::min<size_t>(p - pp, 30);
-
-        size_t len = std::min<size_t>(strlen(start), 60);
-
-        std::cerr << std::endl;
-        std::cerr << std::string(start, len) << std::endl;
-
-        while (start++ != p)
-          std::cerr << " ";
-
-        std::cerr << "^" << std::endl;
-      };
-      switch (*p) {
-      case '"':
-      case '\'':
-      case '$':
-      case ' ':
-      case ';':
-        badChar(p);
-        return true;
-      }
-    } while (*p && *++p);
-    return false;
-  };
-
   if (argc <= 1) {
     const std::string &pname = getParentProcessName();
 
@@ -86,58 +49,15 @@ int env(int argc, char **argv) {
     }
   }
 
-  auto hasPath = [](const char * ov, const char * v, const char * vs)->bool {
-    // ov = old value
-    // v = value
-    // vs = value suffix
-
-    if (!ov || !v)
-      return false;
-
-    bool hasPathSeparator = false;
-
-    for (auto p = ov; *p; ++p) {
-      if (*p == ':') {
-        hasPathSeparator = true;
-        break;
-      }
-    }
-
-    static std::string tmp;
-
-    auto check = [&](int t)->bool {
-      tmp.clear();
-
-      if (t == 0)
-        tmp = ':';
-
-      tmp += v;
-
-      if (vs)
-        tmp += vs;
-
-      if (t == 1)
-        tmp += ':';
-
-      return strstr(ov, tmp.c_str()) != nullptr;
-    };
-
-    return ((hasPathSeparator && (check(0) || check(1))) || check(-1));
-  };
-
-  if (containsBadChars(oldpath, "PATH"))
-    return 1;
-
-  std::stringstream path;
-  std::stringstream librarypath;
+  std::vector<std::string> path;
   std::map<std::string, std::string> vars;
 
-  path << oldpath;
+  splitPath(oldpath, path);
 
-  if (!hasPath(oldpath, epath, nullptr))
-    path << ":" << epath;
+  if (!hasPath(path, epath))
+    path.push_back(epath);
 
-  vars["PATH"] = path.str();
+  vars["PATH"] = joinPath(path);
 
   auto printVariable = [&](const std::string & var)->bool {
     auto it = vars.find(var);

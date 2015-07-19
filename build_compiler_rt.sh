@@ -31,16 +31,20 @@ set -e
 CLANG_VERSION=$(echo "__clang_major__ __clang_minor__ __clang_patchlevel__" | \
  clang -xc -E - | tail -n1 | tr ' ' '.')
 
-set +e
-which llvm-config &>/dev/null && { CLANG_LIB_DIR=$(llvm-config --libdir); }
-set -e
+if [[ $PLATFORM == CYGWIN* ]] && [[ $(which clang) == "/usr/bin/clang" ]]; then
+  CLANG_LIB_DIR="/usr/lib/clang/$(uname -m)-pc-cygwin"
+else
+  set +e
+  which llvm-config &>/dev/null && { CLANG_LIB_DIR=$(llvm-config --libdir); }
+  set -e
 
-if [ -z "$CLANG_LIB_DIR" ]; then
-  require $READLINK
-  CLANG_LIB_DIR="$(dirname $($READLINK -f $(which clang)))/../lib"
+  if [ -z "$CLANG_LIB_DIR" ]; then
+    require $READLINK
+    CLANG_LIB_DIR="$(dirname $($READLINK -f $(which clang)))/../lib"
+  fi
+
+  CLANG_LIB_DIR+="/clang"
 fi
-
-CLANG_LIB_DIR+="/clang"
 
 if [ ! -d "$CLANG_LIB_DIR" ]; then
   echo "$CLANG_LIB_DIR does not exist!" 1>&2
@@ -84,10 +88,10 @@ git clean -fdx
 touch .clone_complete
 git pull
 
-sed -i "s/Configs += ios//g" make/platform/clang_darwin.mk
-sed -i "s/Configs += cc_kext_ios5//g" make/platform/clang_darwin.mk
-sed -i "s/Configs += profile_ios//g" make/platform/clang_darwin.mk
-sed -i "s/Configs += asan_iossim_dynamic//g" make/platform/clang_darwin.mk
+$SED -i "s/Configs += ios//g" make/platform/clang_darwin.mk
+$SED -i "s/Configs += cc_kext_ios5//g" make/platform/clang_darwin.mk
+$SED -i "s/Configs += profile_ios//g" make/platform/clang_darwin.mk
+$SED -i "s/Configs += asan_iossim_dynamic//g" make/platform/clang_darwin.mk
 
 # Unbreak the -Werror build.
 if [ -f lib/asan/asan_mac.h ]; then
