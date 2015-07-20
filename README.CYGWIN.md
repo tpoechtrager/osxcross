@@ -16,13 +16,13 @@ Click on setup-*.exe and install the following packages:
 
 #### Step 2: ####
 
-Open the Cygwin shell.
+Open the Cygwin shell:
 
 ![](images/cygwin/osxcross/2.png)
 
 #### Step 3: ####
 
-Clone the OSXCross repository.
+Clone the OSXCross repository:
 
 ![](images/cygwin/osxcross/3.png)
 
@@ -43,13 +43,13 @@ Build OSXCross:
 
 #### Step 6: ####
 
-Add the printed target/bin path to your `~/.bashrc`.
+Add the printed target/bin path to your `~/.bashrc`:
 
 ![](images/cygwin/osxcross/6.png)
 
 #### Step 7: ####
 
-Restart the Cygwin shell.
+Restart the Cygwin shell:
 
 ![](images/cygwin/osxcross/7.png)
 
@@ -126,5 +126,3 @@ Compile the test program:
 ... or the xcrun way:
 
 ![](images/cygwin/macports/6.png)
-
-
