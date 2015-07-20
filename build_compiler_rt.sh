@@ -10,7 +10,6 @@ if [ $PLATFORM == "Darwin" ]; then
 fi
 
 require git
-require $MAKE
 
 set +e
 
@@ -31,35 +30,24 @@ set -e
 CLANG_VERSION=$(echo "__clang_major__ __clang_minor__ __clang_patchlevel__" | \
  clang -xc -E - | tail -n1 | tr ' ' '.')
 
-if [[ $PLATFORM == CYGWIN* ]] && [[ $(which clang) == "/usr/bin/clang" ]]; then
-  CLANG_LIB_DIR="/usr/lib/clang/$(uname -m)-pc-cygwin"
-else
-  set +e
-  which llvm-config &>/dev/null && { CLANG_LIB_DIR=$(llvm-config --libdir); }
-  set -e
-
-  if [ -z "$CLANG_LIB_DIR" ]; then
-    require $READLINK
-    CLANG_LIB_DIR="$(dirname $($READLINK -f $(which clang)))/../lib"
-  fi
-
-  CLANG_LIB_DIR+="/clang"
-fi
-
-if [ ! -d "$CLANG_LIB_DIR" ]; then
-  echo "$CLANG_LIB_DIR does not exist!" 1>&2
-  echo "Installing llvm-dev may help" 1>&2
-  exit 1
-fi
-
 # Drop patch level for <= 3.3.
 if [ $(osxcross-cmp $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
   CLANG_VERSION=$(echo $CLANG_VERSION | tr '.' ' ' |
                   awk '{print $1, $2}' | tr ' ' '.')
 fi
 
-CLANG_INCLUDE_DIR="${CLANG_LIB_DIR}/${CLANG_VERSION}/include"
-CLANG_DARWIN_LIB_DIR="${CLANG_LIB_DIR}/${CLANG_VERSION}/lib/darwin"
+CLANG_LIB_DIR=$(clang -print-search-dirs | grep "libraries: =" | \
+                tr '=' ' ' | tr ':' ' ' | awk '{print $2}')
+
+VERSION=$(echo "${CLANG_LIB_DIR}" | tr '/' '\n' | tail -n1)
+
+if [ $VERSION != $CLANG_VERSION ]; then
+  echo "sanity check failed: $VERSION != ${CLANG_VERSION}" 1>&2
+  exit 1
+fi
+
+CLANG_INCLUDE_DIR="${CLANG_LIB_DIR}/include"
+CLANG_DARWIN_LIB_DIR="${CLANG_LIB_DIR}/lib/darwin"
 
 case $CLANG_VERSION in
   3.2*) BRANCH=release_32 ;;
@@ -95,7 +83,7 @@ $SED -i "s/Configs += asan_iossim_dynamic//g" make/platform/clang_darwin.mk
 
 # Unbreak the -Werror build.
 if [ -f lib/asan/asan_mac.h ]; then
-  sed -i "s/ASAN__MAC_H/ASAN_MAC_H/g" lib/asan/asan_mac.h
+  $SED -i "s/ASAN__MAC_H/ASAN_MAC_H/g" lib/asan/asan_mac.h
 fi
 
 if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
@@ -111,12 +99,12 @@ then
   exit 1
 fi
 
-EXTRA_MAKE_FLAGS="LIPO=\"xcrun lipo\""
+EXTRA_MAKE_FLAGS="LIPO=\"$(xcrun -f lipo)\""
 
 if [ $(osxcross-cmp $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
-  EXTRA_MAKE_FLAGS+=" AR=\"xcrun ar\""
-  EXTRA_MAKE_FLAGS+=" RANLIB=\"xcrun ranlib\""
-  EXTRA_MAKE_FLAGS+=" CC=\"xcrun clang\""
+  EXTRA_MAKE_FLAGS+=" AR=\"$(xcrun -f ar)\""
+  EXTRA_MAKE_FLAGS+=" RANLIB=\"$(xcrun -f ranlib)\""
+  EXTRA_MAKE_FLAGS+=" CC=\"$(xcrun -f clang)\""
 fi
 
 if [ -n "$OCDEBUG" ]; then
@@ -135,8 +123,8 @@ echo ""
 echo "Please run the following commands by hand to install compiler-rt:"
 echo ""
 
-echo "mkdir -p ${CLANG_LIB_DIR}/${CLANG_VERSION}/include"
-echo "mkdir -p ${CLANG_LIB_DIR}/${CLANG_VERSION}/lib/darwin"
+echo "mkdir -p ${CLANG_INCLUDE_DIR}"
+echo "mkdir -p ${CLANG_DARWIN_LIB_DIR}"
 echo "cp -r $PWD/include/sanitizer ${CLANG_INCLUDE_DIR}"
 
 pushd "clang_darwin" &>/dev/null

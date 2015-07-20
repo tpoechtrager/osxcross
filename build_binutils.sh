@@ -6,7 +6,7 @@ DESC=binutils
 USESYSTEMCOMPILER=1
 source tools/tools.sh
 
-`tools/osxcross_conf.sh`
+eval $(tools/osxcross_conf.sh)
 
 # binutils version to build
 BINUTILS_VERSION=2.25

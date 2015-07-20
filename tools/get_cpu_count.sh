@@ -15,4 +15,4 @@ esac
 
 [ ! -f $prog ] && cc cpucount.c -o cpucount &>/dev/null
 
-eval "./${prog}"
+./$prog

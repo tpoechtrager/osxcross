@@ -59,7 +59,9 @@ test -n "$OCDEBUG" && set -x
 
 if [[ $SCRIPT != *wrapper/build.sh ]]; then
   # how many concurrent jobs should be used for compiling?
-  JOBS=${JOBS:=$(tools/get_cpu_count.sh)}
+  if [ -z "$JOBS" ]; then
+    JOBS=$(tools/get_cpu_count.sh || echo 1)
+  fi
 
   if [ $SCRIPT != "build.sh" -a $SCRIPT != "build_clang.sh" -a \
        $SCRIPT != "mount_xcode_image.sh" -a \
@@ -95,20 +97,10 @@ function require()
 
 if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "DragonFly" ]; then
   MAKE=gmake
-else
-  MAKE=make
-fi
-
-if [[ $PLATFORM == OpenBSD ]]; then
   SED=gsed
 else
+  MAKE=make
   SED=sed
-fi
-
-if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "Darwin" ]; then
-  READLINK=greadlink
-else
-  READLINK=readlink
 fi
 
 require $SED

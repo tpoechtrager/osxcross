@@ -26,8 +26,8 @@ function guess_sdk_version()
     exit 1
   else
     sdk=$(find -L tarballs/ -type f | grep MacOSX)
-    tmp2=$(echo ${sdk/bz2/} | sed s/[^0-9.]//g)
-    tmp3=$(echo $tmp2 | sed s/\\\.*$//g)
+    tmp2=$(echo ${sdk/bz2/} | $SED s/[^0-9.]//g)
+    tmp3=$(echo $tmp2 | $SED s/\\\.*$//g)
     guess_sdk_version_result=$tmp3
     echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$(basename $sdk)
   fi
@@ -117,7 +117,6 @@ require $CXX
 
 require clang
 require patch
-require sed
 require gunzip
 
 pushd $BUILD_DIR &>/dev/null
@@ -188,12 +187,12 @@ CCTOOLS=$(find . -name "x86_64-apple-darwin*")
 CCTOOLS=($CCTOOLS)
 if [ $X86_64H_SUPPORTED -eq 1 ]; then
   for CCTOOL in ${CCTOOLS[@]}; do
-    CCTOOL_X86_64H=$(echo "$CCTOOL" | sed 's/x86_64/x86_64h/g')
+    CCTOOL_X86_64H=$(echo "$CCTOOL" | $SED 's/x86_64/x86_64h/g')
     ln -sf $CCTOOL $CCTOOL_X86_64H
   done
 fi
 for CCTOOL in ${CCTOOLS[@]}; do
-  CCTOOL_I386=$(echo "$CCTOOL" | sed 's/x86_64/i386/g')
+  CCTOOL_I386=$(echo "$CCTOOL" | $SED 's/x86_64/i386/g')
   ln -sf $CCTOOL $CCTOOL_I386
 done
 popd &>/dev/null

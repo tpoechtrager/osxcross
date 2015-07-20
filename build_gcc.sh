@@ -8,7 +8,7 @@ DESC=gcc
 USESYSTEMCOMPILER=1
 source tools/tools.sh
 
-`tools/osxcross_conf.sh`
+eval $(tools/osxcross_conf.sh)
 
 # GCC version to build
 # (<4.7 will not work properly with libc++)
