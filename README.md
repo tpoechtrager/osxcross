@@ -25,6 +25,8 @@ Please see [README.MACPORTS](README.MACPORTS.md) for more.
 
 ### INSTALLATION: ###
 
+*Windows/Cygwin users should follow [README.CYGWIN](README.CYGWIN.md).*
+
 Move your packaged SDK to the tarballs/ directory.
 
 Then ensure you have the following installed on your system:
