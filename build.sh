@@ -202,9 +202,9 @@ fi
 
 # MacPorts symlinks
 pushd $TARGET_DIR/bin &>/dev/null # The BSD ln command doesn't support '-r'
-ln -sf ../../tools/osxcross-macports osxcross-macports
-ln -sf ../../tools/osxcross-macports osxcross-mp
-ln -sf ../../tools/osxcross-macports omp
+ln -sf $BASE_DIR/tools/osxcross-macports osxcross-macports
+ln -sf $BASE_DIR/tools/osxcross-macports osxcross-mp
+ln -sf $BASE_DIR/tools/osxcross-macports omp
 popd &>/dev/null
 
 SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION*)
@@ -308,6 +308,7 @@ export OSXCROSS_VERSION
 export OSXCROSS_TARGET=$TARGET
 export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN
 export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
+export OSXCROSS_BUILD_DIR=$BUILD_DIR
 
 if [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so

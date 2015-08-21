@@ -31,6 +31,7 @@ int conf(Target &target) {
   std::string SDKPath;
   OSVersion OSXVersionMin = getDefaultMinTarget();
   const char *ltopath = getLibLTOPath();
+  const char *builddir = getBuildDir();
 
   if (!target.getSDKPath(SDKPath))
     return 1;
@@ -59,8 +60,16 @@ int conf(Target &target) {
             << std::endl;
   std::cout << "export OSXCROSS_TARGET_DIR=" << target.execpath << "/.."
             << std::endl;
-  std::cout << "export OSXCROSS_BUILD_DIR=" << target.execpath << "/../../build"
-            << std::endl;
+
+  std::cout << "export OSXCROSS_BUILD_DIR=";
+
+  if (builddir[0])
+    std::cout << builddir;
+  else
+    std::cout << target.execpath << "/../../build";
+
+  std::cout << std::endl;
+
   std::cout << "export OSXCROSS_CCTOOLS_PATH=" << target.execpath
             << std::endl;
   std::cout << "export OSXCROSS_LIBLTO_PATH=" << ltopath

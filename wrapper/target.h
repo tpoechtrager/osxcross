@@ -32,6 +32,7 @@ constexpr const char *getDefaultTarget() { return OSXCROSS_TARGET; }
 constexpr const char *getDefaultCompiler() { return "clang"; }
 constexpr const char *getDefaultCXXCompiler() { return "clang++"; }
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
+constexpr const char *getBuildDir() { return OSXCROSS_BUILD_DIR; }
 
 constexpr const char *getLibLTOPath() {
 #ifdef OSXCROSS_LIBLTO_PATH

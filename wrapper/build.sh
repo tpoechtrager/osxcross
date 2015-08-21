@@ -127,7 +127,7 @@ if [ -n "$BWCOMPILEONLY" ]; then
   exit 0
 fi
 
-verbose_cmd mv wrapper "../target/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
+verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
 
 pushd "../target/bin" &>/dev/null
 
