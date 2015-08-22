@@ -72,7 +72,7 @@ to install them.
 
 ATTENTION:
 
-OSXCross links libgcc and libstdc++ statically by default (this affects `-oc-use-gcc-libs` too).  
+OSXCross links libgcc and libstdc++ statically by default (this affects `-foc-use-gcc-libstdc++` too).  
 You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ### PACKAGING THE SDK: ###
@@ -152,26 +152,29 @@ Note: libc++ requires Mac OS X 10.7 or newer! If you really need C++11 for
 an older OS X version, then you can do the following:
 
 1. Build GCC so you have an up-to-date libstdc++
-2. Build your source code with GCC or with clang and '-oc-use-gcc-libs'
+2. Build your source code with GCC or `clang++-gstdc++` / `clang++ -foc-use-gcc-libstdc++`
 
 Usage Examples:
 
 * Clang:
 
   * C++98: `o32-clang++ -stdlib=libc++ test.cpp -o test`
-  * C++11: `o32-clang++ -stdlib=libc++ -std=c++11 tes1.cpp -o test`
-  * C++1y: `o32-clang++ -stdlib=libc++ -std=c++1y test1.cpp -o test`  
+  * C++11: `o32-clang++ -stdlib=libc++ -std=c++11 test1.cpp -o test`
+  * C++14: `o32-clang++ -stdlib=libc++ -std=c++14 test1.cpp -o test`
+  * C++1z: `o32-clang++ -stdlib=libc++ -std=c++1z test1.cpp -o test`
 
 * Clang (shortcut):
 
   * C++98: `o32-clang++-libc++ test.cpp -o test`
   * C++11: `o32-clang++-libc++ -std=c++11 test.cpp -o test`
-  * C++1y: `o32-clang++-libc++ -std=c++1y test.cpp  -o test`
+  * C++14: `o32-clang++-libc++ -std=c++14 test.cpp  -o test`
+  * C++1z: `o32-clang++-libc++ -std=c++1z test.cpp  -o test`
 
-* GCC (defaults to C++11 with libc++)
+* GCC
 
-  * C++11: `o32-g++-libc++ test.cpp`
-  * C++1y: `o32-g++-libc++ -std=c++1y test.cpp -o test`
+  * C++11: `o32-g++-libc++ -std=c++11 test.cpp`
+  * C++14: `o32-g++-libc++ -std=c++14 test.cpp -o test`
+  * C++1z: `o32-g++-libc++ -std=c++1z test.cpp -o test`
 
 ##### Building test1.cpp and test2.cpp with LTO (Link Time Optimization): #####
 
@@ -218,4 +221,4 @@ You will need gcc/g++/gcc-objc 4.6+.
   * xar: New BSD
 
 ### CREDITS: ####
- * [cjacker for the cctools linux port](https://code.google.com/p/ios-toolchain-based-on-clang-for-linux/source/browse/#svn%2Ftrunk%2Fcctools-porting%2Fpatches)
+ * [cjacker for the initial cctools port](https://code.google.com/p/ios-toolchain-based-on-clang-for-linux/source/browse/#svn%2Ftrunk%2Fcctools-porting%2Fpatches)

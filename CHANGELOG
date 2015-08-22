@@ -1,3 +1,18 @@
+/****************************** v0.11 ********************************/
+
+changed:
+* '-oc-use-gcc-libs' has been renamed to '-foc-use-gcc-libstdc++'
+* support for generating fat object files with gcc and '-foc-use-gcc-libstdc++'
+  has been removed.
+
+added:
+* support for '-stdc++' and '-gstdc++' compiler "shortcuts"
+  o32-clang++ --> uses libstdc++ for <= 10.8 and libc++ for >= 10.9
+  o32-clang++-libc++ --> uses the SDK's libc++
+  o32-clang++-stdc++ --> uses the SDK's libstdc++
+  o32-clang++-gstdc++ --> uses gcc's (build_gcc.sh) libstdc++
+* unit tests (wrapper)
+
 /****************************** v0.10 ********************************/
 
 changed:

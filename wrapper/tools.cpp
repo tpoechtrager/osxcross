@@ -362,9 +362,9 @@ bool writeFileContent(const std::string &file, const std::string &content) {
   return f.good();
 }
 
-bool fileExists(const std::string &dir) {
+bool fileExists(const std::string &file) {
   struct stat st;
-  return !stat(dir.c_str(), &st);
+  return !stat(file.c_str(), &st);
 }
 
 bool dirExists(const std::string &dir) {

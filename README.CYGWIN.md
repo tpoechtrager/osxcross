@@ -12,7 +12,7 @@ Note: *You can compile for 64-bit in a 32-bit environment.*
 Click on setup-*.exe and install the following packages:
 
 `git`, `make`, `clang`, `gcc-core`, `gcc-objc`, `gcc-g++`,  
-`patch`, `wget`, `libuuid-devel` and `pkg-config`
+`patch`, `wget`, `libuuid-devel`, `openssl` and  `pkg-config`
 
 #### Step 2: ####
 
@@ -87,7 +87,7 @@ Verify Compiler-RT works:
 
 ![](images/cygwin/compiler-rt/4.png)
 
-## EXAMPLES: ###
+## EXAMPLE USAGE: ###
 
 ### osxcross-macports ###
 

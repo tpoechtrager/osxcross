@@ -46,6 +46,7 @@ public:
   constexpr prog(const char *name, f4 fun)
       : name(name), fun1(), fun2(), fun3(), fun4(fun), type(4) {}
 
+  __attribute__((noreturn))
   void operator()(int argc, char **argv, Target &target) const {
     switch (type) {
     case 1:
@@ -57,6 +58,7 @@ public:
     case 4:
       exit(fun4(target));
     }
+    __builtin_unreachable();
   }
 
   bool operator==(const char *name) const { return !strcmp(name, this->name); }
@@ -88,16 +90,18 @@ int pkg_config(int argc, char **argv, Target &target);
 
 static int dummy() { return 0; }
 
-constexpr prog programs[] = { { "sw_vers", sw_vers },
-                              { "xcrun", xcrun },
-                              { "dsymutil", dummy },
-                              { "osxcross", osxcross::version },
-                              { "osxcross-env", osxcross::env },
-                              { "osxcross-conf", osxcross::conf },
-                              { "osxcross-cmp", osxcross::cmp },
-                              { "osxcross-man", osxcross::man },
-                              { "pkg-config", osxcross::pkg_config },
-                              { "wrapper", dummy } };
+constexpr prog programs[] = {
+  { "sw_vers", sw_vers },
+  { "xcrun", xcrun },
+  { "dsymutil", dummy },
+  { "osxcross", osxcross::version },
+  { "osxcross-env", osxcross::env },
+  { "osxcross-conf", osxcross::conf },
+  { "osxcross-cmp", osxcross::cmp },
+  { "osxcross-man", osxcross::man },
+  { "pkg-config", osxcross::pkg_config },
+  { "wrapper", dummy }
+};
 
 template <class T> const prog *getprog(const T &name) {
   for (auto &p : programs) {

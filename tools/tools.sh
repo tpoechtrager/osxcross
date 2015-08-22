@@ -11,8 +11,8 @@ PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
 
 PLATFORM=$(uname -s)
-SCRIPT=$(basename $0)
 ARCH=$(uname -m)
+SCRIPT=$(basename $0)
 
 if [ -z "$USESYSTEMCOMPILER" ]; then
   # Default to gcc on some OSs rather than clang due to either
@@ -55,7 +55,7 @@ fi
 
 
 # enable debug messages
-test -n "$OCDEBUG" && set -x
+[ -n "$OCDEBUG" ] && set -x
 
 if [[ $SCRIPT != *wrapper/build.sh ]]; then
   # how many concurrent jobs should be used for compiling?
@@ -133,7 +133,7 @@ function extract()
       bzip2 -dc $1 | tar $tarflags -
       ;;
     *)
-      echo "Unhandled archive type"
+      echo "Unhandled archive type" 2>&1
       exit 1
       ;;
   esac
@@ -146,7 +146,8 @@ function extract()
 if [[ $PLATFORM == CYGWIN* ]]; then
 
 # Work around Cygwin brokenness.
-function ln() {
+function ln()
+{
   [[ $1 == -* ]] && rm -f $3
   $(which ln) $@
 }

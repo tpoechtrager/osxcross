@@ -50,13 +50,6 @@ constexpr const char *getOSXCrossVersion() {
 #endif
 }
 
-inline const char *getDefaultCStandard() {
-  return getenv("OSXCROSS_C_STANDARD");
-}
-inline const char *getDefaultCXXStandard() {
-  return getenv("OSXCROSS_CXX_STANDARD");
-}
-
 #ifdef OSXCROSS_OSX_VERSION_MIN
 inline OSVersion getDefaultMinTarget() {
   if (!strcmp(OSXCROSS_OSX_VERSION_MIN, "default"))
@@ -76,8 +69,8 @@ struct Target {
   Target()
       : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
         arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
-        usegcclibs(), nocodegen(), compilername(getDefaultCompiler()), lang(),
-        langstd(), sourcefile(), outputname() {
+        usegcclibs(), nocodegen(), compilername(getDefaultCompiler()),
+        outputname() {
     if (!getExecutablePath(execpath, sizeof(execpath)))
       abort();
   }
@@ -100,12 +93,9 @@ struct Target {
   bool isLibCXX() const;
   bool isLibSTDCXX() const;
 
-  bool haveSourceFile() { return sourcefile != nullptr; }
   bool haveOutputName() { return outputname != nullptr; }
 
-  bool isC(bool r = false);
   bool isCXX();
-  bool isObjC(bool r = false);
 
   bool isGCH() {
     if (haveOutputName()) {
@@ -125,12 +115,6 @@ struct Target {
   }
 
   bool isKnownCompiler() const { return isClang() || isGCC(); }
-
-  bool langGiven() const { return lang != nullptr; }
-  bool langStdGiven() const { return langstd != nullptr; }
-
-  const char *getLangName();
-  bool isCXX11orNewer() const;
 
   const std::string &getDefaultTriple(std::string &triple) const;
   const std::string &getTriple() const { return triple; }
@@ -157,11 +141,8 @@ struct Target {
   std::string compilerexecname; // clang | *-apple-darwin-gcc
   std::string triple;
   std::string otriple;
-  const char *lang;
-  const char *langstd;
   string_vector fargs;
   string_vector args;
-  const char *sourcefile;
   const char *outputname;
   char execpath[PATH_MAX + 1];
 };

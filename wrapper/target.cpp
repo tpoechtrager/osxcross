@@ -169,90 +169,8 @@ bool Target::isLibCXX() const {
 
 bool Target::isLibSTDCXX() const { return stdlib == StdLib::libstdcxx; }
 
-bool Target::isC(bool r) {
-  if (!r && isCXX())
-    return false;
-
-  if (langGiven() && lang[0] != 'o' &&
-      (!strcmp(lang, "c") || !strcmp(lang, "c-header")))
-    return true;
-
-  if (haveSourceFile()) {
-    if (!strcmp(getFileExtension(sourcefile), ".c"))
-      return true;
-  }
-
-  return compilername.find("++") == std::string::npos && !isObjC(true);
-}
-
 bool Target::isCXX() {
-  bool CXXCompiler = compilername.find("++") != std::string::npos;
-
-  if (!langGiven() && CXXCompiler && !isObjC(true))
-    return true;
-
-  if (langGiven() && !strncmp(lang, "c++", 3))
-    return true;
-
-  constexpr const char *CXXFileExts[] = { ".C",   ".cc", ".cpp", ".CPP",
-                                          ".c++", ".cp", ".cxx" };
-
-  if (haveSourceFile()) {
-    const char *ext = getFileExtension(sourcefile);
-
-    if (*ext) {
-      for (auto &cxxfe : CXXFileExts) {
-        if (!strcmp(ext, cxxfe))
-          return true;
-      }
-    }
-  }
-
-  return CXXCompiler && !isC(true) && !isObjC(true);
-}
-
-bool Target::isObjC(bool r) {
-  if (!r && isCXX())
-    return false;
-
-  if (langGiven() && lang[0] == 'o')
-    return true;
-
-  if (haveSourceFile()) {
-    const char *ext = getFileExtension(sourcefile);
-
-    if (!strcmp(ext, ".m") || !strcmp(ext, ".mm"))
-      return true;
-  }
-
-  return false;
-}
-
-const char *Target::getLangName() {
-  if (isC())
-    return "C";
-  else if (isCXX())
-    return "C++";
-  else if (isObjC())
-    return "Obj-C";
-  else
-    return "unknown";
-}
-
-bool Target::isCXX11orNewer() const {
-  if (!langStdGiven())
-    return false;
-
-  constexpr const char *STD[] = { "c++0x", "gnu++0x", "c++11", "gnu++11",
-                                  "c++1y", "gnu++1y", "c++14", "gnu++14",
-                                  "c++1z", "gnu++1z" };
-
-  for (auto std : STD) {
-    if (!strcmp(langstd, std))
-      return true;
-  }
-
-  return false;
+  return endsWith(compilername, "++");
 }
 
 const std::string &Target::getDefaultTriple(std::string &triple) const {
@@ -469,13 +387,6 @@ bool Target::setup() {
   if (targetarch.empty())
     targetarch.push_back(arch);
 
-  if (!langStdGiven()) {
-    if (isC())
-      langstd = getDefaultCStandard();
-    else if (isCXX())
-      langstd = getDefaultCXXStandard();
-  }
-
   triple = getArchName(arch);
   triple += "-";
   triple += vendor;
@@ -567,7 +478,7 @@ bool Target::setup() {
     break;
   }
   case StdLib::libstdcxx: {
-    if (isGCC() && /*isCXX11orNewer()*/ true)
+    if (isGCC())
       break;
 
     if (usegcclibs) {
@@ -587,7 +498,7 @@ bool Target::setup() {
       });
 
       if (v.empty()) {
-        err << "'-oc-use-gcc-libs' requires gcc to be installed "
+        err << "'-foc-use-gcc-libstdc++' requires gcc to be installed "
                "(./build_gcc.sh)" << err.endl();
         return false;
       }
@@ -613,6 +524,8 @@ bool Target::setup() {
       tmp += target;
       addCXXPath(tmp);
     }
+
+    addCXXPath("backward");
 
     if (!dirExists(CXXHeaderPath)) {
       err << "cannot find " << getStdLibString(stdlib) << " headers"
@@ -679,13 +592,6 @@ bool Target::setup() {
     }
   } else if (isGCC()) {
 
-    if (isLibCXX()) {
-      if (!langStdGiven())
-        langstd = "c++0x";
-      else if (!isCXX11orNewer())
-        warn << "libc++ requires -std=c++11 (or later) with gcc" << warn.endl();
-    }
-
     if (isCXX() && isLibCXX()) {
       fargs.push_back("-nostdinc++");
       fargs.push_back("-nodefaultlibs");
@@ -693,8 +599,7 @@ bool Target::setup() {
       if (!isGCH()) {
         fargs.push_back("-lc");
         fargs.push_back("-lc++");
-        fargs.push_back(OSNum <= OSVersion(10, 4) ? "-lgcc_s.10.4"
-                                                  : "-lgcc_s.10.5");
+        fargs.push_back("-lgcc_s.10.5");
       }
     } else if (!isLibCXX() && !isGCH() &&
                !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
@@ -742,19 +647,6 @@ bool Target::setup() {
     }
   }
 
-  if (langGiven() && !usegcclibs) {
-    // usegcclibs: delay it to later
-    fargs.push_back("-x");
-    fargs.push_back(lang);
-  }
-
-  if (langStdGiven()) {
-    std::string tmp;
-    tmp = "-std=";
-    tmp += langstd;
-    fargs.push_back(tmp);
-  }
-
   if (OSNum.Num()) {
     std::string tmp;
     tmp = "-mmacosx-version-min=";
@@ -796,12 +688,6 @@ bool Target::setup() {
           << err.endl();
       return false;
     }
-  }
-
-  if (haveOutputName() &&
-      (targetarch.size() <= 1 || (!isGCC() && !usegcclibs))) {
-    fargs.push_back("-o");
-    fargs.push_back(outputname);
   }
 
   return true;

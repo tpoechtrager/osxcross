@@ -29,10 +29,19 @@ namespace tools {
 
 typedef std::vector<std::string> string_vector;
 
-static inline void clear(std::stringstream &sstr)
-{
+static inline void clear(std::stringstream &sstr) {
   sstr.clear();
   sstr.str(std::string());
+}
+
+static inline bool endsWith(std::string const &str, std::string const &end) {
+  if (end.size() > str.size())
+    return false;
+  return std::equal(end.rbegin(), end.rend(), str.rbegin());
+}
+
+size_t constexpr slen(const char *str) {
+  return *str ? 1 + slen(str + 1) : 0;
 }
 
 //

@@ -51,18 +51,149 @@ namespace {
 
 int unittest = 0;
 
-void checkIncludePath(const char *opt, const char *path) {
+void warnExtension(const char *extension) {
+  static bool noextwarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
+  if (noextwarnings)
+    return;
+  warn << extension << " is an osxcross extension" << warn.endl();
+  warninfo << "you can silence this warning via "
+           << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warninfo.endl();
+}
+
+__attribute__((unused))
+void warnDeprecated(const char *flag, const char *replacement = nullptr) {
+  if (replacement)
+    warn << flag << " is deprecated; "
+         << "please use " << replacement << " instead"
+         << warn.endl();
+  else
+    warn << flag << " is deprecated and will be "
+         << "removed soon" << warn.endl();
+}
+
+//
+// Command Line Options
+//
+
+namespace commandopts {
+
+typedef bool (*optFun)(Target &target, const char *opt, const char *val,
+                      char **);
+
+bool versionmin(Target &target, const char *, const char *val, char **) {
+  target.OSNum = parseOSVersion(val);
+
+  if (target.OSNum != val)
+    warn << "'-mmacosx-version-min=' (" << target.OSNum.Str()
+         << " != " << val << ")" << warn.endl();
+
+  return true;
+}
+
+bool arch(Target &target, const char *opt, const char *val, char **) {
+  Arch arch;
+
+  if (!strcmp(opt, "-arch")) {
+    arch = parseArch(val);
+
+    if (arch == Arch::unknown)
+      warn << "'-arch': unknown architecture '" << val << "'"
+           << warn.endl();
+
+    const char *name = getArchName(arch);
+
+    if (strcmp(val, name))
+      warn << "'-arch': '" << val << "' != '" << name << "'" << warn.endl();
+  } else {
+    if (!strcmp(opt, "-m16") || !strcmp(opt, "-mx32")) {
+      err << "'" << opt << "' is not supported" << err.endl();
+      return false;
+    } else if (!strcmp(opt, "-m32")) {
+      arch = Arch::i386;
+    } else if (!strcmp(opt, "-m64")) {
+      arch = Arch::x86_64;
+    } else {
+      __builtin_unreachable();
+    }
+  }
+
+  if (target.isClang())
+    target.addArch(arch);
+  else
+    target.arch = arch;
+
+  return true;
+}
+
+bool stdlib(Target &target, const char *, const char *val, char **) {
+  if (target.isGCC())
+    warnExtension("'-stdlib='");
+
+  size_t i = 0;
+
+  for (auto stdlibname : StdLibNames) {
+    if (!strcmp(val, stdlibname)) {
+      target.stdlib = static_cast<StdLib>(i);
+      break;
+    }
+    ++i;
+  }
+
+  if (i == (sizeof(StdLibNames) / sizeof(StdLibNames[0]))) {
+    err << "value of '-stdlib=' must be ";
+
+    for (size_t j = 0; j < i; ++j) {
+      err << "'" << StdLibNames[j] << "'";
+
+      if (j == i - 2)
+        err << " or ";
+      else if (j < i - 2)
+        err << ", ";
+    }
+
+    err << err.endl();
+    return false;
+  }
+
+  return true;
+}
+
+bool outputname(Target &target, const char *, const char *val, char **) {
+  target.outputname = val;
+  return true;
+}
+
+bool usegcclibstdcxx(Target &target, const char *, const char *, char **) {
+  target.stdlib = StdLib::libstdcxx;
+  target.usegcclibs = true;
+  return true;
+}
+
+bool runprog(Target &target, const char *, const char *progname, char **cargs) {
+  auto *prog = program::getprog(progname);
+
+  if (!prog)
+    exit(EXIT_FAILURE);
+
+  std::vector<char *> args;
+  args.push_back(const_cast<char *>(progname));
+
+  while (*cargs)
+    args.push_back(*cargs++);
+  args.push_back(nullptr);
+
+  (*prog)(args.size() - 1, args.data(), target);
+}
+
+bool checkincludepath(Target &, const char *opt, const char *path, char **) {
 #ifndef __APPLE__
   constexpr const char *DangerousIncludePaths[] = { "/usr/include",
                                                     "/usr/local/include" };
 
-  if (!path)
-    return;
-
   static bool noinccheck = !!getenv("OSXCROSS_NO_INCLUDE_PATH_WARNINGS");
 
   if (noinccheck)
-    return;
+    return true;
 
 #ifndef _WIN32
   char buf[PATH_MAX + 1];
@@ -93,37 +224,133 @@ void checkIncludePath(const char *opt, const char *path) {
   (void)opt;
   (void)path;
 #endif
+
+  return true;
 }
 
-void warnExtension(const char *extension) {
-  static bool noextwarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
-  if (noextwarnings)
+constexpr struct Opt {
+  const char *name;
+  const size_t namelen;
+  const optFun fun;
+  const bool valrequired;
+  const bool pusharg;
+  const char *valseparator;
+  const size_t valseparatorlen;
+  constexpr Opt(const char *name, optFun fun, const bool valrequired = false,
+                const bool pusharg = false, const char *valseparator = nullptr)
+      :  name(name), namelen(slen(name)), fun(fun),
+         valrequired(valrequired), pusharg(pusharg),
+         valseparator(valseparator),
+         valseparatorlen(valseparator ? slen(valseparator) : 0) {}
+} opts[] = {
+  {"-mmacosx-version-min", versionmin, true, false, "="},
+  {"-stdlib", stdlib, true, false, "="},
+  {"-arch", arch, true},
+  {"-m16", arch},
+  {"-m32", arch},
+  {"-mx32", arch},
+  {"-m64", arch},
+  {"-o", outputname, true, true},
+  {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
+  {"-foc-run-prog", runprog, true, false, "="}, // for internal use only
+  {"-isystem", checkincludepath, true, true},
+  {"-icxx-isystem", checkincludepath, true, true},
+  {"-cxx-isystem", checkincludepath, true, true},
+  {"-I", checkincludepath, true, true},
+};
+
+bool parse(int argc, char **argv, Target &target) {
+  target.args.reserve(argc);
+
+  if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
+    target.OSNum = parseOSVersion(p);
+    unsetenv("MACOSX_DEPLOYMENT_TARGET");
+  }
+
+  for (int i = 1; i < argc; ++i) {
+    char *arg = argv[i];
+
+    if (*arg != '-') {
+      target.args.push_back(arg);
+      continue;
+    }
+
+    bool pusharg = true;
+    int j = i;
+
+    for (const Opt &opt : opts) {
+      if (strncmp(arg, opt.name, opt.namelen))
+        continue;
+
+      pusharg = opt.pusharg;
+
+      const char *val = nullptr;
+
+      if (opt.valrequired) {
+        val = arg + opt.namelen;
+
+        if (opt.valseparator &&
+            strncmp(val, opt.valseparator, opt.valseparatorlen)) {
+          err << "expected '" << opt.name << opt.valseparator << "<val>' "
+              << "instead of '" << arg << "'" << err.endl();
+          return false;
+        } else {
+          val += opt.valseparatorlen;
+        }
+
+        if (!opt.valseparator && !*val && i < argc - 1)
+          val = argv[++i];
+
+        if (!*val) {
+          err << "missing argument for '" << opt.name << "'" << err.endl();
+          return false;
+        }
+      }
+
+      if (opt.fun && !opt.fun(target, opt.name, val, &argv[i + 1]))
+        return false;
+
+      break;
+    }
+
+    if (pusharg) {
+      for (; j <= i; ++j)
+        target.args.push_back(argv[j]);
+    }
+  }
+
+  return true;
+}
+
+} // namespace commandopts
+
+void detectCXXLib(Target &target) {
+  if (target.compilername.size() <= 7)
     return;
-  warn << extension << " is an osxcross extension" << warn.endl();
-  warninfo << "you can silence this warning via "
-           << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warninfo.endl();
+
+  StdLib prevstdlib = target.stdlib;
+
+  if (endsWith(target.compilername, "-stdc++")) {
+    target.stdlib = StdLib::libstdcxx;
+    target.compilername.resize(target.compilername.size() - 7);
+  } else if (endsWith(target.compilername, "-gstdc++")) {
+    target.stdlib = StdLib::libstdcxx;
+    target.usegcclibs = true;
+    target.compilername.resize(target.compilername.size() - 8);
+  } else if (endsWith(target.compilername, "-libc++")) {
+    target.stdlib = StdLib::libcxx;
+    target.compilername.resize(target.compilername.size() - 7);
+  }
+
+  if (prevstdlib != StdLib::unset && prevstdlib != target.stdlib)
+    warn << "ignoring '-stdlib=" << getStdLibString(prevstdlib) << "'"
+         << warn.endl();
 }
 
 //
 // detectTarget():
 //  detect target and setup invocation command
 //
-
-#define PABREAK                                                                \
-  else target.args.push_back(arg);                                             \
-  break
-
-#define PAPUSHARG                                                              \
-  target.args.push_back(arg);                                                  \
-  break
-
-#define PAPUSHARGANDVAL(splitted)                                              \
-  do {                                                                         \
-    target.args.push_back(arg);                                                \
-    if (splitted && i < argc)                                                  \
-      target.args.push_back(argv[i]);                                          \
-  } while (0);                                                                 \
-  break
 
 bool detectTarget(int argc, char **argv, Target &target) {
   const char *cmd = argv[0];
@@ -133,297 +360,6 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   if (p)
     cmd = &p[1];
-
-  target.args.reserve(static_cast<size_t>(argc));
-
-  auto parseArgs = [&]()->bool {
-    typedef bool (*delayedfun)(Target &);
-    std::vector<delayedfun> delayedfuncs;
-
-    auto runLater = [&](delayedfun fun) {
-      for (auto dfun : delayedfuncs) {
-        if (dfun == fun)
-          return;
-      }
-      delayedfuncs.push_back(fun);
-    };
-
-    auto getVal = [&](char * arg, const char * flag, int & i)->const char * {
-      const char *val = arg + strlen(flag);
-
-      if (!*val) {
-        val = argv[++i];
-
-        if (i >= argc) {
-          err << "missing argument for '" << flag << "'" << err.endl();
-          return nullptr;
-        }
-      }
-
-      return val;
-    };
-
-    auto installGCCArchExtensionWarning = [&]() {
-      runLater([](Target &t) {
-        if (t.targetarch.size() > 1 && t.isGCC())
-          warnExtension("using multiple '-arch' flags with gcc");
-        return true;
-      });
-    };
-
-    if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
-      target.OSNum = parseOSVersion(p);
-      unsetenv("MACOSX_DEPLOYMENT_TARGET");
-    }
-
-    for (int i = 1; i < argc; ++i) {
-      char *arg = argv[i];
-
-      if (arg[0] == '-') {
-        switch (arg[1]) {
-        case 'a': {
-          // -a
-
-          if (!strncmp(arg, "-arch", 5)) {
-            const char *val = getVal(arg, "-arch", i);
-
-            if (!val)
-              return false;
-
-            Arch arch = parseArch(val);
-
-            if (arch == Arch::unknown) {
-              warn << "'-arch': unknown architecture '" << val << "'"
-                   << warn.endl();
-            }
-
-            const char *name = getArchName(arch);
-
-            if (strcmp(val, name))
-              warn << "'-arch': '" << val << "' != '" << name << "'"
-                   << warn.endl();
-
-            target.addArch(arch);
-            installGCCArchExtensionWarning();
-          }
-
-          PABREAK;
-        }
-        case 'E': {
-          // -E
-
-          if (!strcmp(arg, "-E")) {
-            target.nocodegen = true;
-
-            runLater([](Target &t) {
-              if (t.targetarch.size() > 1) {
-                err << "cannot use '-E' with multiple -arch options"
-                    << err.endl();
-                return false;
-              }
-              return true;
-            });
-
-            target.args.push_back(arg);
-          }
-
-          PABREAK;
-        }
-        case 'f': {
-          // -f
-
-          if (!strcmp(arg, "-flto") || !strncmp(arg, "-flto=", 5)) {
-            target.args.push_back(arg);
-
-            if (target.isClang())
-              continue;
-
-            runLater([](Target &t) {
-              if (t.targetarch.size() > 1) {
-                err << "gcc does not support '-flto' with multiple "
-                    << "'-arch' flags" << err.endl();
-                return false;
-              }
-              return true;
-            });
-          }
-
-          PABREAK;
-        }
-        case 'c':
-        case 'i':
-        case 'I': {
-          // c
-          // i
-          // I
-
-          constexpr const char *OptsToCheck[] = {
-            "-isystem", "-icxx-isystem", "-cxx-isystem", "-I"
-          };
-
-          bool splitted = false;
-
-          for (const char *opt : OptsToCheck) {
-            if (!strncmp(arg, opt, strlen(opt))) {
-              int iold = i;
-              checkIncludePath(opt, getVal(arg, opt, i));
-              splitted = i > iold;
-              break;
-            }
-          }
-
-          PAPUSHARGANDVAL(splitted);
-        }
-        case 'm': {
-          // -m
-
-          if (!strncmp(arg, "-mmacosx-version-min=", 21)) {
-            const char *val = arg + 21;
-            target.OSNum = parseOSVersion(val);
-
-            if (target.OSNum != val) {
-              warn << "'-mmacosx-version-min=' (" << target.OSNum.Str()
-                   << " != " << val << ")" << warn.endl();
-            }
-          } else if (!strcmp(arg, "-m16") || !strcmp(arg, "-mx32")) {
-            err << "'" << arg << "' is not supported" << err.endl();
-            return false;
-          } else if (!strcmp(arg, "-m32")) {
-            target.addArch(Arch::i386);
-            installGCCArchExtensionWarning();
-          } else if (!strcmp(arg, "-m64")) {
-            target.addArch(Arch::x86_64);
-            installGCCArchExtensionWarning();
-          }
-
-          PABREAK;
-        }
-        case 'o': {
-          // -o
-
-          if (!strcmp(arg, "-oc-use-gcc-libs")) {
-            if (target.isGCC()) {
-              warn << "'" << arg << "' has no effect" << warn.endl();
-              break;
-            }
-            target.stdlib = StdLib::libstdcxx;
-            target.usegcclibs = true;
-          } else if (!strncmp(arg, "-o", 2)) {
-            target.outputname = getVal(arg, "-o", i);
-          }
-
-          PABREAK;
-        }
-        case 's': {
-          // -s
-
-          if (!strncmp(arg, "-stdlib=", 8)) {
-            const char *val = arg + 8;
-            size_t i = 0;
-
-            if (target.isGCC()) {
-              runLater([](Target &) {
-                warnExtension("'-stdlib='");
-                return true;
-              });
-            }
-
-            for (auto stdlibname : StdLibNames) {
-              if (!strcmp(val, stdlibname)) {
-                target.stdlib = static_cast<StdLib>(i);
-                break;
-              }
-              ++i;
-            }
-
-            if (i == (sizeof(StdLibNames) / sizeof(StdLibNames[0]))) {
-              err << "value of '-stdlib=' must be ";
-
-              for (size_t j = 0; j < i; ++j) {
-                err << "'" << StdLibNames[j] << "'";
-                if (j == i - 2)
-                  err << " or ";
-                else if (j < i - 2)
-                  err << ", ";
-              }
-
-              err << err.endl();
-              return false;
-            }
-
-          } else if (!strncmp(arg, "-std=", 5)) {
-            const char *val = arg + 5;
-            target.langstd = val;
-          }
-
-          PABREAK;
-        }
-        case 'x': {
-          if (!strncmp(arg, "-x", 2))
-            target.lang = getVal(arg, "-x", i);
-
-          PABREAK;
-        }
-        default:
-          target.args.push_back(arg);
-        }
-
-        continue;
-      }
-
-      // Detect source file
-      target.args.push_back(arg);
-
-      const char *prevarg = "";
-
-      if (i > 1) {
-        prevarg = argv[i - 1];
-
-        if (prevarg[0] == '-' && strlen(prevarg) > 2 &&
-            strcmp(prevarg, "-MT") && strcmp(prevarg, "-MF"))
-          prevarg = "";
-      }
-
-      if (prevarg[0] != '-' || !strcmp(prevarg, "-c")) {
-        constexpr const char *badexts[] = { ".o", ".a" };
-        const char *ext = getFileExtension(arg);
-        bool b = false;
-
-        for (auto &badext : badexts) {
-          if (!strcmp(ext, badext)) {
-            b = true;
-            break;
-          }
-        }
-
-        if (!b)
-          target.sourcefile = arg;
-      }
-    }
-
-    for (auto fun : delayedfuncs) {
-      if (!fun(target))
-        return false;
-    }
-
-    return true;
-  };
-
-  auto checkCXXLib = [&]() {
-    if (target.compilername.size() <= 7)
-      return;
-
-    if (target.compilername.rfind("-libc++") ==
-        (target.compilername.size() - 7)) {
-      if (target.stdlib != StdLib::unset && target.stdlib != StdLib::libcxx) {
-        warn << "'-stdlib=" << getStdLibString(target.stdlib)
-             << "' will be ignored" << warn.endl();
-      }
-
-      target.compilername.resize(target.compilername.size() - 7);
-      target.stdlib = StdLib::libcxx;
-    }
-  };
 
   if (auto *prog = program::getprog(cmd))
     (*prog)(argc, argv, target);
@@ -463,15 +399,14 @@ bool detectTarget(int argc, char **argv, Target &target) {
       else if (auto *prog = program::getprog(target.compilername))
         (*prog)(argc, argv, target);
 
-      if (target.target != getDefaultTarget()) {
+      if (target.target != getDefaultTarget())
         warn << "this wrapper was built for target "
              << "'" << getDefaultTarget() << "'" << warn.endl();
-      }
 
-      if (!parseArgs())
+      if (!commandopts::parse(argc, argv, target))
         return false;
 
-      checkCXXLib();
+      detectCXXLib(target);
       return target.setup();
     }
   }
@@ -488,247 +423,11 @@ bool detectTarget(int argc, char **argv, Target &target) {
   if (const char *p = strchr(cmd, '-'))
     target.compilername = &cmd[p - cmd + 1];
 
-  if (!parseArgs())
+  if (!commandopts::parse(argc, argv, target))
     return false;
 
-  checkCXXLib();
+  detectCXXLib(target);
   return target.setup();
-}
-
-//
-// generateMultiArchObjectFile():
-//  support multiple -arch flags with gcc
-//  and clang + -oc-use-gcc-libs
-//
-
-void generateMultiArchObjectFile(int &rc, int argc, char **argv, Target &target,
-                                 int debug) {
-#ifndef _WIN32
-  std::string stdintmpfile;
-  string_vector objs;
-  std::stringstream obj;
-  bool compile = false;
-  size_t num = 0;
-
-  if (!strcmp(argv[argc - 1], "-")) {
-    //
-    // fork() + reading from stdin isn't a good idea
-    //
-
-    std::stringstream file;
-    std::string stdinsrc;
-    std::string line;
-
-    while (std::getline(std::cin, line)) {
-      stdinsrc += line;
-      stdinsrc += '\n';
-    }
-
-    file << "/tmp/" << getNanoSeconds() << "_stdin";
-
-    if (target.isC())
-      file << ".c";
-    else if (target.isCXX())
-      file << ".cpp";
-    else if (target.isObjC())
-      file << ".m";
-
-    stdintmpfile = file.str();
-    writeFileContent(stdintmpfile, stdinsrc);
-    target.args[target.args.size() - 1] = stdintmpfile;
-  }
-
-  auto cleanup = [&]() {
-    if (!stdintmpfile.empty())
-      remove(stdintmpfile.c_str());
-    for (auto &obj : objs)
-      remove(obj.c_str());
-  };
-
-  if (!target.outputname) {
-    bool f = false;
-
-    for (auto &arg : target.args) {
-      if (arg == "-c") {
-        f = true;
-        break;
-      }
-    }
-
-    if (f && target.haveSourceFile()) {
-      static std::string outputname;
-      const char *ext = getFileExtension(target.sourcefile);
-      size_t pos;
-
-      if (*ext)
-        outputname = std::string(target.sourcefile, ext - target.sourcefile);
-      else
-        outputname = target.sourcefile;
-
-      outputname += ".o";
-
-      if ((pos = outputname.find_last_of('/')) == std::string::npos)
-        pos = 0;
-      else
-        ++pos;
-
-      target.outputname = outputname.c_str() + pos;
-    } else {
-      if (f)
-        warn << "source filename detection failed (using a.out)" << warn.endl();
-      target.outputname = "a.out";
-    }
-  }
-
-  const char *outputname = strrchr(target.outputname, '/');
-
-  if (!outputname)
-    outputname = target.outputname;
-  else
-    ++outputname;
-
-  for (auto &arch : target.targetarch) {
-    const char *archname = getArchName(arch);
-    pid_t pid;
-    ++num;
-
-    clear(obj);
-    obj << "/tmp/" << getNanoSeconds() << "_" << outputname << "_" << archname;
-
-    objs.push_back(obj.str());
-    pid = fork();
-
-    if (pid > 0) {
-      int status = 1;
-
-      if (wait(&status) == -1) {
-        err << "wait() failed" << err.endl();
-        cleanup();
-        rc = 1;
-        break;
-      }
-
-      if (WIFEXITED(status)) {
-        status = WEXITSTATUS(status);
-
-        if (status) {
-          rc = status;
-          break;
-        }
-      } else {
-        rc = 1;
-        break;
-      }
-    } else if (pid == 0) {
-
-      if (target.isGCC()) {
-        // GCC
-        bool is32bit = false;
-
-        switch (arch) {
-        case Arch::i386:
-        case Arch::i486:
-        case Arch::i586:
-        case Arch::i686:
-          is32bit = true;
-        case Arch::x86_64:
-          break;
-        default:
-          assert(false && "unsupported arch");
-        }
-
-        target.fargs.push_back(is32bit ? "-m32" : "-m64");
-      } else if (target.isClang()) {
-        // Clang
-        target.fargs.push_back("-arch");
-        target.fargs.push_back(getArchName(arch));
-      } else {
-        assert(false && "unsupported compiler");
-      }
-
-      target.fargs.push_back("-o");
-      target.fargs.push_back(obj.str());
-
-      if (target.usegcclibs) {
-        target.setupGCCLibs(arch);
-
-        if (target.langGiven()) {
-          // -x must be added *after* the static libstdc++ *.a
-          // otherwise clang thinks they are source files
-          target.fargs.push_back("-x");
-          target.fargs.push_back(target.lang);
-        }
-      }
-
-      if (debug) {
-        dbg << "[" << num << "/" << target.targetarch.size() << "] [compiling] "
-            << archname << dbg.endl();
-      }
-
-      compile = true;
-      break;
-    } else {
-      err << "fork() failed" << err.endl();
-      rc = 1;
-      break;
-    }
-  }
-
-  if (!compile && !target.nocodegen && rc == -1) {
-    std::string cmd;
-    std::string lipo;
-    std::string path;
-
-    lipo = "x86_64-apple-";
-    lipo += getDefaultTarget();
-    lipo += "-lipo";
-
-    if (!getPathOfCommand(lipo.c_str(), path)) {
-      lipo = "lipo";
-
-      if (!getPathOfCommand(lipo.c_str(), path)) {
-        err << "cannot find lipo binary" << err.endl();
-        rc = 1;
-      }
-    }
-
-    if (rc == -1) {
-      cmd.swap(path);
-      cmd += "/";
-      cmd += lipo;
-      cmd += " -create ";
-
-      for (auto &obj : objs) {
-        cmd += obj;
-        cmd += " ";
-      }
-
-      cmd += "-output ";
-      cmd += target.outputname;
-
-      if (debug)
-        dbg << "[lipo] <-- " << cmd << dbg.endl();
-
-      if (unittest == 2) {
-        rc = 0;
-      } else {
-        rc = system(cmd.c_str());
-        rc = WEXITSTATUS(rc);
-      }
-    }
-  }
-
-  if (!compile)
-    cleanup();
-#else
-  (void)rc;
-  (void)argc;
-  (void)argv;
-  (void)target;
-  (void)debug;
-  err << __func__ << " not supported" << err.endl();
-  rc = 1;
-#endif
 }
 
 } // unnamed namespace
@@ -748,8 +447,12 @@ int main(int argc, char **argv) {
   if (char *p = getenv("OCDEBUG"))
     debug = atoi(p);
 
-  if (char *p = getenv("OSXCROSS_UNIT_TEST"))
+  if (char *p = getenv("OSXCROSS_UNIT_TEST")) {
     unittest = atoi(p);
+
+    if ((p = getenv("OSXCROSS_PROG_NAME")))
+      argv[0] = p;
+  }
 
   if (!detectTarget(argc, argv, target)) {
     err << "while detecting target" << err.endl();
@@ -766,13 +469,6 @@ int main(int argc, char **argv) {
       dbg << "detected stdlib: " << getStdLibString(target.stdlib)
           << dbg.endl();
 
-      if (debug >= 3) {
-        dbg << "detected source file: "
-            << (target.sourcefile ? target.sourcefile : "-") << dbg.endl();
-
-        dbg << "detected language: " << target.getLangName() << dbg.endl();
-      }
-
       b->resume();
     }
   }
@@ -785,9 +481,6 @@ int main(int argc, char **argv) {
 #else
   concatEnvVariable("COMPILER_PATH", target.execpath);
 #endif
-
-  if (target.targetarch.size() > 1 && (target.usegcclibs || target.isGCC()))
-    generateMultiArchObjectFile(rc, argc, argv, target, debug);
 
   auto printCommand = [&]() {
     std::string in;

@@ -46,6 +46,8 @@ int cmp(int argc, char **argv) {
     res = a <= b;
   else if (!strcmp(op, "=="))
     res = a == b;
+  else if (!strcmp(op, "!="))
+    res = a != b;
   else
     return 1;
 
