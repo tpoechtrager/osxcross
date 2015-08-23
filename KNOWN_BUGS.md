@@ -2,7 +2,7 @@
 
 -------------
 
-*** ISSUE: ***
+***ISSUE:***
 
 GCH generation does not work with `gcc` or `clang++-gstdc++`/`-foc-use-gcc-libstdc++`
 if `-c` or `-x<lang>-header` is **not** passed to the compiler.
@@ -27,7 +27,7 @@ Example:
     start in crt1.10.6.o
     ld: symbol(s) not found for architecture x86_64
 
-*** WORKAROUND: ***
+***WORKAROUND:***
 
 Add `-c` or `-x<lang>-header` to the compiler flags.
 
