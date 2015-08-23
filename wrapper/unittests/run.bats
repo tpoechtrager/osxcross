@@ -172,7 +172,9 @@ eval $(osxcross-conf)
 }
 
 @test "command line parsing" {
-  run o64-clang++ -mmacosx-version-min=10.4 -g -I test1 -march=native -Itest2 -O2 -stdlib=libstdc++ -stdlib=default -stdlib=libstdc++ -otest1 -o test2 foo.cpp -c
+  run o64-clang++ -mmacosx-version-min=10.4 -g -I test1 -march=native -Itest2 -O2 \
+                  -xc-header -x c++-header -stdlib=libstdc++ -stdlib=default -stdlib=libstdc++ \
+                  -otest1 -o test2 foo.cpp -c
   [ "$status" -eq 0 ]
   [[ "${lines[0]}" == *\ -mmacosx-version-min=10.4*\ * ]]
   [[ "${lines[0]}" == *\ -g\ *\ * ]]
@@ -180,6 +182,8 @@ eval $(osxcross-conf)
   [[ "${lines[0]}" == *\ -march=native\ * ]]
   [[ "${lines[0]}" == *\ -Itest2\ * ]]
   [[ "${lines[0]}" == *\ -O2\ * ]]
+  [[ "${lines[0]}" == *\ -xc-header\ * ]]
+  [[ "${lines[0]}" == *\ -x\ c++-header\ * ]]
   [[ "${lines[0]}" != *\ -stdlib=default\ * ]]
   [[ "${lines[0]}" == *\ -otest1\ * ]]
   [[ "${lines[0]}" == *\ -o\ test2\ * ]]
@@ -335,6 +339,24 @@ eval $(osxcross-conf)
   run o64-clang++ -stdlib=foo
   [ "$status" -eq 1 ]
   [[ "${lines[0]}" == *error:\ value\ of\ \'-stdlib=\'\ must\ be\ \'default\',\ \'libc++\'\ or\ \'libstdc++\' ]]
+}
+
+@test "precompiled headers" {
+  function gch()
+  {
+    run $@
+    [ "$status" -eq 0 ]
+    [[ "${lines[0]}" != *\ -l* ]]
+    [[ "${lines[0]}" != *\ -Wl,* ]]
+    [[ "${lines[0]}" != *\ *.a ]]
+  }
+
+  gch o64-clang -x c-header
+  gch o64-clang++-gstdc++ -xc++-header
+
+  if [ $GCC_INSTALLED -eq 1 ]; then
+    gch o64-g++ -xc++-header
+  fi
 }
 
 @test "-arch/-m32/-m64/-m16/-mx32" {

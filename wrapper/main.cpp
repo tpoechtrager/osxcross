@@ -158,8 +158,8 @@ bool stdlib(Target &target, const char *, const char *val, char **) {
   return true;
 }
 
-bool outputname(Target &target, const char *, const char *val, char **) {
-  target.outputname = val;
+bool language(Target &target, const char *, const char *val, char **) {
+  target.language = val;
   return true;
 }
 
@@ -250,7 +250,7 @@ constexpr struct Opt {
   {"-m32", arch},
   {"-mx32", arch},
   {"-m64", arch},
-  {"-o", outputname, true, true},
+  {"-x", language, true, true},
   {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
   {"-foc-run-prog", runprog, true, false, "="}, // for internal use only
   {"-isystem", checkincludepath, true, true},

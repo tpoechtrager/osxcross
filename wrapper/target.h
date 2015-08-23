@@ -70,7 +70,7 @@ struct Target {
       : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
         arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
         usegcclibs(), nocodegen(), compilername(getDefaultCompiler()),
-        outputname() {
+        language() {
     if (!getExecutablePath(execpath, sizeof(execpath)))
       abort();
   }
@@ -93,26 +93,11 @@ struct Target {
   bool isLibCXX() const;
   bool isLibSTDCXX() const;
 
-  bool haveOutputName() { return outputname != nullptr; }
-
   bool isCXX();
+  bool isGCH();
 
-  bool isGCH() {
-    if (haveOutputName()) {
-      const char *ext = getFileExtension(outputname);
-      return !strcmp(ext, ".gch");
-    }
-    return false;
-  }
-
-  bool isClang() const {
-    return !strncmp(getFileName(compilername.c_str()), "clang", 5);
-  }
-
-  bool isGCC() const {
-    const char *c = getFileName(compilername.c_str());
-    return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
-  }
+  bool isClang() const;
+  bool isGCC() const;
 
   bool isKnownCompiler() const { return isClang() || isGCC(); }
 
@@ -143,7 +128,7 @@ struct Target {
   std::string otriple;
   string_vector fargs;
   string_vector args;
-  const char *outputname;
+  const char *language;
   char execpath[PATH_MAX + 1];
 };
 

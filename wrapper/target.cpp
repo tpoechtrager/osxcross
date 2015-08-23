@@ -173,6 +173,27 @@ bool Target::isCXX() {
   return endsWith(compilername, "++");
 }
 
+bool Target::isGCH() {
+  if (!language)
+    return false;
+
+  return !strcmp(language, "c-header") ||
+         !strcmp(language, "c++-header") ||
+         !strcmp(language, "objective-c-header") ||
+         !strcmp(language, "objective-c++-header");
+}
+
+
+bool Target::isClang() const {
+  return !strncmp(getFileName(compilername.c_str()), "clang", 5);
+}
+
+bool Target::isGCC() const {
+  const char *c = getFileName(compilername.c_str());
+  return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
+}
+
+
 const std::string &Target::getDefaultTriple(std::string &triple) const {
   triple = getArchName(Arch::x86_64);
   triple += "-";
@@ -585,13 +606,13 @@ bool Target::setup() {
         fargs.push_back("-Qunused-arguments");
       }
 
-      if (stdlib == StdLib::libstdcxx && usegcclibs && targetarch.size() < 2) {
+      if (stdlib == StdLib::libstdcxx && usegcclibs && targetarch.size() < 2 &&
+          !isGCH()) {
         // Use libs from './build_gcc' installation
         setupGCCLibs(targetarch[0]);
       }
     }
   } else if (isGCC()) {
-
     if (isCXX() && isLibCXX()) {
       fargs.push_back("-nostdinc++");
       fargs.push_back("-nodefaultlibs");
@@ -607,7 +628,8 @@ bool Target::setup() {
       fargs.push_back("-static-libstdc++");
     }
 
-    fargs.push_back("-Wl,-no_compact_unwind");
+    if (!isGCH())
+      fargs.push_back("-Wl,-no_compact_unwind");
   }
 
   auto addCXXHeaderPath = [&](const std::string &path) {
