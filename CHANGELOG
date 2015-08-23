@@ -4,6 +4,8 @@ changed:
 * '-oc-use-gcc-libs' has been renamed to '-foc-use-gcc-libstdc++'
 * support for generating fat object files with gcc and '-foc-use-gcc-libstdc++'
   has been removed.
+* support for setting the language standard via
+ 'OSXCROSS_C_STANDARD' / 'OSXCROSS_CXX_STANDARD' (env) has been removed
 
 added:
 * support for '-stdc++' and '-gstdc++' compiler "shortcuts"
