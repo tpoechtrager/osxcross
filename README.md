@@ -27,7 +27,7 @@ Please see [README.MACPORTS](README.MACPORTS.md) for more.
 
 *Windows/Cygwin users should follow [README.CYGWIN](README.CYGWIN.md).*
 
-Move your packaged SDK to the tarballs/ directory.
+Move your [packaged SDK](https://github.com/tpoechtrager/osxcross#packaging-the-sdk) to the tarballs/ directory.
 
 Then ensure you have the following installed on your system:
 
