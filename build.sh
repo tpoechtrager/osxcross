@@ -194,6 +194,9 @@ if [ $PLATFORM == "OpenBSD" ] || [ $PLATFORM == "DragonFly" ]; then
   patch -p0 < $PATCH_DIR/cctools-ld64-epath.patch
   popd &>/dev/null
 fi
+if [ $LINKER_VERSION == "134.9" ]; then
+  patch -p1 < $PATCH_DIR/cctools-ld64-134.9-old-compiler.patch
+fi
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
