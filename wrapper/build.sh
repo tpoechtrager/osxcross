@@ -47,7 +47,7 @@ function create_wrapper_link
     "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
   if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
-     ([[ $1 != gcc* ]] && [[ $1 != g++* ]]); then
+     ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   fi
@@ -59,7 +59,7 @@ function create_wrapper_link
       "o64-${1}${EXESUFFIX}"
 
     if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
-       ([[ $1 != gcc* ]] && [[ $1 != g++* ]]); then
+       ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
       verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
         "o64h-${1}${EXESUFFIX}"
     fi
