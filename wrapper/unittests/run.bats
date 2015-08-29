@@ -348,11 +348,14 @@ eval $(osxcross-conf)
     [ "$status" -eq 0 ]
     [[ "${lines[0]}" != *\ -l* ]]
     [[ "${lines[0]}" != *\ -Wl,* ]]
-    [[ "${lines[0]}" != *\ *.a ]]
+    [[ "${lines[0]}" != *\ *.a* ]]
   }
 
   gch o64-clang -x c-header
-  gch o64-clang++-gstdc++ -xc++-header
+
+  if [ $GCC_INSTALLED -eq 1 ]; then
+    gch o64-clang++-gstdc++ -xc++-header
+  fi
 
   if [ $GCC_INSTALLED -eq 1 ]; then
     gch o64-g++ -xc++-header
