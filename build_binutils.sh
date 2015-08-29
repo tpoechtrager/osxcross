@@ -9,9 +9,14 @@ source tools/tools.sh
 eval $(tools/osxcross_conf.sh)
 
 # binutils version to build
-BINUTILS_VERSION=2.25
+if [ -z "$BINUTILS_VERSION" ]; then
+  BINUTILS_VERSION=2.25.1
+fi
+
 # gdb version to build
-GDB_VERSION=7.8.2
+if [ -z "$GDB_VERSION" ]; then
+  GDB_VERSION=7.10
+fi
 
 # mirror
 MIRROR="ftp://sourceware.org/pub"
