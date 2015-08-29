@@ -141,14 +141,34 @@ if [ "$PLATFORM" == "Darwin" ]; then
   unset PREVCXX
 fi
 
-if [ $res -ne 0 ]; then
-  echo "Your C++ standard library is either broken or too old to build ld64-241.9" 1>&2
-  echo "Building ld64-134.9 instead" 1>&2
-  echo "" 1>&2
-  sleep 3
-  LINKER_VERSION=134.9
-else
-  LINKER_VERSION=242
+# CCTOOLS
+if [ -z $LINKER_VERSION ]; then
+  if [ "$PLATFORM" == "Darwin" ]; then
+    PREVCXX=$CXX
+    CXX+=" -stdlib=libc++"
+  fi
+
+  res=$(check_cxx_stdlib)
+
+  if [ "$PLATFORM" == "Darwin" ]; then
+    CXX=$PREVCXX
+    unset PREVCXX
+  fi
+
+  if [ $res -ne 0 ]; then
+    echo "Your C++ standard library is either broken or too old to build ld64-241.9" 1>&2
+    echo "Building ld64-134.9 instead" 1>&2
+    echo "" 1>&2
+    sleep 3
+    LINKER_VERSION=134.9
+  else
+    LINKER_VERSION=242
+  fi
+fi
+
+if [ "$LINKER_VERSION" != "242" ] && [ "$LINKER_VERSION" != "134.9" ]; then
+  echo "LINKER_VERSION must be 242 or 134.9"
+  exit 1
 fi
 
 CCTOOLS="cctools-870-ld64-$LINKER_VERSION"
