@@ -47,9 +47,10 @@
 using namespace tools;
 using namespace target;
 
-namespace {
-
 int unittest = 0;
+int debug = 0;
+
+namespace {
 
 void warnExtension(const char *extension) {
   static bool noextwarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
@@ -441,7 +442,6 @@ int main(int argc, char **argv) {
   auto b = new (bbuf) benchmark;
   Target target;
   char **cargs = nullptr;
-  int debug = 0;
   int rc = -1;
 
   if (char *p = getenv("OCDEBUG"))

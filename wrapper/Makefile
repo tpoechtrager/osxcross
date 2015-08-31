@@ -57,7 +57,8 @@ SRCS= \
  programs/osxcross-man.cpp \
  programs/sw_vers.cpp \
  programs/pkg-config.cpp \
- programs/xcrun.cpp
+ programs/xcrun.cpp \
+ programs/dsymutil.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
 

@@ -28,6 +28,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
 #include <climits>
 #include <cassert>
@@ -536,6 +537,36 @@ const char *getFileExtension(const char *file) {
     p = "";
 
   return p;
+}
+
+//
+// Shell Commands
+//
+
+size_t runcommand(const char *command, char *buf, size_t len) {
+#define RETURN(v)                                                              \
+  do {                                                                         \
+    if (p)                                                                     \
+      pclose(p);                                                               \
+    return (v);                                                                \
+  } while (0)
+
+  if (!len)
+    return RUNCOMMAND_ERROR;
+
+  FILE *p;
+  size_t outputlen;
+
+  if (!(p = popen(command, "r")))
+    RETURN(RUNCOMMAND_ERROR);
+
+  if (!(outputlen = fread(buf, sizeof(char), len - 1, p)))
+    RETURN(RUNCOMMAND_ERROR);
+
+  buf[outputlen] = '\0';
+
+  RETURN(outputlen);
+#undef RETURN
 }
 
 //

@@ -78,6 +78,7 @@ private:
 
 int sw_vers(int argc, char **argv, target::Target &target);
 int xcrun(int argc, char **argv, Target &target);
+int dsymutil(int argc, char **argv, target::Target &target);
 
 namespace osxcross {
 int version();
@@ -93,7 +94,7 @@ static int dummy() { return 0; }
 constexpr prog programs[] = {
   { "sw_vers", sw_vers },
   { "xcrun", xcrun },
-  { "dsymutil", dummy },
+  { "dsymutil", dsymutil },
   { "osxcross", osxcross::version },
   { "osxcross-env", osxcross::env },
   { "osxcross-conf", osxcross::conf },

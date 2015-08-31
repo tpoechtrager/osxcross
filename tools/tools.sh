@@ -67,13 +67,15 @@ if [[ $SCRIPT != *wrapper/build.sh ]]; then
        $SCRIPT != "mount_xcode_image.sh" -a \
        $SCRIPT != "gen_sdk_package_darling_dmg.sh" -a \
        $SCRIPT != "gen_sdk_package_p7zip.sh" ]; then
-    eval $(tools/osxcross_conf.sh)
+    res=$(tools/osxcross_conf.sh)
 
     if [ $? -ne 0 ]; then
       echo -n "you need to complete ./build.sh first, before you can start "
       echo "building $DESC"
       exit 1
     fi
+
+    eval "$res"
   fi
 fi
 

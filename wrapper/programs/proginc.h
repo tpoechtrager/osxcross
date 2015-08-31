@@ -11,3 +11,6 @@
 #include "tools.h"
 #include "target.h"
 #include "progs.h"
+
+extern int debug;
+extern int unittest;

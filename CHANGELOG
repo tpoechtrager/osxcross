@@ -14,6 +14,8 @@ added:
   o32-clang++-stdc++ --> uses the SDK's libstdc++
   o32-clang++-gstdc++ --> uses gcc's (build_gcc.sh) libstdc++
 * unit tests (wrapper)
+* llvm-dsymutil build script
+* dsymutil is now wrapped to llvm-dsymutil (LLVM >= 3.8 only)
 
 /****************************** v0.10 ********************************/
 

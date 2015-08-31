@@ -46,6 +46,7 @@
       <File Name="programs/osxcross-cmp.cpp"/>
       <File Name="programs/xcrun.cpp"/>
       <File Name="programs/osxcross-man.cpp"/>
+      <File Name="programs/dsymutil.cpp"/>
     </VirtualDirectory>
     <File Name="Makefile"/>
     <File Name="build.sh"/>

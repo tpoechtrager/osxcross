@@ -1,8 +1,8 @@
 ## COMPILER-RT ##
 
-### WHAT IS COMPILER-RT: ###
+### WHAT IS COMPILER-RT? ###
 
-Please see http://compiler-rt.llvm.org/.
+Please see http://compiler-rt.llvm.org.
 
 ### INSTALLATION: ###
 
@@ -23,6 +23,8 @@ You do not need to do anything, clang's doing the job for you.
 
 However, `-fsanitize=address` is a bit annoying because the address sanitizer library is linked  
 dynamically, and thus requires you to copy the ASAN runtime library onto the target system. 
+
+\[See [README.DEBUGGING](README.DEBUGGING.md) in how to get a backtrace with line numbers and symbol names]
 
 The following example illustrates how to achieve this:
 
