@@ -3,30 +3,45 @@
 
 export LC_ALL=C
 
+function set_xcode_dir()
+{
+  local tmp=$(ls $1 2>/dev/null | grep "^Xcode.*.app" | grep -v "beta" | head -n1)
+
+  if [ -z "$tmp" ]; then
+    tmp=$(ls $1 2>/dev/null | grep "^Xcode.*.app" | head -n1)
+  fi
+
+  if [ -n "$tmp" ]; then
+    XCODEDIR="$1/$tmp"
+  fi
+}
+
 if [ $(uname -s) != "Darwin" ]; then
   if [ -z "$XCODEDIR" ]; then
-    echo "This script must be run on OS X"
-    echo "... Or with XCODEDIR=... on Linux"
+    echo "This script must be run on OS X" 1>&2
+    echo "... Or with XCODEDIR=... on Linux" 1>&2
     exit 1
   else
     case $XCODEDIR in
       /*) ;;
       *) XCODEDIR="$PWD/$XCODEDIR" ;;
     esac
-    XCODEDIR+="/$(ls "$XCODEDIR" | grep "^Xcode.*" | head -n1)"
+    set_xcode_dir $XCODEDIR
   fi
 else
-  XCODEDIR=$(ls /Volumes | grep "^Xcode.*" | head -n1)
+  set_xcode_dir $(echo /Volumes/Xcode* | tr ' ' '\n' | grep -v "beta" | head -n1)
 
   if [ -z "$XCODEDIR" ]; then
-    if [ -d /Applications/Xcode*.app ]; then
-      XCODEDIR="/Applications/Xcode*.app"
-    else
-      echo "please mount Xcode.dmg"
-      exit 1
+    set_xcode_dir /Applications
+
+    if [ -z "$XCODEDIR" ]; then
+      set_xcode_dir $(echo /Volumes/Xcode* | tr ' ' '\n' | head -n1)
+
+      if [ -z "$XCODEDIR" ]; then
+        echo "please mount Xcode.dmg" 1>&2
+        exit 1
+      fi
     fi
-  else
-    XCODEDIR="/Volumes/$XCODEDIR/Xcode*.app"
   fi
 fi
 
@@ -76,7 +91,7 @@ else
       SDKDIR=$(find . -name SDKs -type d | grep MacOSX | head -n1)
 
       if [ -z "$SDKDIR" ]; then
-        echo "cannot find SDKs!"
+        echo "cannot find SDKs!" 1>&2
         exit 1
       fi
 
