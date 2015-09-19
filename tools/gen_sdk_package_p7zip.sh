@@ -82,8 +82,8 @@ set +e
 
 $TARGET_DIR/SDK/tools/bin/7z x \
   $XCODEDMG \
-  "*/Xcode.app/Contents/Developer/Platforms/MacOSX.platform" \
-  "*/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
+  "*/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform" \
+  "*/Xcode*.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
 
 [ $? -ne 0 -a $? -ne 2 ] && exit 1
 
