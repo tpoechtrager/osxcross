@@ -239,10 +239,10 @@ constexpr struct Opt {
   const size_t valseparatorlen;
   constexpr Opt(const char *name, optFun fun, const bool valrequired = false,
                 const bool pusharg = false, const char *valseparator = nullptr)
-      :  name(name), namelen(slen(name)), fun(fun),
+      :  name(name), namelen(constexprStrLen(name)), fun(fun),
          valrequired(valrequired), pusharg(pusharg),
          valseparator(valseparator),
-         valseparatorlen(valseparator ? slen(valseparator) : 0) {}
+         valseparatorlen(valseparator ? constexprStrLen(valseparator) : 0) {}
 } opts[] = {
   {"-mmacosx-version-min", versionmin, true, false, "="},
   {"-stdlib", stdlib, true, false, "="},

@@ -40,8 +40,8 @@ static inline bool endsWith(std::string const &str, std::string const &end) {
   return std::equal(end.rbegin(), end.rend(), str.rbegin());
 }
 
-size_t constexpr slen(const char *str) {
-  return *str ? 1 + slen(str + 1) : 0;
+size_t constexpr constexprStrLen(const char *str) {
+  return *str ? 1 + constexprStrLen(str + 1) : 0;
 }
 
 //
