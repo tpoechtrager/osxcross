@@ -9,6 +9,10 @@ source tools/tools.sh
 
 mkdir -p $BUILD_DIR
 
+if [[ $(uname -s) == CYGWIN* ]]; then
+  DISABLE_BOOTSTRAP=1
+fi
+
 if [ -z "$SKIP_GCC_CHECK" ]; then
 if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
   set +e
@@ -79,6 +83,7 @@ echo "Building Clang/LLVM $CLANG_VERSION may take a long time."
 echo "Installation Prefix: $INSTALLPREFIX"
 
 if [ -z "$UNATTENDED" ]; then
+  echo ""
   read -p "Press enter to start building."
   echo ""
 fi
