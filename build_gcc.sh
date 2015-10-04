@@ -52,6 +52,12 @@ pushd gcc*$GCC_VERSION* &>/dev/null
 rm -f $OSXCROSS_TARGET_DIR/bin/*-gcc*
 rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 
+if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) == 1 ] &&
+   [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) == 1 ]; then
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66035
+  patch -p1 < $PATCH_DIR/gcc-pr66035.patch
+fi
+
 mkdir -p build
 pushd build &>/dev/null
 
