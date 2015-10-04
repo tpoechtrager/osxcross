@@ -21,10 +21,6 @@
 
 #include "proginc.h"
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 extern char **environ;
 using namespace tools;
 

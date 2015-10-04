@@ -35,15 +35,10 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 
-#ifndef _WIN32
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dirent.h>
-#else
-#include <windows.h>
-#include <tlhelp32.h>
-#endif
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -72,7 +67,6 @@ namespace tools {
 //
 
 bool isTerminal() {
-#ifndef _WIN32
   static bool first = false;
   static bool val;
 
@@ -82,9 +76,6 @@ bool isTerminal() {
   }
 
   return val;
-#else
-  return false;
-#endif
 }
 
 //
@@ -143,8 +134,6 @@ char *getExecutablePath(char *buf, size_t len) {
   else
     l = 0;
   delete[] argv;
-#elif defined(_WIN32)
-  size_t l = GetModuleFileName(nullptr, buf, (DWORD)len);
 #else
   ssize_t l = readlink("/proc/self/exe", buf, len);
   assert(l > 0 && "/proc not mounted?");
@@ -160,58 +149,6 @@ char *getExecutablePath(char *buf, size_t len) {
 
 const std::string &getParentProcessName() {
   static std::string name;
-#ifdef _WIN32
-  HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  PROCESSENTRY32 pe;
-
-  auto zerope = [&]() {
-    memset(&pe, 0, sizeof(pe));
-    pe.dwSize = sizeof(PROCESSENTRY32);
-  };
-
-  zerope();
-
-  auto pid = GetCurrentProcessId();
-  decltype(pid) ppid = -1;
-
-  if (Process32First(h, &pe)) {
-    do {
-      if (pe.th32ProcessID == pid) {
-        ppid = pe.th32ParentProcessID;
-        break;
-      }
-    } while (Process32Next(h, &pe));
-  }
-
-  if (ppid != static_cast<decltype(ppid)>(-1)) {
-    PROCESSENTRY32 *ppe = nullptr;
-    zerope();
-
-    if (Process32First(h, &pe)) {
-      do {
-        if (pe.th32ProcessID == ppid) {
-          ppe = &pe;
-          break;
-        }
-      } while (Process32Next(h, &pe));
-    }
-
-    if (ppe) {
-      char *p = strrchr(ppe->szExeFile, '\\');
-      if (p) {
-        name = p + 1;
-      } else {
-        name = ppe->szExeFile;
-      }
-    }
-  }
-
-  CloseHandle(h);
-
-  if (!name.empty()) {
-    return name;
-  }
-#else
   auto getName = [](const char * path)->const char * {
     if (const char *p = strrchr(path, '/')) {
       return p + 1;
@@ -251,20 +188,9 @@ const std::string &getParentProcessName() {
     }
   }
 #endif
-#endif
   name = "unknown";
   return name;
 }
-
-#ifdef _WIN32
-std::string &fixPathDiv(std::string &path) {
-  for (auto &c : path) {
-    if (c == '/')
-      c = '\\';
-  }
-  return path;
-}
-#endif
 
 //
 // Environment
@@ -389,7 +315,6 @@ bool isDirectory(const char *file, const char *prefix) {
 
 bool listFiles(const char *dir, std::vector<std::string> *files,
                listfilescallback cmp) {
-#ifndef _WIN32
   DIR *d = opendir(dir);
   dirent *de;
 
@@ -404,25 +329,6 @@ bool listFiles(const char *dir, std::vector<std::string> *files,
 
   closedir(d);
   return true;
-#else
-  WIN32_FIND_DATA fdata;
-  HANDLE handle;
-
-  handle = FindFirstFile(dir, &fdata);
-
-  if (handle == INVALID_HANDLE_VALUE)
-    return false;
-
-  do {
-    if ((!cmp || cmp(fdata.cFileName)) && files) {
-      files->push_back(fdata.cFileName);
-    }
-  } while (FindNextFile(handle, &fdata));
-
-  FindClose(handle);
-
-  return true;
-#endif
 }
 
 typedef bool (*realpathcmp)(const char *file, const struct stat &st);
@@ -455,7 +361,6 @@ bool realPath(const char *file, std::string &result,
     result += file;
 
     if (!stat(result.c_str(), &st)) {
-#ifndef _WIN32
       char buf[PATH_MAX + 1];
 
       if (realpath(result.c_str(), buf)) {
@@ -492,7 +397,6 @@ bool realPath(const char *file, std::string &result,
           }
         }
       }
-#endif
 
       if ((!cmp1 || cmp1(result.c_str(), st)) &&
           (!cmp2 || cmp2(result.c_str(), st)))
@@ -620,24 +524,5 @@ OSVersion parseOSVersion(const char *OSVer) {
   OSNum.patch = atoi(p);
   return OSNum;
 }
-
-//
-// OS Compat
-//
-
-#ifdef _WIN32
-int setenv(const char *name, const char *value, int overwrite) {
-  std::string buf;
-  (void)overwrite; // TODO
-
-  buf = name;
-  buf += '=';
-  buf += value;
-
-  return putenv(buf.c_str());
-}
-
-int unsetenv(const char *name) { return setenv(name, "", 1); }
-#endif
 
 } // namespace tools

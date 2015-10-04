@@ -76,8 +76,8 @@ if [ -n "$BWPLATFORM" ]; then
   PLATFORM=$BWPLATFORM
 
   if [ $PLATFORM = "Darwin" -a $(uname -s) != "Darwin" ]; then
-    CXX=o32-clang++
-    #CXX=o32-g++
+    CXX=$(xcrun -f clang++)
+    #CXX=$(xcrun -f g++)
     FLAGS+="-fvisibility-inlines-hidden "
   elif [ $PLATFORM = "FreeBSD" -a $(uname -s) != "FreeBSD" ]; then
     CXX=amd64-pc-freebsd10.1-clang++
@@ -85,14 +85,6 @@ if [ -n "$BWPLATFORM" ]; then
   elif [ $PLATFORM = "NetBSD" -a $(uname -s) != "NetBSD" ]; then
     CXX=amd64-pc-netbsd6.1.3-clang++
     #CXX=amd64-pc-netbsd6.1.3-g++
-  elif [ $PLATFORM = "Windows" ]; then
-    CXX=w32-clang++
-    FLAGS+="-wc-static-runtime -g "
-    EXESUFFIX=".exe"
-  elif [ $PLATFORM = "MWindows" ]; then
-    CXX=i686-w64-mingw32-g++
-    FLAGS+="-static-libgcc -static-libstdc++ -g "
-    EXESUFFIX=".exe"
   fi
 
   [ -z "$BWCOMPILEONLY" ] && BWCOMPILEONLY=1

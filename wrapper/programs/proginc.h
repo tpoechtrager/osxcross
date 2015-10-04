@@ -7,6 +7,7 @@
 #include <cstring>
 #include <climits>
 #include <cassert>
+#include <unistd.h>
 
 #include "tools.h"
 #include "target.h"

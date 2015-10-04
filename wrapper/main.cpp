@@ -34,11 +34,8 @@
 #include <cstdio>
 #include <climits>
 #include <cassert>
-
-#ifndef _WIN32
 #include <unistd.h>
 #include <sys/wait.h>
-#endif
 
 #include "tools.h"
 #include "target.h"
@@ -196,15 +193,11 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
   if (noinccheck)
     return true;
 
-#ifndef _WIN32
   char buf[PATH_MAX + 1];
   const char *rpath = realpath(path, buf);
 
   if (!rpath)
     rpath = path;
-#else
-  const char *rpath = path;
-#endif
 
   for (const char *dpath : DangerousIncludePaths) {
     if (!strncmp(rpath, dpath, strlen(dpath))) {

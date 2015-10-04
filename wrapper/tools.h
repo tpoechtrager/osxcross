@@ -145,6 +145,8 @@ bool hasPath(const std::vector<std::string> &path, const char *find);
 // Files and directories
 //
 
+constexpr char PATHDIV = '/';
+
 std::string *getFileContent(const std::string &file, std::string &content);
 bool writeFileContent(const std::string &file, const std::string &content);
 
@@ -340,18 +342,6 @@ static const auto &parseClangVersion = parseOSVersion;
 
 typedef OSVersion LLVMVersion;
 static const auto &parseLLVMVersion = parseOSVersion;
-
-//
-// OS Compat
-//
-
-#ifdef _WIN32
-int setenv(const char *name, const char *value, int overwrite);
-int unsetenv(const char *name);
-constexpr char PATHDIV = '\\';
-#else
-constexpr char PATHDIV = '/';
-#endif
 
 //
 // Arch

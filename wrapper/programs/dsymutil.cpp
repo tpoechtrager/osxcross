@@ -21,12 +21,9 @@
 
 #include "proginc.h"
 
-#ifndef _WIN32
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
-#endif
 
 using namespace tools;
 
@@ -140,7 +137,6 @@ int dsymutil(int argc, char **argv, Target &target) {
       return 0;
     }
 
-#ifndef _WIN32
     //
     // A glorious workaround to make the vanilla llvm-dsymutil find lipo.
     //
@@ -148,7 +144,7 @@ int dsymutil(int argc, char **argv, Target &target) {
     // 2. Store a lipo symlink there.
     // 3. Append <tmpdir> to PATH.
     // 4. Fork the process and wait until the child process exited.
-    // 5. Remove the temporary directory and return the llvm-dsymutil.
+    // 5. Remove the temporary directory and return the llvm-dsymutil
     //    exit code.
     //
 
@@ -209,7 +205,6 @@ int dsymutil(int argc, char **argv, Target &target) {
         removeTemporaryDirectory();
       }
     }
-#endif
   }
 
   if (execvp(dsymutil.c_str(), argv))
