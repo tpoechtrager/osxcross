@@ -1,1 +1,3 @@
 document 'osxcross-man'
+Xcode 7 compatibility (requires a newer not yet open sourced linker)
+verify downloaded archive tarballs (gcc, llvm, ...) with sha256sum or similar
