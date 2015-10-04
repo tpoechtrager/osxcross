@@ -61,21 +61,26 @@ inline OSVersion getDefaultMinTarget() {
 constexpr OSVersion getDefaultMinTarget() { return OSVersion(); }
 #endif
 
+inline const char *getSDKSearchDir() {
+  const char *SDKSearchDir = getenv("OSXCROSS_SDK_SEARCH_DIR");
+
+#ifdef OSXCROSS_SDK_SEARCH_DIR
+  if (!SDKSearchDir)
+    SDKSearchDir = OSXCROSS_SDK_SEARCH_DIR;
+#endif
+
+  return SDKSearchDir ? SDKSearchDir : "";
+}
+
 //
 // Target
 //
 
 struct Target {
-  Target()
-      : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
-        arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
-        usegcclibs(), nocodegen(), compilername(getDefaultCompiler()),
-        language() {
-    if (!getExecutablePath(execpath, sizeof(execpath)))
-      abort();
-  }
+  Target();
 
   OSVersion getSDKOSNum() const;
+  void overrideDefaultSDKPath(const char *SDKSearchDir);
   bool getSDKPath(std::string &path) const;
 
   bool getMacPortsDir(std::string &path) const;
@@ -120,7 +125,6 @@ struct Target {
   ClangVersion clangversion;
   GCCVersion gccversion;
   bool usegcclibs;
-  bool nocodegen;
   std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
   std::string compilername;     // clang | gcc
   std::string compilerexecname; // clang | *-apple-darwin-gcc

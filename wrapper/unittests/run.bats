@@ -473,6 +473,15 @@ eval $(osxcross-conf)
   [ "$status" -eq 0 ]
 }
 
+@test "OSXCROSS_SDK_SEARCH_DIR" {
+  OSXCROSS_SDK_SEARCH_DIR=/dev/null run o64-clang++
+  [ "$status" -ne 0 ]
+  [[ "${lines[0]}" == *error:\ no\ SDK\ found\ in\ \'/dev/null\' ]]
+
+  OSXCROSS_SDK_SEARCH_DIR=$OSXCROSS_SDK/.. run o64-clang++
+  [ "$status" -eq 0 ]
+}
+
 @test "xcrun" {
   run xcrun -sdk
   [ "$status" -ne 0 ]

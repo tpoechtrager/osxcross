@@ -32,11 +32,26 @@
 #include <cstdlib>
 #include <climits>
 #include <cassert>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "tools.h"
 #include "target.h"
 
 namespace target {
+
+Target::Target()
+    : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
+      arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
+      usegcclibs(), compilername(getDefaultCompiler()), language() {
+  if (!getExecutablePath(execpath, sizeof(execpath)))
+    abort();
+
+  const char *SDKSearchDir = getSDKSearchDir();
+
+  if (!SDK && SDKSearchDir[0])
+    overrideDefaultSDKPath(SDKSearchDir);
+}
 
 OSVersion Target::getSDKOSNum() const {
   if (SDK) {
@@ -57,6 +72,63 @@ OSVersion Target::getSDKOSNum() const {
 
     int n = atoi(target.c_str() + 6);
     return OSVersion(10, 4 + (n - 8));
+  }
+}
+
+void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
+  std::string defaultSDKPath;
+
+  defaultSDKPath = SDKSearchDir;
+  defaultSDKPath += PATHDIV;
+  defaultSDKPath += "default";
+
+  struct stat st;
+
+  if (!lstat(defaultSDKPath.c_str(), &st)) {
+    if (!S_ISLNK(st.st_mode)) {
+      err << "'" << defaultSDKPath << "' must be a symlink to an SDK"
+          << err.endl();
+      exit(EXIT_FAILURE);
+    }
+
+    if (char *resolved = realpath(defaultSDKPath.c_str(), nullptr)) {
+      SDK = resolved;
+    } else {
+      err << "'" << defaultSDKPath << "' broken symlink" << err.endl();
+      exit(EXIT_FAILURE);
+    }
+  } else {
+    // Choose the latest SDK
+
+    static OSVersion latestSDKVersion;
+    static std::string latestSDK;
+
+    latestSDKVersion = OSVersion();
+    latestSDK.clear();
+
+    listFiles(SDKSearchDir, nullptr, [](const char *SDK) {
+      if (!strncasecmp(SDK, "MacOSX", 6)) {
+        OSVersion SDKVersion = parseOSVersion(SDK + 6);
+        if (SDKVersion > latestSDKVersion) {
+          latestSDKVersion = SDKVersion;
+          latestSDK = SDK;
+        }
+      }
+      return false;
+    });
+
+    if (!latestSDKVersion.Num()) {
+      err << "no SDK found in '" << SDKSearchDir << "'" << err.endl();
+      exit(EXIT_FAILURE);
+    }
+
+    std::string SDKPath;
+
+    SDKPath = SDKSearchDir;
+    SDKPath += PATHDIV;
+    SDKPath += latestSDK;
+
+    SDK = strdup(SDKPath.c_str()); // intentionally leaked
   }
 }
 
