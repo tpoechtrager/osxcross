@@ -12,7 +12,15 @@ Note: *You can compile for 64-bit in a 32-bit environment.*
 Click on setup-*.exe and install the following packages:
 
 `git`, `make`, `clang`, `gcc-core`, `gcc-objc`, `gcc-g++`,  
-`patch`, `wget`, `libuuid-devel`, `openssl` and  `pkg-config`
+`patch`, `wget`, `libuuid-devel`, `openssl` and `pkg-config`
+
+For LTO support you will also need:
+
+`libllvm-devel`, `libllvm` and `gendef`
+
+The cygLTO.dll import library is missing, create it by hand:
+
+`gendef /bin/cygLTO.dll && dlltool -d cygLTO.def -l /lib/libLTO.dll.a && rm cygLTO.def`
 
 #### Step 2: ####
 
