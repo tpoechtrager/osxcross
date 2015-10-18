@@ -204,15 +204,16 @@ bool Target::getMacPortsFrameworksDir(std::string &path) const {
 }
 
 void Target::addArch(const Arch arch) {
-  auto &v = targetarch;
-  for (size_t i = 0; i < v.size(); ++i) {
-    if (v[i] == arch) {
-      v.erase(v.begin() + i);
+  if (isGCC())
+    targetarch.clear();
+  for (size_t i = 0; i < targetarch.size(); ++i) {
+    if (targetarch[i] == arch) {
+      targetarch.erase(targetarch.begin() + i);
       addArch(arch);
       return;
     }
   }
-  v.push_back(arch);
+  targetarch.push_back(arch);
 }
 
 bool Target::haveArch(const Arch arch) {
@@ -265,9 +266,9 @@ bool Target::isGCC() const {
   return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
 }
 
-
 const std::string &Target::getDefaultTriple(std::string &triple) const {
-  triple = getArchName(Arch::x86_64);
+  triple = getArchName(isPowerPC(arch) ?
+                       Arch::ppc64 : Arch::x86_64, true);
   triple += "-";
   triple += getDefaultVendor();
   triple += "-";
@@ -432,7 +433,12 @@ void Target::setupGCCLibs(Arch arch) {
   case Arch::i586:
   case Arch::i686:
     GCCLibPath << "/" << getArchName(Arch::i386);
-    GCCLibSTDCXXPath << "/" << getArchName(i386);
+    GCCLibSTDCXXPath << "/" << getArchName(Arch::i386);
+    break;
+  case Arch::ppc:
+    GCCLibPath << "/" << getArchName(Arch::ppc);
+    GCCLibSTDCXXPath << "/" << getArchName(Arch::ppc);
+    break;
   default:
     ;
   }
@@ -477,16 +483,31 @@ bool Target::setup() {
   if (!getSDKPath(SDKPath))
     return false;
 
-  if (targetarch.empty())
+  if (targetarch.empty()) {
     targetarch.push_back(arch);
+  } else if (targetarch.size() > 1 && usegcclibs) {
+    err << "'-foc-use-gcc-libstdc++' is not compatible with "
+        << "multiple '-arch' flags" << err.endl();
+    return false;
+  }
 
-  triple = getArchName(arch);
+  if (isPowerPC(targetarch[0]) && isGCC() &&
+      !getParentProcessName().compare(0, 5, "clang")) {
+    // Clang < 3.5 tries to use GCC for assembling when targeting PowerPC
+    // but that won't work out.
+    err << "gcc shouldn't be invoked by clang; "
+        << "use clang >= 3.5 when targeting powerpc!" << err.endl();
+    return false;
+  }
+
+  triple = getArchName(targetarch[0], true);
   triple += "-";
   triple += vendor;
   triple += "-";
   triple += target;
 
-  otriple = getArchName(Arch::x86_64);
+  otriple = getArchName(isPowerPC(targetarch[0]) ?
+                        Arch::ppc64 : Arch::x86_64, true);
   otriple += "-";
   otriple += vendor;
   otriple += "-";
@@ -612,7 +633,7 @@ bool Target::setup() {
       else
         CXXHeaderPath += "/usr/include/c++/4.2.1";
 
-      tmp = getArchName(arch);
+      tmp = getArchName(arch, true);
       tmp += "-apple-";
       tmp += target;
       addCXXPath(tmp);
@@ -678,8 +699,7 @@ bool Target::setup() {
         fargs.push_back("-Qunused-arguments");
       }
 
-      if (stdlib == StdLib::libstdcxx && usegcclibs && targetarch.size() < 2 &&
-          !isGCH()) {
+      if (stdlib == StdLib::libstdcxx && usegcclibs && !isGCH()) {
         // Use libs from './build_gcc' installation
         setupGCCLibs(targetarch[0]);
       }
@@ -705,7 +725,7 @@ bool Target::setup() {
   }
 
   auto addCXXHeaderPath = [&](const std::string &path) {
-    fargs.push_back(isClang() ? "-cxx-isystem" : "-isystem");
+    fargs.push_back("-isystem");
     fargs.push_back(path);
   };
 
@@ -756,9 +776,11 @@ bool Target::setup() {
     case Arch::i486:
     case Arch::i586:
     case Arch::i686:
+    case Arch::ppc:
       is32bit = true;
     case Arch::x86_64:
     case Arch::x86_64h:
+    case Arch::ppc64:
       if (isGCC()) {
         if (arch == Arch::x86_64h) {
           err << "gcc does not support architecture '" << getArchName(arch)
@@ -783,6 +805,9 @@ bool Target::setup() {
       return false;
     }
   }
+
+  if ((haveArch(Arch::ppc) || haveArch(ppc64)) && isGCC())
+    setenv("DISABLE_ANNOYING_LD64_ASSERTION", "1", 1);
 
   return true;
 }

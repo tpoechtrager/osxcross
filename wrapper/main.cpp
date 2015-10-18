@@ -107,18 +107,15 @@ bool arch(Target &target, const char *opt, const char *val, char **) {
       err << "'" << opt << "' is not supported" << err.endl();
       return false;
     } else if (!strcmp(opt, "-m32")) {
-      arch = Arch::i386;
+      arch = (isPowerPC(target.arch) ? Arch::ppc : Arch::i386);
     } else if (!strcmp(opt, "-m64")) {
-      arch = Arch::x86_64;
+      arch = (isPowerPC(target.arch) ? Arch::ppc64 : Arch::x86_64);
     } else {
       __builtin_unreachable();
     }
   }
 
-  if (target.isClang())
-    target.addArch(arch);
-  else
-    target.arch = arch;
+  target.addArch(arch);
 
   return true;
 }
@@ -347,10 +344,8 @@ void detectCXXLib(Target &target) {
 //
 
 bool detectTarget(int argc, char **argv, Target &target) {
-  const char *cmd = argv[0];
-  const char *p = strrchr(cmd, '/');
-  size_t len;
-  size_t i = 0;
+  char *cmd = argv[0];
+  char *p = strrchr(cmd, '/');
 
   if (p)
     cmd = &p[1];
@@ -360,14 +355,15 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   // -> x86_64 <- -apple-darwin13
   p = strchr(cmd, '-');
-  len = (p ? p : cmd) - cmd;
 
-  for (auto arch : ArchNames) {
-    ++i;
+  if (p) {
+    *p = '\0';
+    Arch arch = parseArch(cmd);
+    *p = '-';
 
-    if (!strncmp(cmd, arch, len)) {
-      target.arch = static_cast<Arch>(i - 1);
-      cmd += len;
+    if (arch != Arch::unknown) {
+      target.arch = arch;
+      cmd = p;
 
       if (*cmd++ != '-')
         return false;
@@ -405,17 +401,23 @@ bool detectTarget(int argc, char **argv, Target &target) {
     }
   }
 
-  if (!strncmp(cmd, "o32", 3))
+  if (!strncmp(cmd, "o32-", 4))
     target.arch = Arch::i386;
-  else if (!strncmp(cmd, "o64h", 4))
+  else if (!strncmp(cmd, "o64h-", 5))
     target.arch = Arch::x86_64h;
-  else if (!strncmp(cmd, "o64", 3))
+  else if (!strncmp(cmd, "o64-", 4))
     target.arch = Arch::x86_64;
+  else if (!strncmp(cmd, "o64-", 4))
+    target.arch = Arch::x86_64;
+  else if (!strncmp(cmd, "oppc32-", 7))
+    target.arch = Arch::ppc;
+  else if (!strncmp(cmd, "oppc64-", 7))
+    target.arch = Arch::ppc64;
   else
     return false;
 
   if (const char *p = strchr(cmd, '-'))
-    target.compilername = &cmd[p - cmd + 1];
+    target.compilername = &p[1];
 
   if (!commandopts::parse(argc, argv, target))
     return false;

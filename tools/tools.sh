@@ -10,6 +10,8 @@ TARGET_DIR=$BASE_DIR/target
 PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
 
+export PATH=$TARGET_DIR/bin:$PATH
+
 PLATFORM=$(uname -s)
 ARCH=$(uname -m)
 SCRIPT=$(basename $0)
@@ -163,15 +165,30 @@ function verbose_cmd()
   eval "$@"
 }
 
-function check_cxx_stdlib()
+function create_toolchain_symlinks()
 {
-  set +e
+  pushd $TARGET_DIR/bin &>/dev/null
 
-  $CXX $CXXFLAGS -std=c++0x $BASE_DIR/tools/stdlib-test.cpp -S -o- \
-    2>$BUILD_DIR/stdlib-test.log 1>/dev/null
-  echo "$?"
+  local tools=$(find . -name "x86_64-apple-$TARGET-*")
+  tools=($tools)
+  for tool in ${tools[@]}; do
+    ln -sf $tool $(echo "$tool" | $SED "s/x86_64/$1/")
+  done
 
-  set -e
+  popd &>/dev/null
+}
+
+function sdk_has_ppc_support()
+{
+  local res=$(x86_64-apple-$OSXCROSS_TARGET-lipo -detailed_info \
+              "$1/usr/lib/crt1.o")
+
+  if [[ $res == *architecture\ ppc* ]] &&
+     [[ $res == *architecture\ ppc64* ]]; then
+    echo 1
+  else
+    echo 0
+  fi
 }
 
 function test_compiler()

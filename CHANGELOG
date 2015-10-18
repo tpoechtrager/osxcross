@@ -1,6 +1,7 @@
 /****************************** v0.11 ********************************/
 
 changed:
+* updated ld64 to 242.2
 * '-oc-use-gcc-libs' has been renamed to '-foc-use-gcc-libstdc++'
 * support for generating fat object files with gcc and '-foc-use-gcc-libstdc++'
   has been removed.
@@ -8,6 +9,7 @@ changed:
  'OSXCROSS_C_STANDARD' / 'OSXCROSS_CXX_STANDARD' (env) has been removed
 
 added:
+* PowerPC support (target)
 * support for '-stdc++' and '-gstdc++' compiler "shortcuts"
   o32-clang++ --> uses libstdc++ for <= 10.8 and libc++ for >= 10.9
   o32-clang++-libc++ --> uses the SDK's libc++

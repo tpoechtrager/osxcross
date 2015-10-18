@@ -23,6 +23,13 @@ MIRROR="ftp://sourceware.org/pub"
 
 require wget
 
+if [ -n "$POWERPC" ]; then
+  # powerpc64 does not build
+  BINUTILS_ARCH="powerpc"
+else
+  BINUTILS_ARCH="x86_64"
+fi
+
 pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
 function remove_locks()
@@ -32,7 +39,7 @@ function remove_locks()
 
 function build_and_install()
 {
-  if [ ! -f "have_$1_$2_${OSXCROSS_TARGET}" ]; then
+  if [ ! -f "have_$1_$2_${BINUTILS_ARCH}_${OSXCROSS_TARGET}" ]; then
     pushd $OSXCROSS_TARBALL_DIR &>/dev/null
     wget -c "$MIRROR/$1/releases/$1-$2.tar.gz"
     popd &>/dev/null
@@ -47,8 +54,8 @@ function build_and_install()
     pushd build &>/dev/null
 
     ../configure \
-      --target=x86_64-apple-$OSXCROSS_TARGET \
-      --program-prefix=x86_64-apple-$OSXCROSS_TARGET- \
+      --target=$BINUTILS_ARCH-apple-$OSXCROSS_TARGET \
+      --program-prefix=$BINUTILS_ARCH-apple-$OSXCROSS_TARGET- \
       --prefix=$OSXCROSS_TARGET_DIR/binutils \
       --disable-nls \
       --disable-werror
@@ -58,7 +65,7 @@ function build_and_install()
 
     popd &>/dev/null
     popd &>/dev/null
-    touch "have_$1_$2_${OSXCROSS_TARGET}"
+    touch "have_$1_$2_${BINUTILS_ARCH}_${OSXCROSS_TARGET}"
   fi
 }
 

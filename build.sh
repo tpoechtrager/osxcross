@@ -32,7 +32,7 @@ function guess_sdk_version()
     echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$(basename $sdk)
   fi
   if [ $guess_sdk_version_result ]; then
-    if [ $guess_sdk_version_result = 10.4 ]; then
+    if [ $guess_sdk_version_result == 10.4 ]; then
       guess_sdk_version_result=10.4u
     fi
   fi
@@ -57,7 +57,7 @@ function verify_sdk_version()
 
 if [ $SDK_VERSION ]; then
   echo 'SDK VERSION set in environment variable:' $SDK_VERSION
-  test $SDK_VERSION = 10.4 && SDK_VERSION=10.4u
+  [ $SDK_VERSION == 10.4 ] && SDK_VERSION=10.4u
 else
   guess_sdk_version
   SDK_VERSION=$guess_sdk_version_result
@@ -67,7 +67,7 @@ verify_sdk_version $SDK_VERSION
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
 if [ -z "$OSX_VERSION_MIN" ]; then
-  if [ $SDK_VERSION = 10.4u ]; then
+  if [ $SDK_VERSION == 10.4u ]; then
     OSX_VERSION_MIN=10.4
   else
     OSX_VERSION_MIN=10.5
@@ -77,6 +77,7 @@ fi
 OSXCROSS_VERSION=0.11
 
 X86_64H_SUPPORTED=0
+POWERPC_SUPPORTED=0
 
 case $SDK_VERSION in
   10.4*) TARGET=darwin8 ;;
@@ -106,8 +107,6 @@ if [ -z "$UNATTENDED" ]; then
 fi
 echo ""
 
-export PATH=$TARGET_DIR/bin:$PATH
-
 mkdir -p $BUILD_DIR
 mkdir -p $TARGET_DIR
 mkdir -p $SDK_DIR
@@ -128,50 +127,10 @@ function remove_locks()
 
 source $BASE_DIR/tools/trap_exit.sh
 
-# CCTOOLS
-if [ "$PLATFORM" == "Darwin" ]; then
-  PREVCXX=$CXX
-  CXX+=" -stdlib=libc++"
-fi
-
-res=$(check_cxx_stdlib)
-
-if [ "$PLATFORM" == "Darwin" ]; then
-  CXX=$PREVCXX
-  unset PREVCXX
-fi
-
-# CCTOOLS
-if [ -z $LINKER_VERSION ]; then
-  if [ "$PLATFORM" == "Darwin" ]; then
-    PREVCXX=$CXX
-    CXX+=" -stdlib=libc++"
-  fi
-
-  res=$(check_cxx_stdlib)
-
-  if [ "$PLATFORM" == "Darwin" ]; then
-    CXX=$PREVCXX
-    unset PREVCXX
-  fi
-
-  if [ $res -ne 0 ]; then
-    echo "Your C++ standard library is either broken or too old to build ld64-241.9" 1>&2
-    echo "Building ld64-134.9 instead" 1>&2
-    echo "" 1>&2
-    sleep 3
-    LINKER_VERSION=134.9
-  else
-    LINKER_VERSION=242
-  fi
-fi
-
-if [ "$LINKER_VERSION" != "242" ] && [ "$LINKER_VERSION" != "134.9" ]; then
-  echo "LINKER_VERSION must be 242 or 134.9"
-  exit 1
-fi
-
-CCTOOLS="cctools-870-ld64-$LINKER_VERSION"
+# CCTOOLS / LD64
+CCTOOLS_VERSION=870
+LINKER_VERSION=242.2
+CCTOOLS="cctools-$CCTOOLS_VERSION-ld64-$LINKER_VERSION-ppc"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
 CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' '\n' | \
                   tr '.' '\n' | tail -n3 | head -n1)
@@ -189,14 +148,6 @@ pushd .. &>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
-if [ $PLATFORM == "OpenBSD" ] || [ $PLATFORM == "DragonFly" ]; then
-  pushd .. &>/dev/null
-  patch -p0 < $PATCH_DIR/cctools-ld64-epath.patch
-  popd &>/dev/null
-fi
-if [ $LINKER_VERSION == "134.9" ]; then
-  patch -p1 < $PATCH_DIR/cctools-ld64-134.9-old-compiler.patch
-fi
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
@@ -206,18 +157,10 @@ $MAKE install -j$JOBS
 popd &>/dev/null
 
 pushd $TARGET_DIR/bin &>/dev/null
-CCTOOLS=$(find . -name "x86_64-apple-darwin*")
-CCTOOLS=($CCTOOLS)
+create_toolchain_symlinks i386
 if [ $X86_64H_SUPPORTED -eq 1 ]; then
-  for CCTOOL in ${CCTOOLS[@]}; do
-    CCTOOL_X86_64H=$(echo "$CCTOOL" | $SED 's/x86_64/x86_64h/g')
-    ln -sf $CCTOOL $CCTOOL_X86_64H
-  done
+  create_toolchain_symlinks x86_64h
 fi
-for CCTOOL in ${CCTOOLS[@]}; do
-  CCTOOL_I386=$(echo "$CCTOOL" | $SED 's/x86_64/i386/g')
-  ln -sf $CCTOOL $CCTOOL_I386
-done
 popd &>/dev/null
 
 fi
@@ -298,7 +241,9 @@ set -e
 
 extract $SDK 1 1
 
-rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
+TARGET_SDK_DIR=$SDK_DIR/MacOSX$SDK_VERSION*
+
+rm -rf $TARGET_SDK_DIR* 2>/dev/null
 
 if [ "$(ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then
   mv -f SDKs/*$SDK_VERSION* $SDK_DIR
@@ -306,10 +251,10 @@ else
   mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
 fi
 
-pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
+pushd $TARGET_SDK_DIR &>/dev/null
 set +e
 ln -s \
-  $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
+  $TARGET_SDK_DIR/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
   usr/include 2>/dev/null
 [ ! -f "usr/include/float.h" ] && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
 [ $PLATFORM == "FreeBSD" ] && cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
@@ -318,12 +263,7 @@ popd &>/dev/null
 
 popd &>/dev/null
 
-OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
-OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
-
-rm -f $OSXCROSS_CONF $OSXCROSS_ENV
-
-echo "compiling wrapper ..."
+rm -f $TARGET_DIR/bin/osxcross-conf
 
 export X86_64H_SUPPORTED
 
@@ -333,16 +273,18 @@ export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN
 export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
 export OSXCROSS_BUILD_DIR=$BUILD_DIR
 
-if [ "$PLATFORM" != "Darwin" ]; then
-  # libLTO.so
-  set +e
-  eval $(cat $BUILD_DIR/cctools*/cctools/config.log | grep LLVM_LIB_DIR | head -n1)
-  set -e
-  export OSXCROSS_LIBLTO_PATH=$LLVM_LIB_DIR
+export TARGETARCHS=x86
+
+POWERPC_SUPPORTED=$(sdk_has_ppc_support $TARGET_SDK_DIR)
+
+if [ $POWERPC_SUPPORTED -eq 1 ]; then
+  TARGETARCHS+=" ppc"
+  create_toolchain_symlinks powerpc
+  create_toolchain_symlinks powerpc64
 fi
 
+echo "compiling wrapper ..."
 $BASE_DIR/wrapper/build.sh 1>/dev/null
-
 echo ""
 
 if [ $(osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN) -eq 1 ]; then

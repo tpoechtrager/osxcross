@@ -69,6 +69,17 @@ int dsymutil(int argc, char **argv, Target &target) {
     }
   }
 
+  if (isPowerPC(target.arch) &&
+      !getenv("OSXCROSS_FORCE_POWERPC_DSYMUTIL_INVOCATION")) {
+    // powerpc*-apple-darwin*-dsymutil is a no-op until
+    // llvm-dsymutil has got proper PowerPC support.
+    if (debug)
+      dbg << "ignoring dsymutil invocation: "
+          << "llvm-dsymutil does not support powerpc"
+          << dbg.endl();
+    return 0;
+  }
+
   std::string command = dsymutil + " -version";
 
   if (runcommand(command.c_str(), LLVMDsymutilVersionOutput,

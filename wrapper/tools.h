@@ -379,17 +379,42 @@ constexpr const char *ArchNames[] = {
   "unknown"
 };
 
-constexpr const char *getArchName(Arch arch) { return ArchNames[arch]; }
+inline const char *getArchName(Arch arch, bool alt = false) {
+  if (alt) {
+    switch (arch) {
+      case ppc:
+        return "powerpc";
+      case ppc64:
+        return "powerpc64";
+      default:
+        ;
+    }
+  }
+  return ArchNames[arch];
+}
 
 inline Arch parseArch(const char *arch) {
   size_t i = 0;
   for (auto archname : ArchNames) {
-    if (!strcmp(arch, archname)) {
+    if (!strcmp(arch, archname))
       return static_cast<Arch>(i);
-    }
     ++i;
   }
+  if (!strcmp(arch, "powerpc"))
+    return Arch::ppc;
+  else if (!strcmp(arch, "powerpc64"))
+    return Arch::ppc64;
   return Arch::unknown;
+}
+
+inline bool isPowerPC(Arch arch) {
+  switch (arch) {
+    case Arch::ppc:
+    case Arch::ppc64:
+      return true;
+    default:
+      return false;
+  }
 }
 
 //

@@ -28,7 +28,7 @@ pushd build &>/dev/null
 
 cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
-  -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64" \
+  -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;PowerPC" \
   -DLLVM_ENABLE_ASSERTIONS=Off
 
 $MAKE -f tools/dsymutil/Makefile -j$JOBS

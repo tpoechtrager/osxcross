@@ -30,7 +30,6 @@ namespace osxcross {
 int conf(Target &target) {
   std::string SDKPath;
   OSVersion OSXVersionMin = getDefaultMinTarget();
-  const char *ltopath = getLibLTOPath();
   const char *builddir = getBuildDir();
 
   if (!target.getSDKPath(SDKPath))
@@ -38,9 +37,6 @@ int conf(Target &target) {
 
   if (!OSXVersionMin.Num())
     OSXVersionMin = target.getSDKOSNum();
-
-  if (!ltopath)
-    ltopath = "";
 
   std::cout << "export OSXCROSS_VERSION=" << getOSXCrossVersion()
             << std::endl;
@@ -71,8 +67,6 @@ int conf(Target &target) {
   std::cout << std::endl;
 
   std::cout << "export OSXCROSS_CCTOOLS_PATH=" << target.execpath
-            << std::endl;
-  std::cout << "export OSXCROSS_LIBLTO_PATH=" << ltopath
             << std::endl;
   std::cout << "export OSXCROSS_LINKER_VERSION=" << getLinkerVersion()
             << std::endl;

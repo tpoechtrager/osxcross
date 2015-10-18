@@ -34,14 +34,6 @@ constexpr const char *getDefaultCXXCompiler() { return "clang++"; }
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
 constexpr const char *getBuildDir() { return OSXCROSS_BUILD_DIR; }
 
-constexpr const char *getLibLTOPath() {
-#ifdef OSXCROSS_LIBLTO_PATH
-  return OSXCROSS_LIBLTO_PATH;
-#else
-  return nullptr;
-#endif
-}
-
 constexpr const char *getOSXCrossVersion() {
 #ifdef OSXCROSS_VERSION
   return OSXCROSS_VERSION[0] ? OSXCROSS_VERSION : "unknown";

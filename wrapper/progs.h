@@ -63,6 +63,10 @@ public:
 
   bool operator==(const char *name) const { return !strcmp(name, this->name); }
 
+  bool operator==(char *name) const {
+    return *this == const_cast<const char *>(name);
+  }
+
   template<class T>
   bool operator==(const T &name) const { return name == this->name; }
 

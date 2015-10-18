@@ -41,12 +41,13 @@ function create_wrapper_link
   fi
 
   verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-    "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+    "$WRAPPERARCH32-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
   verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-    "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+    "$WRAPPERARCH-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
-  if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
+  if [ $WRAPPERARCH == "x86_64" ] && [ -n "$X86_64H_SUPPORTED" ] &&
+     [ $X86_64H_SUPPORTED -eq 1 ] &&
      ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
@@ -54,11 +55,12 @@ function create_wrapper_link
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-      "o32-${1}${EXESUFFIX}"
+      "$WRAPPERARCHSHORT32-${1}${EXESUFFIX}"
     verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-      "o64-${1}${EXESUFFIX}"
+      "$WRAPPERARCHSHORT-${1}${EXESUFFIX}"
 
-    if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
+    if [ $WRAPPERARCH == "x86_64" ] && [ -n "$X86_64H_SUPPORTED" ] &&
+       [ $X86_64H_SUPPORTED -eq 1 ] &&
        ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
       verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
         "o64h-${1}${EXESUFFIX}"
@@ -67,8 +69,6 @@ function create_wrapper_link
 }
 
 [ -z "$TARGETCOMPILER" ] && TARGETCOMPILER=clang
-
-TARGETTRIPLE=x86_64-apple-${OSXCROSS_TARGET}
 
 FLAGS=""
 
@@ -119,37 +119,67 @@ if [ -n "$BWCOMPILEONLY" ]; then
   exit 0
 fi
 
-verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
+function set_wrapper_arch()
+{
+  if [ $1 == "x86" ]; then
+    WRAPPERARCH=x86_64
+    WRAPPERARCHSHORT=o64
+    WRAPPERARCH32=i386
+    WRAPPERARCHSHORT32=o32
+    TARGETTRIPLE=$WRAPPERARCH-apple-${OSXCROSS_TARGET}
+  elif [ $1 == "ppc" ]; then
+    WRAPPERARCH=powerpc64
+    WRAPPERARCHSHORT=oppc64
+    WRAPPERARCH32=powerpc
+    WRAPPERARCHSHORT32=oppc32
+    TARGETTRIPLE=$WRAPPERARCH-apple-${OSXCROSS_TARGET}
+  else
+    echo "unknown target arch: $1" 1>&2
+    exit 1
+  fi
+}
 
-pushd "../target/bin" &>/dev/null
-
-if [ $TARGETCOMPILER = "clang" ]; then
-  create_wrapper_link clang 2
-  create_wrapper_link clang++ 2
-  create_wrapper_link clang++-libc++ 2
-  create_wrapper_link clang++-stdc++ 2
-  create_wrapper_link clang++-gstdc++ 2
-elif [ $TARGETCOMPILER = "gcc" ]; then
-  create_wrapper_link gcc 2
-  create_wrapper_link g++ 2
-  create_wrapper_link g++-libc++ 2
+if [ -z "$TARGETARCHS" ]; then
+  echo "TARGETARCHS not set; assuming x86" 1>&2
+  TARGETARCHS="x86"
 fi
 
-create_wrapper_link cc
-create_wrapper_link c++
+for TARCH in $TARGETARCHS; do
+  set_wrapper_arch $TARCH
 
-create_wrapper_link osxcross 1
-create_wrapper_link osxcross-conf 1
-create_wrapper_link osxcross-env 1
-create_wrapper_link osxcross-cmp 1
-create_wrapper_link osxcross-man 1
-create_wrapper_link pkg-config
+  verbose_cmd cp wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
 
-if [ "$PLATFORM" != "Darwin" ]; then
-  create_wrapper_link sw_vers 1
-  create_wrapper_link dsymutil 1
-  create_wrapper_link xcrun 1
-fi
+  pushd "../target/bin" &>/dev/null
 
-popd &>/dev/null
+  if [ $TARGETCOMPILER = "clang" ]; then
+    create_wrapper_link clang 2
+    create_wrapper_link clang++ 2
+    create_wrapper_link clang++-libc++ 2
+    create_wrapper_link clang++-stdc++ 2
+    create_wrapper_link clang++-gstdc++ 2
+  elif [ $TARGETCOMPILER = "gcc" ]; then
+    create_wrapper_link gcc 2
+    create_wrapper_link g++ 2
+    create_wrapper_link g++-libc++ 2
+  fi
+
+  create_wrapper_link cc
+  create_wrapper_link c++
+
+  create_wrapper_link osxcross 1
+  create_wrapper_link osxcross-conf 1
+  create_wrapper_link osxcross-env 1
+  create_wrapper_link osxcross-cmp 1
+  create_wrapper_link osxcross-man 1
+  create_wrapper_link pkg-config
+
+  if [ "$PLATFORM" != "Darwin" ]; then
+    create_wrapper_link sw_vers 1
+    create_wrapper_link dsymutil 1
+    create_wrapper_link xcrun 1
+  fi
+
+  popd &>/dev/null
+done
+
 popd &>/dev/null
