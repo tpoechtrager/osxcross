@@ -92,6 +92,10 @@ eval $(osxcross-conf)
   [ "$status" -eq 0 ]
   [[ "${lines[0]}" == *\ -target\ powerpc64-apple-darwin*\ * ]]
 
+  OSXCROSS_PROG_NAME=o64-g++ run o64-clang++
+  [[ "${lines[0]}" != *\ -Wl,* ]]
+  [ "$status" -eq 0 ]
+
   OSXCROSS_PROG_NAME=o64ppc-clang++ run o64-clang++
   [ "$status" -ne 0 ]
 
@@ -143,7 +147,7 @@ eval $(osxcross-conf)
   [[ "${lines[0]}" != *\ \(x86_64-apple-darwin*\)\ * ]]
 
   if [ $GCC_INSTALLED -eq 1 ]; then
-    run o64-g++
+    run o64-g++ x.c
     [ "$status" -eq 0 ]
     [[ "${lines[0]}" == *\ *x86_64-apple-darwin*-base-g++*\ \(x86_64-apple-darwin*-g++\)\ * ]]
     [[ "${lines[0]}" != *\ -target\ x86_64-apple-darwin*\ * ]]

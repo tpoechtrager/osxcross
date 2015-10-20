@@ -462,15 +462,17 @@ void Target::setupGCCLibs(Arch arch) {
     }
   };
 
-  fargs.push_back("-Qunused-arguments");
+  if (!args.empty()) {
+    fargs.push_back("-Qunused-arguments");
 
-  addLib(GCCLibSTDCXXPath, "stdc++");
-  addLib(GCCLibSTDCXXPath, "supc++");
-  addLib(GCCLibPath, "gcc");
-  addLib(GCCLibPath, "gcc_eh");
+    addLib(GCCLibSTDCXXPath, "stdc++");
+    addLib(GCCLibSTDCXXPath, "supc++");
+    addLib(GCCLibPath, "gcc");
+    addLib(GCCLibPath, "gcc_eh");
 
-  fargs.push_back("-lc");
-  fargs.push_back("-Wl,-no_compact_unwind");
+    fargs.push_back("-lc");
+    fargs.push_back("-Wl,-no_compact_unwind");
+  }
 }
 
 bool Target::setup() {
@@ -720,12 +722,12 @@ bool Target::setup() {
       fargs.push_back("-static-libstdc++");
     }
 
-    if (!isGCH())
+    if (!isGCH() && !args.empty())
       fargs.push_back("-Wl,-no_compact_unwind");
   }
 
   auto addCXXHeaderPath = [&](const std::string &path) {
-    fargs.push_back("-isystem");
+    fargs.push_back(isClang() ? "-cxx-isystem" : "-isystem");
     fargs.push_back(path);
   };
 
@@ -806,8 +808,13 @@ bool Target::setup() {
     }
   }
 
-  if ((haveArch(Arch::ppc) || haveArch(ppc64)) && isGCC())
-    setenv("DISABLE_ANNOYING_LD64_ASSERTION", "1", 1);
+  if (isGCC()) {
+    if ((haveArch(Arch::ppc) || haveArch(Arch::ppc64)))
+      setenv("DISABLE_ANNOYING_LD64_ASSERTION", "1", 1);
+
+    // Ensure target/bin is in PATH for GCC.
+    concatEnvVariable("PATH", execpath);
+  }
 
   return true;
 }
