@@ -74,7 +74,7 @@ if [ -z "$OSX_VERSION_MIN" ]; then
   fi
 fi
 
-OSXCROSS_VERSION=0.11
+OSXCROSS_VERSION=0.12
 
 X86_64H_SUPPORTED=0
 
@@ -86,6 +86,7 @@ case $SDK_VERSION in
   10.8*) TARGET=darwin12; X86_64H_SUPPORTED=1; ;;
   10.9*) TARGET=darwin13; X86_64H_SUPPORTED=1; ;;
   10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; ;;
+  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; ;;
   *) echo "Invalid SDK Version" && exit 1 ;;
 esac
 
@@ -129,49 +130,8 @@ function remove_locks()
 source $BASE_DIR/tools/trap_exit.sh
 
 # CCTOOLS
-if [ "$PLATFORM" == "Darwin" ]; then
-  PREVCXX=$CXX
-  CXX+=" -stdlib=libc++"
-fi
-
-res=$(check_cxx_stdlib)
-
-if [ "$PLATFORM" == "Darwin" ]; then
-  CXX=$PREVCXX
-  unset PREVCXX
-fi
-
-# CCTOOLS
-if [ -z $LINKER_VERSION ]; then
-  if [ "$PLATFORM" == "Darwin" ]; then
-    PREVCXX=$CXX
-    CXX+=" -stdlib=libc++"
-  fi
-
-  res=$(check_cxx_stdlib)
-
-  if [ "$PLATFORM" == "Darwin" ]; then
-    CXX=$PREVCXX
-    unset PREVCXX
-  fi
-
-  if [ $res -ne 0 ]; then
-    echo "Your C++ standard library is either broken or too old to build ld64-241.9" 1>&2
-    echo "Building ld64-134.9 instead" 1>&2
-    echo "" 1>&2
-    sleep 3
-    LINKER_VERSION=134.9
-  else
-    LINKER_VERSION=242
-  fi
-fi
-
-if [ "$LINKER_VERSION" != "242" ] && [ "$LINKER_VERSION" != "134.9" ]; then
-  echo "LINKER_VERSION must be 242 or 134.9"
-  exit 1
-fi
-
-CCTOOLS="cctools-870-ld64-$LINKER_VERSION"
+LINKER_VERSION=253.3
+CCTOOLS="cctools-877.5-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
 CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' '\n' | \
                   tr '.' '\n' | tail -n3 | head -n1)
@@ -189,17 +149,10 @@ pushd .. &>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
-if [ $PLATFORM == "OpenBSD" ] || [ $PLATFORM == "DragonFly" ]; then
-  pushd .. &>/dev/null
-  patch -p0 < $PATCH_DIR/cctools-ld64-epath.patch
-  popd &>/dev/null
-fi
-if [ $LINKER_VERSION == "134.9" ]; then
-  patch -p1 < $PATCH_DIR/cctools-ld64-134.9-old-compiler.patch
-fi
 echo ""
-CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
-[ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
+CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
+CONFFLAGS+="--disable-clang-as "
+[ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
 ./configure $CONFFLAGS
 $MAKE -j$JOBS
 $MAKE install -j$JOBS

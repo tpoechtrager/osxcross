@@ -33,10 +33,14 @@ Then ensure you have the following installed on your system:
 
 `Clang 3.2+`, `patch`, `libxml2-devel` (<=10.6 only) and the `bash shell`.
 
-Optional:
+*Optional:*
 
 `llvm-devel`: For Link Time Optimization support  
-`uuid-devel`: For ld64 `-random_uuid` support
+`uuid-devel`: For ld64 `-random_uuid` support  
+`llvm-devel` + `xar-devel`: For ld64 `-bitcode_bundle` support
+
+You can find xar [here](https://github.com/mackyle/xar).  
+Do not install libxar-dev on Ubuntu, it's a different package.
 
 \--  
 You can run 'sudo tools/get\_dependencies.sh' to get these automatically.  
@@ -82,13 +86,13 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ##### Packaging the SDK on Mac OS X: #####
 
-1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%205.1.1) \*\*]
+1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%207.0.1) \*\*]
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
 3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross
 
-\*\* Xcode up to 6.4 is known to work; 7.x is not working (yet).  
+\*\* Xcode up to 7.1.x is known to work.  
 \*\*\* If you get a dialog with a crossed circle, ignore it, you don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
@@ -213,7 +217,7 @@ You can build OSXCross with GCC this way:
 
 `CC=gcc CXX=g++ ./build.sh`
 
-You will need gcc/g++/gcc-objc 4.6+.
+You will need gcc/g++/gcc-objc 4.7+.
 
 ### LICENSE: ####
   * scripts/wrapper: GPLv2
