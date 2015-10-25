@@ -74,19 +74,22 @@ if [ -z "$OSX_VERSION_MIN" ]; then
   fi
 fi
 
-OSXCROSS_VERSION=0.11
+OSXCROSS_VERSION=0.12
 
-X86_64H_SUPPORTED=0
 POWERPC_SUPPORTED=0
+X86_64H_SUPPORTED=0
+
+APPLY_LD64_ADD_PPC_SUPPORT_PATCH=0
 
 case $SDK_VERSION in
-  10.4*) TARGET=darwin8 ;;
-  10.5*) TARGET=darwin9 ;;
+  10.4*) TARGET=darwin8; APPLY_LD64_ADD_PPC_SUPPORT_PATCH=1; ;;
+  10.5*) TARGET=darwin9; APPLY_LD64_ADD_PPC_SUPPORT_PATCH=1; ;;
   10.6*) TARGET=darwin10 ;;
   10.7*) TARGET=darwin11 ;;
   10.8*) TARGET=darwin12; X86_64H_SUPPORTED=1; ;;
   10.9*) TARGET=darwin13; X86_64H_SUPPORTED=1; ;;
   10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; ;;
+  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; ;;
   *) echo "Invalid SDK Version" && exit 1 ;;
 esac
 
@@ -127,10 +130,9 @@ function remove_locks()
 
 source $BASE_DIR/tools/trap_exit.sh
 
-# CCTOOLS / LD64
-CCTOOLS_VERSION=870
-LINKER_VERSION=242.2
-CCTOOLS="cctools-$CCTOOLS_VERSION-ld64-$LINKER_VERSION-ppc"
+# CCTOOLS
+LINKER_VERSION=253.3
+CCTOOLS="cctools-877.5-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
 CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' '\n' | \
                   tr '.' '\n' | tail -n3 | head -n1)
@@ -146,11 +148,16 @@ pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
 ./tools/fix_unistd_issue.sh 1>/dev/null
 popd &>/dev/null
-patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
-patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
+patch -p0 < $PATCH_DIR/ld64-antique-ubuntu.patch
+if [ $APPLY_LD64_ADD_PPC_SUPPORT_PATCH -eq 1 ]; then
+  pushd .. &>/dev/null
+  patch -p0 < $PATCH_DIR/ld64-add-ppc-support.patch
+  popd &>/dev/null
+fi
 echo ""
-CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET"
-[ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+=" --enable-lto=no"
+CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
+CONFFLAGS+="--disable-clang-as "
+[ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
 ./configure $CONFFLAGS
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
@@ -278,9 +285,15 @@ export TARGETARCHS=x86
 POWERPC_SUPPORTED=$(sdk_has_ppc_support $TARGET_SDK_DIR)
 
 if [ $POWERPC_SUPPORTED -eq 1 ]; then
-  TARGETARCHS+=" ppc"
-  create_toolchain_symlinks powerpc
-  create_toolchain_symlinks powerpc64
+  if [ $APPLY_LD64_ADD_PPC_SUPPORT_PATCH -eq 1 ]; then
+    TARGETARCHS+=" ppc"
+    create_toolchain_symlinks powerpc
+    create_toolchain_symlinks powerpc64
+  else
+    echo "" 1>&2
+    echo "This SDK supports PPC while it shouldn't. Please report this issue!" 1>&2
+    echo "" 1>&2
+  fi
 fi
 
 echo "compiling wrapper ..."

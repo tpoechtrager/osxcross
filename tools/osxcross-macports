@@ -90,6 +90,9 @@ case $MACOSX_DEPLOYMENT_TARGET in
   10.8*  ) OSXVERSION="darwin_12" ;;
   10.9*  ) OSXVERSION="darwin_13" ;;
   10.10* ) OSXVERSION="darwin_14" ;;
+  # "Downgrade" 10.11 to 10.10 until
+  # there are packages for 10.11
+  10.11* ) OSXVERSION="darwin_14" ;;
        * ) unsupportedDepTarget ;;
 esac
 
@@ -187,7 +190,7 @@ verifyFileIntegrity()
     exit 1
   fi
 
-  verboseMsg "verifying file integrity ..."
+  echo "verifying file integrity of $file"
 
   set +e
 
