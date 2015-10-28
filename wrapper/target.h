@@ -29,8 +29,23 @@ using namespace tools;
 
 constexpr const char *getDefaultVendor() { return "apple"; }
 constexpr const char *getDefaultTarget() { return OSXCROSS_TARGET; }
-constexpr const char *getDefaultCompiler() { return "clang"; }
-constexpr const char *getDefaultCXXCompiler() { return "clang++"; }
+
+constexpr const char *getDefaultCompilerName() {
+  return "clang";
+}
+
+constexpr Compiler getDefaultCompilerIdentifier() {
+  return Compiler::CLANG;
+}
+
+constexpr const char *getDefaultCXXCompilerName() {
+  return "clang++";
+}
+
+constexpr Compiler getDefaultCXXCompilerIdentifier() {
+  return Compiler::CLANGXX;
+}
+
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
 constexpr const char *getBuildDir() { return OSXCROSS_BUILD_DIR; }
 
@@ -104,7 +119,7 @@ struct Target {
   bool isClang() const;
   bool isGCC() const;
 
-  bool isKnownCompiler() const { return isClang() || isGCC(); }
+  bool isKnownCompiler() const;
 
   const std::string &getDefaultTriple(std::string &triple) const;
   const std::string &getTriple() const { return triple; }
@@ -125,6 +140,7 @@ struct Target {
   ClangVersion clangversion;
   GCCVersion gccversion;
   bool usegcclibs;
+  Compiler compiler;
   std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
   std::string compilername;     // clang | gcc
   std::string compilerexecname; // clang | *-apple-darwin-gcc

@@ -344,6 +344,36 @@ typedef OSVersion LLVMVersion;
 static const auto &parseLLVMVersion = parseOSVersion;
 
 //
+// Compiler Identifier
+//
+
+#undef Compiler
+#undef CLANG
+#undef CLANGXX
+#undef GCC
+#undef GXX
+
+enum Compiler : int {
+  CLANG,
+  CLANGXX,
+  GCC,
+  GXX,
+  UNKNOWN // Upper-case to avoid clash with "enum Arch"
+};
+
+inline Compiler getCompilerIdentifier(const char *compilername) {
+  if (!strncmp(compilername, "clang++", 7))
+    return Compiler::CLANGXX;
+  if (!strncmp(compilername, "clang", 5))
+    return Compiler::CLANG;
+  else if (!strncmp(compilername, "g++", 3))
+    return Compiler::GXX;
+  else if (!strncmp(compilername, "gcc", 3))
+    return Compiler::GCC;
+  return Compiler::UNKNOWN;
+}
+
+//
 // Arch
 //
 

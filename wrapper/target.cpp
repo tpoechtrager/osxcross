@@ -43,7 +43,8 @@ namespace target {
 Target::Target()
     : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
       arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
-      usegcclibs(), compilername(getDefaultCompiler()), language() {
+      usegcclibs(), compiler(getDefaultCompilerIdentifier()),
+      compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
     abort();
 
@@ -242,6 +243,9 @@ bool Target::isLibCXX() const {
 bool Target::isLibSTDCXX() const { return stdlib == StdLib::libstdcxx; }
 
 bool Target::isCXX() {
+  if (isKnownCompiler())
+    return (compiler == Compiler::CLANGXX || compiler == Compiler::GXX);
+
   return endsWith(compilername, "++");
 }
 
@@ -257,12 +261,15 @@ bool Target::isGCH() {
 
 
 bool Target::isClang() const {
-  return !strncmp(getFileName(compilername.c_str()), "clang", 5);
+  return (compiler == Compiler::CLANG || compiler == Compiler::CLANGXX);
 }
 
 bool Target::isGCC() const {
-  const char *c = getFileName(compilername.c_str());
-  return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
+  return (compiler == Compiler::GCC || compiler == Compiler::GXX);
+}
+
+bool Target::isKnownCompiler() const {
+  return compiler != Compiler::UNKNOWN;
 }
 
 
