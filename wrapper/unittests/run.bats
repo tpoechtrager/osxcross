@@ -339,6 +339,12 @@ eval $(osxcross-conf)
   run o64-clang++ -stdlib=foo
   [ "$status" -eq 1 ]
   [[ "${lines[0]}" == *error:\ value\ of\ \'-stdlib=\'\ must\ be\ \'default\',\ \'libc++\'\ or\ \'libstdc++\' ]]
+
+  if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<" 10.7) -eq 1 ]; then
+    run o64-clang++ -stdlib=libc++
+    [ "$status" -ne 0 ]
+    [[ "${lines[0]}" == *error:\ libc++\ requires\ Mac\ OS\ X\ SDK\ 10.7\ \(or\ later\) ]]
+  fi
 }
 
 @test "precompiled headers" {
@@ -411,9 +417,11 @@ eval $(osxcross-conf)
     [[ "${lines[0]}" != *\ -m64\ * ]]
     [[ "${lines[0]}" != *\ -arch\ * ]]
 
-    run o64-g++ -arch x86_64h
-    [ "$status" -eq 1 ]
-    [[ "${lines[0]}" == *error:\ gcc\ does\ not\ support\ architecture\ \'x86_64h\' ]]
+    if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8) -eq 1 ]; then
+      run o64-g++ -arch x86_64h
+      [ "$status" -eq 1 ]
+      [[ "${lines[0]}" == *error:\ gcc\ does\ not\ support\ architecture\ \'x86_64h\' ]]
+    fi
   fi
 }
 

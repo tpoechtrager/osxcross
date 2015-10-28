@@ -516,15 +516,6 @@ bool Target::setup() {
     }
   }
 
-  if (OSNum > SDKOSNum) {
-    err << "targeted OS X version must be <= " << SDKOSNum.Str() << " (SDK)"
-        << err.endl();
-    return false;
-  } else if (OSNum < OSVersion(10, 4)) {
-    err << "targeted OS X version must be >= 10.4" << err.endl();
-    return false;
-  }
-
   if (haveArch(Arch::x86_64h) && OSNum < OSVersion(10, 8)) {
     // -mmacosx-version-min= < 10.8 in combination with '-arch x86_64h'
     // may cause linker errors.
@@ -554,6 +545,15 @@ bool Target::setup() {
           << err.endl();
       return false;
     }
+  }
+
+  if (OSNum > SDKOSNum) {
+    err << "targeted OS X version must be <= " << SDKOSNum.Str() << " (SDK)"
+        << err.endl();
+    return false;
+  } else if (OSNum < OSVersion(10, 4)) {
+    err << "targeted OS X version must be >= 10.4" << err.endl();
+    return false;
   }
 
   std::string CXXHeaderPath = SDKPath;
