@@ -110,8 +110,6 @@ struct Target {
 
   bool hasLibCXX() const;
   bool libCXXIsDefaultCXXLib() const;
-  bool isLibCXX() const;
-  bool isLibSTDCXX() const;
 
   bool isCXX();
   bool isGCH();

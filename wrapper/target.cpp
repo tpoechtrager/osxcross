@@ -236,12 +236,6 @@ bool Target::libCXXIsDefaultCXXLib() const {
          OSNum >= OSVersion(10, 9);
 }
 
-bool Target::isLibCXX() const {
-  return stdlib == StdLib::libcxx || libCXXIsDefaultCXXLib();
-}
-
-bool Target::isLibSTDCXX() const { return stdlib == StdLib::libstdcxx; }
-
 bool Target::isCXX() {
   if (isKnownCompiler())
     return (compiler == Compiler::CLANGXX || compiler == Compiler::GXX);
@@ -692,7 +686,7 @@ bool Target::setup() {
       }
     }
   } else if (isGCC()) {
-    if (isCXX() && isLibCXX()) {
+    if (isCXX() && stdlib == StdLib::libcxx) {
       fargs.push_back("-nostdinc++");
       fargs.push_back("-nodefaultlibs");
 
@@ -701,7 +695,7 @@ bool Target::setup() {
         fargs.push_back("-lc++");
         fargs.push_back("-lgcc_s.10.5");
       }
-    } else if (!isLibCXX() && !isGCH() &&
+    } else if (stdlib != StdLib::libcxx && !isGCH() &&
                !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
       fargs.push_back("-static-libgcc");
       fargs.push_back("-static-libstdc++");

@@ -37,7 +37,7 @@ bool isXcodeTool(const char *tool) {
     "machocheck", "nm", "nmedit", "ObjectDump", "objdump", "otool",
     "pagestuff", "pkg-config", "ranlib", "redo_prebinding",
     "seg_addr_table", "seg_hack", "size", "strings", "strip", "sw_vers",
-    "unwinddump", "xcodebuild", "xcrun"
+    "unwinddump", "xcodebuild", "xcrun", "bitcode_strip"
   };
 
   for (const char *xctool : XcodeTools)
