@@ -380,14 +380,18 @@ bool detectTarget(int argc, char **argv, Target &target) {
         return false;
 
       target.target = std::string(cmd, p - cmd);
+      target.compiler = getCompilerIdentifier(&p[1]);
       target.compilername = &p[1];
 
-      if (target.compilername == "cc")
-        target.compilername = getDefaultCompiler();
-      else if (target.compilername == "c++")
-        target.compilername = getDefaultCXXCompiler();
-      else if (auto *prog = program::getprog(target.compilername))
+      if (target.compilername == "cc") {
+        target.compiler = getDefaultCompilerIdentifier();
+        target.compilername = getDefaultCompilerName();
+      } else if (target.compilername == "c++") {
+        target.compiler = getDefaultCXXCompilerIdentifier();
+        target.compilername = getDefaultCXXCompilerName();
+      } else if (auto *prog = program::getprog(target.compilername)) {
         (*prog)(argc, argv, target);
+      }
 
       if (target.target != getDefaultTarget())
         warn << "this wrapper was built for target "
@@ -416,8 +420,11 @@ bool detectTarget(int argc, char **argv, Target &target) {
   else
     return false;
 
-  if (const char *p = strchr(cmd, '-'))
-    target.compilername = &p[1];
+  if (const char *p = strchr(cmd, '-')) {
+    const char *compilername = &p[1];
+    target.compiler = getCompilerIdentifier(compilername);
+    target.compilername = compilername;
+  }
 
   if (!commandopts::parse(argc, argv, target))
     return false;

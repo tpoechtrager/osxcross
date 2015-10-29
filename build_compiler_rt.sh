@@ -81,6 +81,11 @@ $SED -i "s/Configs += cc_kext_ios5//g" make/platform/clang_darwin.mk
 $SED -i "s/Configs += profile_ios//g" make/platform/clang_darwin.mk
 $SED -i "s/Configs += asan_iossim_dynamic//g" make/platform/clang_darwin.mk
 
+if [ -f "$OSXCROSS_SDK/usr/lib/libSystem.B.tbd" ]; then
+  # https://llvm.org/bugs/show_bug.cgi?id=24776
+  $SED -i "s/x86_64 x86_64h,/x86_64,/g" make/platform/clang_darwin.mk
+fi
+
 # Unbreak the -Werror build.
 if [ -f lib/asan/asan_mac.h ]; then
   $SED -i "s/ASAN__MAC_H/ASAN_MAC_H/g" lib/asan/asan_mac.h

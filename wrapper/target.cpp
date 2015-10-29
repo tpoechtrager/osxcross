@@ -43,7 +43,8 @@ namespace target {
 Target::Target()
     : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
       arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
-      usegcclibs(), compilername(getDefaultCompiler()), language() {
+      usegcclibs(), compiler(getDefaultCompilerIdentifier()),
+      compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
     abort();
 
@@ -236,13 +237,10 @@ bool Target::libCXXIsDefaultCXXLib() const {
          OSNum >= OSVersion(10, 9);
 }
 
-bool Target::isLibCXX() const {
-  return stdlib == StdLib::libcxx || libCXXIsDefaultCXXLib();
-}
-
-bool Target::isLibSTDCXX() const { return stdlib == StdLib::libstdcxx; }
-
 bool Target::isCXX() {
+  if (isKnownCompiler())
+    return (compiler == Compiler::CLANGXX || compiler == Compiler::GXX);
+
   return endsWith(compilername, "++");
 }
 
@@ -258,12 +256,15 @@ bool Target::isGCH() {
 
 
 bool Target::isClang() const {
-  return !strncmp(getFileName(compilername.c_str()), "clang", 5);
+  return (compiler == Compiler::CLANG || compiler == Compiler::CLANGXX);
 }
 
 bool Target::isGCC() const {
-  const char *c = getFileName(compilername.c_str());
-  return (!strncmp(c, "gcc", 3) || !strncmp(c, "g++", 3));
+  return (compiler == Compiler::GCC || compiler == Compiler::GXX);
+}
+
+bool Target::isKnownCompiler() const {
+  return compiler != Compiler::UNKNOWN;
 }
 
 const std::string &Target::getDefaultTriple(std::string &triple) const {
@@ -532,15 +533,6 @@ bool Target::setup() {
     }
   }
 
-  if (OSNum > SDKOSNum) {
-    err << "targeted OS X version must be <= " << SDKOSNum.Str() << " (SDK)"
-        << err.endl();
-    return false;
-  } else if (OSNum < OSVersion(10, 4)) {
-    err << "targeted OS X version must be >= 10.4" << err.endl();
-    return false;
-  }
-
   if (haveArch(Arch::x86_64h) && OSNum < OSVersion(10, 8)) {
     // -mmacosx-version-min= < 10.8 in combination with '-arch x86_64h'
     // may cause linker errors.
@@ -570,6 +562,15 @@ bool Target::setup() {
           << err.endl();
       return false;
     }
+  }
+
+  if (OSNum > SDKOSNum) {
+    err << "targeted OS X version must be <= " << SDKOSNum.Str() << " (SDK)"
+        << err.endl();
+    return false;
+  } else if (OSNum < OSVersion(10, 4)) {
+    err << "targeted OS X version must be >= 10.4" << err.endl();
+    return false;
   }
 
   std::string CXXHeaderPath = SDKPath;
@@ -707,7 +708,7 @@ bool Target::setup() {
       }
     }
   } else if (isGCC()) {
-    if (isCXX() && isLibCXX()) {
+    if (isCXX() && stdlib == StdLib::libcxx) {
       fargs.push_back("-nostdinc++");
       fargs.push_back("-nodefaultlibs");
 
@@ -716,7 +717,7 @@ bool Target::setup() {
         fargs.push_back("-lc++");
         fargs.push_back("-lgcc_s.10.5");
       }
-    } else if (!isLibCXX() && !isGCH() &&
+    } else if (stdlib != StdLib::libcxx && !isGCH() &&
                !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
       fargs.push_back("-static-libgcc");
       fargs.push_back("-static-libstdc++");
