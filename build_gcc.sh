@@ -17,8 +17,24 @@ if [ -z "$GCC_VERSION" ]; then
   #GCC_VERSION=5-20140928 # snapshot
 fi
 
+if [ -n "$APPLE_GCC" ]; then
+  GCC_VERSION=4.2.1-apple-gcc
+
+  if [ -z "$APPLE_GCC_VERSION" ]; then
+    if [ -n "$POWERPC" ]; then
+      APPLE_GCC_VERSION=5575.11
+    else
+      APPLE_GCC_VERSION=5666.3
+    fi
+  fi
+fi
+
 # GCC mirror
-GCC_MIRROR="ftp://ftp.fu-berlin.de/unix/languages/gcc"
+if [ -n "$APPLE_GCC" ]; then
+  GCC_MIRROR="https://opensource.apple.com/"
+else
+  GCC_MIRROR="ftp://ftp.fu-berlin.de/unix/languages/gcc"
+fi
 
 require wget
 
@@ -42,7 +58,9 @@ if [ -n "$POWERPC" ]; then
   GCC_ARCH32=powerpc
   GCC_ARCH_SHORT32=oppc32
   TARGETARCHS=ppc
-  export DISABLE_ANNOYING_LD64_ASSERTION=1
+  if [ -z "$APPLE_GCC" ]; then
+    export DISABLE_ANNOYING_LD64_ASSERTION=1
+  fi
 else
   GCC_ARCH=x86_64
   GCC_ARCH_SHORT=o64
@@ -51,44 +69,62 @@ else
   TARGETARCHS=x86
 fi
 
-export TARGETARCHS
+export TARGETARCHS # wrapper
 
-if [ ! -f "have_gcc_${GCC_VERSION}_${GCC_ARCH}_${OSXCROSS_TARGET}" ]; then
+ARCHS_TO_BUILD=$GCC_ARCH
+EXTRA_CONFFLAGS=""
+
+if [ -n "$APPLE_GCC" ]; then
+  # work around broken multilib support
+  ARCHS_TO_BUILD+=" $GCC_ARCH32"
+  EXTRA_CONFFLAGS+="--with-gxx-include-dir=/usr/include/c++/4.0.0 " ## TODO: version
+
+  # fix -lstdc++ link
+  if [ ! -f "$OSXCROSS_SDK/usr/lib/libstdc++.dylib" ]; then
+    pushd $OSXCROSS_SDK/usr/lib &>/dev/null
+    set +e
+    if [ ! -f "libstdc++.dylib" ]; then
+      ln -sf "libstdc++.6.dylib" "libstdc++.dylib"
+    fi
+    set -e
+    popd &>/dev/null
+  fi
+else
+  EXTRA_CONFFLAGS+="--enable-multilib --with-multilib-list=m32,m64 "
+fi
+
+if [ ! -f "have_gcc_${GCC_VERSION}_${ARCHS_TO_BUILD/ /_}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR &>/dev/null
-if [[ $GCC_VERSION != *-* ]]; then
-  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+if [ -n "$APPLE_GCC" ]; then
+  wget -c "$GCC_MIRROR/tarballs/gcc/gcc-$APPLE_GCC_VERSION.tar.gz"
 else
-  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+  if [[ $GCC_VERSION != *-* ]]; then
+    wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+  else
+    wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+  fi
 fi
 popd &>/dev/null
 
 echo "cleaning up ..."
 rm -rf gcc* 2>/dev/null
 
-extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2" 1
+if [ -n "$APPLE_GCC" ]; then
+  extract "$OSXCROSS_TARBALL_DIR/gcc-$APPLE_GCC_VERSION.tar.gz" 1
+else
+  extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2" 1
+fi
+
 echo ""
 
-pushd gcc*$GCC_VERSION* &>/dev/null
-
-rm -f $OSXCROSS_TARGET_DIR/bin/*-gcc*
-rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
-
-if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) == 1 ] &&
-   [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) == 1 ]; then
-  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66035
-  patch -p1 < $PATCH_DIR/gcc-pr66035.patch
+if [ -n "$APPLE_GCC" ]; then
+  pushd gcc*$APPLE_GCC_VERSION &>/dev/null
+  [ -z "$CC" ] && CC=cc
+  export CC+=" -std=gnu89"
+else
+  pushd gcc*$GCC_VERSION* &>/dev/null
 fi
-
-if [ $GCC_ARCH == "x86_64" ] &&
-   [ $(osxcross-cmp $OSXCROSS_SDK_VERSION '<=' 10.4) == 1 ]; then
-  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64184
-  $SED -i 's/sysconf(_SC_NPROCESSORS_ONLN)/1/g' \
-    libcilkrts/runtime/sysdep-unix.c || true
-fi
-
-mkdir -p build_$GCC_ARCH
-pushd build_$GCC_ARCH &>/dev/null
 
 if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
@@ -100,56 +136,95 @@ elif [ "$PLATFORM" == "Darwin" ]; then
   export LD_LIBRARY_PATH="/opt/local/lib:$LD_LIBRARY_PATH"
 fi
 
+if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) == 1 ] &&
+   [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) == 1 ]; then
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66035
+  patch -p1 < $PATCH_DIR/gcc-pr66035.patch
+fi
+
+if [ $GCC_ARCH == "x86_64" ] &&
+   [ $(osxcross-cmp $OSXCROSS_SDK_VERSION '<=' 10.4) == 1 ]; then
+  # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64184
+  $SED -i 's/sysconf(_SC_NPROCESSORS_ONLN)/1/g' \
+    libcilkrts/runtime/sysdep-unix.c
+fi
+
+rm -f $OSXCROSS_TARGET_DIR/bin/$GCC_ARCH-apple-$OSXCROSS_TARGET*-gcc*
+rm -f $OSXCROSS_TARGET_DIR/bin/$GCC_ARCH-apple-$OSXCROSS_TARGET*-g++*
+
 LANGS="c,c++,objc,obj-c++"
 
 if [ -n "$ENABLE_FORTRAN" ]; then
   LANGS+=",fortran"
 fi
 
-$SED -i "s/dsymutil\"/$GCC_ARCH-apple-$OSXCROSS_TARGET-dsymutil\"/" \
-  ../gcc/config/darwin.h
+if [ -n "$APPLE_GCC" ]; then
+  $SED -i "s/dsymutil /$GCC_ARCH-apple-$OSXCROSS_TARGET-dsymutil /" \
+    gcc/config/darwin.h
+else
+  $SED -i "s/dsymutil\"/$GCC_ARCH-apple-$OSXCROSS_TARGET-dsymutil\"/" \
+    gcc/config/darwin.h
+fi
 
-../configure \
-  --target=$GCC_ARCH-apple-$OSXCROSS_TARGET \
-  --with-sysroot=$OSXCROSS_SDK \
-  --with-ld=$OSXCROSS_TARGET_DIR/bin/$GCC_ARCH-apple-$OSXCROSS_TARGET-ld \
-  --with-as=$OSXCROSS_TARGET_DIR/bin/$GCC_ARCH-apple-$OSXCROSS_TARGET-as \
-  --disable-nls \
-  --enable-languages=$LANGS \
-  --without-headers \
-  --enable-multilib \
-  --with-multilib-list=m32,m64 \
-  --enable-lto \
-  --enable-checking=release \
-  --disable-libstdcxx-pch \
-  --prefix=$OSXCROSS_TARGET_DIR \
-  --with-system-zlib
+for ARCH_TO_BUILD in $ARCHS_TO_BUILD; do
 
-$MAKE -j$JOBS
+  mkdir -p build_$ARCH_TO_BUILD
+  pushd build_$ARCH_TO_BUILD &>/dev/null
 
-popd &>/dev/null # build
+  ../configure \
+    --target=$ARCH_TO_BUILD-apple-$OSXCROSS_TARGET \
+    --with-sysroot=$OSXCROSS_SDK \
+    --with-ld=$OSXCROSS_TARGET_DIR/bin/$GCC_ARCH-apple-$OSXCROSS_TARGET-ld \
+    --with-as=$OSXCROSS_TARGET_DIR/bin/$GCC_ARCH-apple-$OSXCROSS_TARGET-as \
+    --disable-nls \
+    --enable-languages=$LANGS \
+    --enable-lto \
+    --enable-checking=release \
+    --disable-libstdcxx-pch \
+    --prefix=$OSXCROSS_TARGET_DIR \
+    --with-system-zlib \
+    $EXTRA_CONFFLAGS
+
+  $MAKE -j$JOBS
+
+  popd &>/dev/null # build
+
+done
+
 popd &>/dev/null # gcc
 
-touch "have_gcc_${GCC_VERSION}_${GCC_ARCH}_${OSXCROSS_TARGET}"
+touch "have_gcc_${GCC_VERSION}_${ARCHS_TO_BUILD/ /_}_${OSXCROSS_TARGET}"
 
 fi # have gcc
 
+for ARCH_TO_BUILD in $ARCHS_TO_BUILD; do
 
-pushd gcc*$GCC_VERSION*/build_$GCC_ARCH &>/dev/null
-$MAKE install
+  if [ -n "$APPLE_GCC" ]; then
+    pushd gcc*$APPPE_GCC42_VERSION/build_$ARCH_TO_BUILD &>/dev/null
+  else
+    pushd gcc*$GCC_VERSION*/build_$ARCH_TO_BUILD &>/dev/null
+  fi
 
-GCC_VERSION=$(echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}')
+  $MAKE install
 
-pushd $OSXCROSS_TARGET_DIR/$GCC_ARCH-apple-$OSXCROSS_TARGET/include &>/dev/null
-pushd c++/${GCC_VERSION}* &>/dev/null
+  if [ -z "$APPLE_GCC" ]; then
+    GCC_VERSION=$(echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}')
 
-cat $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch | \
-  $SED "s/darwin13/$OSXCROSS_TARGET/g" | \
-  patch -p0 -l &>/dev/null || true
+    pushd $OSXCROSS_TARGET_DIR/$ARCH_TO_BUILD-apple-$OSXCROSS_TARGET/include &>/dev/null
+    pushd c++/${GCC_VERSION}* &>/dev/null
 
-popd &>/dev/null
-popd &>/dev/null
-popd &>/dev/null # gcc/build
+    cat $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch | \
+      $SED "s/darwin13/$OSXCROSS_TARGET/g" | \
+      patch -p0 -l &>/dev/null || true
+
+    popd &>/dev/null
+    popd &>/dev/null
+
+  fi
+
+  popd &>/dev/null # gcc/build
+
+done
 
 
 popd &>/dev/null # build dir
@@ -161,10 +236,16 @@ source tools/tools.sh
 
 pushd $OSXCROSS_TARGET_DIR/bin &>/dev/null
 
-mv $GCC_ARCH-apple-$OSXCROSS_TARGET-gcc $GCC_ARCH-apple-$OSXCROSS_TARGET-base-gcc
-mv $GCC_ARCH-apple-$OSXCROSS_TARGET-g++ $GCC_ARCH-apple-$OSXCROSS_TARGET-base-g++
-ln -sf $GCC_ARCH-apple-$OSXCROSS_TARGET-base-gcc $GCC_ARCH32-apple-$OSXCROSS_TARGET-base-gcc
-ln -sf $GCC_ARCH-apple-$OSXCROSS_TARGET-base-g++ $GCC_ARCH32-apple-$OSXCROSS_TARGET-base-g++
+for ARCH_TO_BUILD in $ARCHS_TO_BUILD; do
+  mv $ARCH_TO_BUILD-apple-$OSXCROSS_TARGET-gcc $ARCH_TO_BUILD-apple-$OSXCROSS_TARGET-base-gcc
+  mv $ARCH_TO_BUILD-apple-$OSXCROSS_TARGET-g++ $ARCH_TO_BUILD-apple-$OSXCROSS_TARGET-base-g++
+  [ -n $APPLE_GCC ] && touch $ARCH_TO_BUILD-apple-$OSXCROSS_TARGET-apple-gcc
+done
+
+if [ -z "$APPLE_GCC" ]; then
+  ln -sf $GCC_ARCH-apple-$OSXCROSS_TARGET-base-gcc $GCC_ARCH32-apple-$OSXCROSS_TARGET-base-gcc
+  ln -sf $GCC_ARCH-apple-$OSXCROSS_TARGET-base-g++ $GCC_ARCH32-apple-$OSXCROSS_TARGET-base-g++
+fi
 
 echo "compiling wrapper ..."
 

@@ -131,6 +131,22 @@ eval $(osxcross-conf)
   [ "$status" -eq 0 ]
   [[ "${lines[0]}" == *\ \(powerpc-apple-darwin*\)\ * ]]
 
+  OSXCROSS_PROG_NAME=oppc64-g++ run o64-clang++ -arch i386
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == *\ \(i386-apple-darwin*\)\ * ]]
+
+  OSXCROSS_PROG_NAME=oppc64-g++ run o64-clang++ -arch x86_64
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == *\ \(x86_64-apple-darwin*\)\ * ]]
+
+  OSXCROSS_PROG_NAME=oppc64-g++ run o64-clang++ -arch x86_64 -arch i386
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == *\ \(i386-apple-darwin*\)\ * ]]
+  
+  OSXCROSS_PROG_NAME=oppc64-g++ run o64-clang++ -arch x86_64 -arch ppc -arch i386
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == *\ \(i386-apple-darwin*\)\ * ]]
+
   ### Clang is able to compile for multiple archs in one go.
   ### The first arch argument sets the target triple.
 
@@ -157,7 +173,12 @@ eval $(osxcross-conf)
     [[ "${lines[0]}" != *\ -stdlib=*++*\ * ]]
     [[ "${lines[0]}" == *\ -mmacosx-version-min=10.* ]]
     [[ "${lines[0]}" == *\ -m64\ * ]]
-    [[ "${lines[0]}" == *\ -Wl,-no_compact_unwind\ * ]]
+
+    if [ -f "$OSXCROSS_TARGET_DIR/bin/x86_64-apple-$OSXCROSS_TARGET-apple-gcc" ]; then
+      [[ "${lines[0]}" != *\ -Wl,-no_compact_unwind\ * ]]
+    else
+      [[ "${lines[0]}" == *\ -Wl,-no_compact_unwind\ * ]]
+    fi
 
     run o32-g++
     [ "$status" -eq 0 ]
@@ -473,7 +494,7 @@ eval $(osxcross-conf)
   [ "$status" -eq 1 ]
 
   run o64-clang++ -arch x86_64h
-  [ "$status" -eq 0 ] || [[ "${lines[0]}" == *error:\ \'x86_64\'\ requires\ Mac\ OS\ X\ SDK\ 10.8\ \(or\ later\) ]]
+  [ "$status" -eq 0 ] || [[ "${lines[0]}" == *error:\ \'x86_64h\'\ requires\ Mac\ OS\ X\ SDK\ 10.8\ \(or\ later\) ]]
 
   run o64-clang++ -arch foo
   [ "$status" -ne 0 ]
@@ -510,11 +531,7 @@ eval $(osxcross-conf)
     [[ "${lines[0]}" != *\ -m64\ * ]]
     [[ "${lines[0]}" != *\ -arch\ * ]]
 
-<<<<<<< HEAD
-    if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION '>=' 10.8) -eq 1 ]; then
-=======
     if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8) -eq 1 ]; then
->>>>>>> master
       run o64-g++ -arch x86_64h
       [ "$status" -eq 1 ]
       [[ "${lines[0]}" == *error:\ gcc\ does\ not\ support\ architecture\ \'x86_64h\' ]]
@@ -627,6 +644,14 @@ eval $(osxcross-conf)
   run xcrun -log -l clang
   [ "$status" -eq 0 ]
   [[ "${lines[1]}" == *debug:\ \<--\ * ]]
+
+  OSXCROSS_PROG_NAME=i386-apple-$OSXCROSS_TARGET-xcrun run xcrun -f clang
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == */bin/i386-apple-darwin*-clang ]]
+
+  OSXCROSS_PROG_NAME=x86_64-apple-$OSXCROSS_TARGET-xcrun run xcrun -f clang
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == */bin/x86_64-apple-darwin*-clang ]]
 
   run xcrun -run clang
   [ "$status" -eq 0 ]

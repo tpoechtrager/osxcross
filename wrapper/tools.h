@@ -358,13 +358,15 @@ enum Compiler : int {
   CLANGXX,
   GCC,
   GXX,
+  APPLE_GCC,
+  APPLE_GXX,
   UNKNOWN // Upper-case to avoid clash with "enum Arch"
 };
 
 inline Compiler getCompilerIdentifier(const char *compilername) {
   if (!strncmp(compilername, "clang++", 7))
     return Compiler::CLANGXX;
-  if (!strncmp(compilername, "clang", 5))
+  else if (!strncmp(compilername, "clang", 5))
     return Compiler::CLANG;
   else if (!strncmp(compilername, "g++", 3))
     return Compiler::GXX;

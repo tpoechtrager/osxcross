@@ -27,7 +27,6 @@ using namespace tools;
 // Default values for the Target struct
 //
 
-constexpr const char *getDefaultVendor() { return "apple"; }
 constexpr const char *getDefaultTarget() { return OSXCROSS_TARGET; }
 
 constexpr const char *getDefaultCompilerName() {
@@ -98,7 +97,8 @@ struct Target {
   bool getMacPortsFrameworksDir(std::string &path) const;
 
   void addArch(const Arch arch);
-  bool haveArch(const Arch arch);
+  bool haveArch(const Arch arch) const;
+  Arch getDefaultArchitecture() const;
 
   bool hasLibCXX() const;
   bool libCXXIsDefaultCXXLib() const;
@@ -108,6 +108,7 @@ struct Target {
 
   bool isClang() const;
   bool isGCC() const;
+  bool isAppleGCC() const;
 
   bool isKnownCompiler() const;
 
@@ -116,11 +117,11 @@ struct Target {
 
   void setCompilerPath();
   bool findClangIntrinsicHeaders(std::string &path);
+  bool findAppleGCCIntrinsicHeaders(std::string &path);
 
   void setupGCCLibs(Arch arch);
   bool setup();
 
-  const char *vendor;
   const char *SDK;
   Arch arch;
   std::vector<Arch> targetarch;

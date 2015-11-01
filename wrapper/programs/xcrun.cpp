@@ -64,9 +64,7 @@ bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
     toolpath = target.execpath;
     toolpath += PATHDIV;
     toolpath += getArchName(target.arch, true);
-    toolpath += "-";
-    toolpath += getDefaultVendor();
-    toolpath += "-";
+    toolpath += "-apple-";
     toolpath += getDefaultTarget();
     toolpath += "-";
     toolpath += tool;

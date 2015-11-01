@@ -41,8 +41,8 @@
 namespace target {
 
 Target::Target()
-    : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
-      arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
+    : SDK(getenv("OSXCROSS_SDKROOT")), arch(Arch::x86_64),
+      target(getDefaultTarget()), stdlib(StdLib::unset),
       usegcclibs(), compiler(getDefaultCompilerIdentifier()),
       compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
@@ -217,12 +217,21 @@ void Target::addArch(const Arch arch) {
   targetarch.push_back(arch);
 }
 
-bool Target::haveArch(const Arch arch) {
+bool Target::haveArch(const Arch arch) const {
   for (auto a : targetarch) {
     if (arch == a)
       return true;
   }
   return false;
+}
+
+Arch Target::getDefaultArchitecture() const {
+  // Apple GCC's multilib support is broken; to work around this issue gcc
+  // is built separately for each architecture.
+  const Arch arch = !targetarch.empty() ? targetarch[0] : this->arch;
+  if (isPowerPC(arch))
+    return isAppleGCC() ? arch : Arch::ppc64;
+  return isAppleGCC() ? arch : Arch::x86_64;
 }
 
 bool Target::hasLibCXX() const { return getSDKOSNum() >= OSVersion(10, 7); }
@@ -239,7 +248,9 @@ bool Target::libCXXIsDefaultCXXLib() const {
 
 bool Target::isCXX() {
   if (isKnownCompiler())
-    return (compiler == Compiler::CLANGXX || compiler == Compiler::GXX);
+    return (compiler == Compiler::CLANGXX ||
+            compiler == Compiler::GXX ||
+            compiler == Compiler::APPLE_GXX);
 
   return endsWith(compilername, "++");
 }
@@ -260,7 +271,13 @@ bool Target::isClang() const {
 }
 
 bool Target::isGCC() const {
-  return (compiler == Compiler::GCC || compiler == Compiler::GXX);
+  return (compiler == Compiler::GCC ||
+          compiler == Compiler::GXX ||
+          isAppleGCC());
+}
+
+bool Target::isAppleGCC() const {
+  return (compiler == Compiler::APPLE_GCC || compiler == Compiler::APPLE_GXX);
 }
 
 bool Target::isKnownCompiler() const {
@@ -268,11 +285,8 @@ bool Target::isKnownCompiler() const {
 }
 
 const std::string &Target::getDefaultTriple(std::string &triple) const {
-  triple = getArchName(isPowerPC(arch) ?
-                       Arch::ppc64 : Arch::x86_64, true);
-  triple += "-";
-  triple += getDefaultVendor();
-  triple += "-";
+  triple += getArchName(getDefaultArchitecture(), true);
+  triple += "-apple-";
   triple += getDefaultTarget();
   return triple;
 }
@@ -411,6 +425,22 @@ do {                                                                           \
 #undef TRYDIR3
 }
 
+bool Target::findAppleGCCIntrinsicHeaders(std::string &path) {
+  std::string triple;
+  struct stat st;
+
+  assert(isAppleGCC());
+
+  getSDKPath(path);
+  path += "/../../lib/gcc/";
+  path += getDefaultTriple(triple);
+  path += "/4.2.1/include";
+  #warning todo version
+
+  return !stat(path.c_str(), &st);
+}
+
+
 void Target::setupGCCLibs(Arch arch) {
   assert(stdlib == StdLib::libstdcxx);
   fargs.push_back("-nodefaultlibs");
@@ -494,6 +524,20 @@ bool Target::setup() {
     return false;
   }
 
+  triple = getArchName(targetarch[0], true);
+  triple += "-apple-";
+  triple += target;
+
+  getDefaultTriple(otriple);
+
+  if (isGCC()) {
+    std::stringstream path;
+    struct stat st;
+    path << execpath << PATHDIV << triple << "-apple-gcc";
+    if (!stat(path.str().c_str(), &st))
+      compiler = isCXX() ? Compiler::APPLE_GXX : Compiler::APPLE_GCC;
+  }
+
   if (isPowerPC(targetarch[0]) && isGCC() &&
       !getParentProcessName().compare(0, 5, "clang")) {
     // Clang < 3.5 tries to use GCC for assembling when targeting PowerPC
@@ -503,26 +547,13 @@ bool Target::setup() {
     return false;
   }
 
-  triple = getArchName(targetarch[0], true);
-  triple += "-";
-  triple += vendor;
-  triple += "-";
-  triple += target;
-
-  otriple = getArchName(isPowerPC(targetarch[0]) ?
-                        Arch::ppc64 : Arch::x86_64, true);
-  otriple += "-";
-  otriple += vendor;
-  otriple += "-";
-  otriple += target;
-
   setCompilerPath();
 
   if (!OSNum.Num()) {
     if (haveArch(Arch::x86_64h)) {
       OSNum = OSVersion(10, 8); // Default to 10.8 for x86_64h
       if (SDKOSNum < OSNum) {
-        err << "'" << getArchName(arch) << "' requires Mac OS X SDK "
+        err << "'" << getArchName(Arch::x86_64h) << "' requires Mac OS X SDK "
             << OSNum.shortStr() << " (or later)" << err.endl();
         return false;
       }
@@ -595,6 +626,29 @@ bool Target::setup() {
     break;
   }
   case StdLib::libstdcxx: {
+    if (isAppleGCC()) {
+      // Work around more Apple GCC brokenness
+      std::string CXXConfigTriple;
+      if (SDKOSNum <= OSVersion(10, 5))
+        CXXHeaderPath += "/usr/include/c++/4.0.0";
+      else
+        CXXHeaderPath += "/usr/include/c++/4.2.1";
+      switch (targetarch[0]) {
+        case Arch::i386:
+        case Arch::i486:
+        case Arch::i586:
+        case Arch::i686:
+          CXXConfigTriple += "i686";
+          break;
+        default:
+          CXXConfigTriple += getArchName(targetarch[0], true);
+      }
+      CXXConfigTriple += "-apple-";
+      CXXConfigTriple += target;
+      addCXXPath(CXXConfigTriple);
+      break;
+    }
+
     if (isGCC())
       break;
 
@@ -708,6 +762,18 @@ bool Target::setup() {
       }
     }
   } else if (isGCC()) {
+    if (isAppleGCC()) {
+      std::string tmp;
+
+      if (findAppleGCCIntrinsicHeaders(tmp)) {
+        fargs.push_back("-isystem");
+        fargs.push_back(tmp);
+      } else {
+        warn << "cannot find apple gcc intrinsic headers; please report this "
+                "issue to the OSXCross project" << warn.endl();
+      }
+    }
+
     if (isCXX() && stdlib == StdLib::libcxx) {
       fargs.push_back("-nostdinc++");
       fargs.push_back("-nodefaultlibs");
@@ -717,13 +783,13 @@ bool Target::setup() {
         fargs.push_back("-lc++");
         fargs.push_back("-lgcc_s.10.5");
       }
-    } else if (stdlib != StdLib::libcxx && !isGCH() &&
-               !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
+    } else if (!isAppleGCC() && stdlib != StdLib::libcxx &&
+               !isGCH() && !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
       fargs.push_back("-static-libgcc");
       fargs.push_back("-static-libstdc++");
     }
 
-    if (!isGCH() && !args.empty())
+    if (!isAppleGCC() && !isGCH() && !args.empty())
       fargs.push_back("-Wl,-no_compact_unwind");
   }
 
@@ -809,7 +875,7 @@ bool Target::setup() {
     }
   }
 
-  if (isGCC()) {
+  if (isGCC() && !isAppleGCC()) {
     if ((haveArch(Arch::ppc) || haveArch(Arch::ppc64)))
       setenv("DISABLE_ANNOYING_LD64_ASSERTION", "1", 1);
 
