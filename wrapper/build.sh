@@ -89,7 +89,7 @@ if [ -n "$BWPLATFORM" ]; then
 
   [ -z "$BWCOMPILEONLY" ] && BWCOMPILEONLY=1
 else
-  [ -z "$PORTABLE"] && FLAGS="-march=native $CXXFLAGS "
+  [ -z "$PORTABLE"] && FLAGS="$CXXFLAGS "
 fi
 
 if [ -n "$BWCXX" ]; then
