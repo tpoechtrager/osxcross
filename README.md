@@ -221,7 +221,7 @@ You will need gcc/g++/gcc-objc 4.7+.
 
 ### PROJECTS USING OSXCROSS: ###
 
-* [multiarch/crossbuild](https://github.com/multiarch/crossbuild), various cross-compilers (systems:linux,osx,windows, archs:x86_64,i386,arm,ppc,mips) in Docker. OSXCross powers the Darwin builds.
+* [multiarch/crossbuild](https://github.com/multiarch/crossbuild), various cross-compilers (systems: Linux, OS X, Windows, archs: x86_64, i386, arm, ppc, mips) in Docker. OSXCross powers the Darwin builds.
 
 ### LICENSE: ####
   * scripts/wrapper: GPLv2
