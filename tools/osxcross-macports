@@ -19,6 +19,7 @@ PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
 PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 
 PLATFORM=$(uname -s)
+ARCH="x86_64"
 
 if [ $PLATFORM == "FreeBSD" ]; then
   WGETOPTS="--ca-certificate="
@@ -262,7 +263,7 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | grep $OSXVERSION | uniq | tail -n1)
+  local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
 
   verboseMsg " selected: $pkg"
 
@@ -540,6 +541,8 @@ main()
       elif [ $opt == "-l" -o $opt == "--ldflags" ]; then
         showLDFLAGS $2
         exit
+      elif [ $opt == "-32" -o $opt == "--i386" ]; then
+        ARCH="i386"
       elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
         selectMirror
         exit
