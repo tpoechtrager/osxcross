@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross Compiler Wrapper                                          *
- *  Copyright (C) 2014, 2015 by Thomas Poechtrager                     *
+ *  Copyright (C) 2014-2016 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -43,7 +43,8 @@ namespace target {
 Target::Target()
     : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
       arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
-      usegcclibs(), compiler(getDefaultCompilerIdentifier()),
+      usegcclibs(), colordiagnostics(-1), wliblto(-1),
+      compiler(getDefaultCompilerIdentifier()),
       compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
     abort();
@@ -783,6 +784,24 @@ bool Target::setup() {
           << err.endl();
       return false;
     }
+  }
+
+  if (clangversion >= ClangVersion(3, 8)) {
+    //
+    // Silence:
+    // warning: libLTO.dylib relative to clang installed dir not found;
+    //          using 'ld' default search path instead
+    //
+    // '-flto' will of course work nevertheless, it's just a buggy
+    // cross-compilation warning.
+    //
+    if (wliblto == -1)
+      fargs.push_back("-Wno-liblto");
+    //
+    // Get back color diagnostics.
+    //
+    if (colordiagnostics == -1)
+      fargs.push_back("-fcolor-diagnostics");
   }
 
   return true;
