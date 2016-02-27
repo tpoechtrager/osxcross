@@ -92,7 +92,7 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross
 
-\*\* Xcode up to 7.2.x is known to work.
+\*\* Xcode up to 7.2.x is known to work.  
 \*\*\* If you get a dialog with a crossed circle, ignore it, you don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
