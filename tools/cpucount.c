@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross                                                           *
- *  Copyright (C) 2013, 2014 by Thomas Poechtrager                     *
+ *  Copyright (C) 2013-2016 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -61,14 +61,15 @@ int getcpucount() {
   int i, cpucount = 0;
 
   CPU_ZERO(&cs);
-  sched_getaffinity(0, sizeof(cs), &cs);
 
-  for (i = 0; i < 128; i++) {
+  if (sched_getaffinity(0, sizeof(cs), &cs))
+    return 1;
+
+  for (i = 0; i < CPU_SETSIZE; i++)
     if (CPU_ISSET(i, &cs))
       cpucount++;
-  }
 
-  return cpucount ? cpucount : 1;
+  return cpucount;
 #else
 #if defined(__FreeBSD__) || defined(__NetBSD__) || \
     defined(__OpenBSD__) || defined(__DragonFly__) || \
