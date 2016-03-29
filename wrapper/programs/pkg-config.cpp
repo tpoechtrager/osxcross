@@ -48,49 +48,67 @@ int pkg_config(int argc, char **argv, Target &target) {
   std::vector<envvar> envvars;
   std::vector<envvar> unset;
   envvar evar;
+  bool usenativevariables = getenv("OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES");
 
   if (!getenv("OSXCROSS_PKG_CONFIG_NO_MP_INC")) {
     std::string MacPortsSysRoot;
 
     if (target.getMacPortsSysRootDir(MacPortsSysRoot)) {
-      concatEnvVariable("OSXCROSS_PKG_CONFIG_SYSROOT_DIR", MacPortsSysRoot);
+      concatEnvVariable(usenativevariables ? "PKG_CONFIG_SYSROOT_DIR"
+                                           : "OSXCROSS_PKG_CONFIG_SYSROOT_DIR",
+                        MacPortsSysRoot);
+
       std::string MacPortsPkgConfigPath;
 
       if (target.getMacPortsPkgConfigDir(MacPortsPkgConfigPath))
-        concatEnvVariable("OSXCROSS_PKG_CONFIG_PATH", MacPortsPkgConfigPath);
+        concatEnvVariable(usenativevariables ? "PKG_CONFIG_PATH"
+                                             : "OSXCROSS_PKG_CONFIG_PATH",
+                          MacPortsPkgConfigPath);
     }
   } else {
     unsetenv("OSXCROSS_PKG_CONFIG_NO_MP_INC");
   }
 
-  // Map OSXCROSS_PKG_* to PKG_*.
-  for (char **env = environ; *env; ++env) {
-    char *p = *env;
+  if (!usenativevariables) {
+    // Map OSXCROSS_PKG_* to PKG_*.
+    for (char **env = environ; *env; ++env) {
+      char *p = *env;
 
-    if (!strncmp(p, "OSXCROSS_PKG_CONFIG", 19)) {
-      p += 9; // skip OSXCROSS_
-      envvars.push_back(var(p, evar));
-    } else if (!strncmp(p, "PKG_CONFIG", 10)) {
-      // Unset native pkg-config vars.
-      unset.push_back(var(p, evar, true));
+      if (!strncmp(p, "OSXCROSS_PKG_CONFIG", 19)) {
+        p += 9; // skip OSXCROSS_
+        envvars.push_back(var(p, evar));
+      } else if (!strncmp(p, "PKG_CONFIG", 10)) {
+        // Unset native pkg-config vars.
+        unset.push_back(var(p, evar, true));
+      }
     }
   }
 
-  if (!envvars.empty()) {
-    for (const envvar &evar : unset)
-      unsetenv(evar.name.c_str());
+  if (usenativevariables || !envvars.empty()) {
+    if (!usenativevariables) {
+      for (const envvar &evar : unset) {
+        warn << argv[0] << ": ignoring environment variable '" << evar.name
+             << "' - please see README.PKG-CONFIG.md for more" << warn.endl();
 
-    for (const envvar &evar : envvars)
-      setenv(evar.name.c_str(), evar.value.c_str(), 1);
+        unsetenv(evar.name.c_str());
+      }
+
+      for (const envvar &evar : envvars)
+        setenv(evar.name.c_str(), evar.value.c_str(), 1);
+    }
 
     // Prevent pkg-config from looking for *.pc files
     // in pre-defined search paths, such as /usr.
     if (!getenv("PKG_CONFIG_LIBDIR"))
       setenv("PKG_CONFIG_LIBDIR", "", 1);
 
-    if (execvp("pkg-config", argv))
-      err << "cannot find or execute pkg-config" << err.endl();
+    execvp("pkg-config", argv);
+    err << "cannot find or execute pkg-config" << err.endl();
+    return 1;
   }
+
+  warn << argv[0] << " is a no-op - please see README.PKG-CONFIG.md for more"
+       << warn.endl();
 
   return 1;
 }
