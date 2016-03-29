@@ -183,11 +183,6 @@ bool runprog(Target &target, const char *, const char *progname, char **cargs) {
   (*prog)(args.size() - 1, args.data(), target);
 }
 
-bool colordiagnostics(Target &target, const char *opt, const char *, char **) {
-  target.colordiagnostics = !strcmp(opt, "-fcolor-diagnostics");
-  return true;
-}
-
 bool liblto(Target &target, const char *opt, const char *, char **) {
   target.wliblto = !strcmp(opt, "-Wliblto");
   return true;
@@ -257,8 +252,6 @@ constexpr struct Opt {
   {"-x", language, true, true},
   {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
   {"-foc-run-prog", runprog, true, false, "="}, // for internal use only
-  {"-fcolor-diagnostics", colordiagnostics, false, true},
-  {"-fno-color-diagnostics", colordiagnostics, false, true},
   {"-Wliblto", liblto, false, true},
   {"-Wno-liblto", liblto, false, true},
   {"-isystem", checkincludepath, true, true},

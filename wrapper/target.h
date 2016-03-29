@@ -138,7 +138,6 @@ struct Target {
   ClangVersion clangversion;
   GCCVersion gccversion;
   bool usegcclibs;
-  int colordiagnostics;
   int wliblto;
   Compiler compiler;
   std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
