@@ -353,7 +353,7 @@ static const auto &parseLLVMVersion = parseOSVersion;
 #undef GCC
 #undef GXX
 
-enum Compiler : int {
+enum Compiler {
   CLANG,
   CLANGXX,
   GCC,
@@ -377,65 +377,64 @@ inline Compiler getCompilerIdentifier(const char *compilername) {
 // Arch
 //
 
-enum Arch {
-  armv4t,
-  armv5,
-  armv6,
-  armv7,
-  armv7f,
-  armv7k,
-  armv7s,
-  armv6m,
-  armv7m,
-  armv7em,
-  armv8,
-  arm64,
-  arm64v8,
-  i386,
-  i486,
-  i586,
-  i686,
-  x86_64,
-  x86_64h, // Haswell
-  ppc,
-  ppc64,
-  unknown
+enum ARCH {
+  ARMV4T,
+  ARMV5,
+  ARMV6,
+  ARMV7,
+  ARM7F,
+  ARMV7K,
+  ARMV7S,
+  ARMV6M,
+  ARMV7M,
+  ARM7EM,
+  ARM8,
+  ARM64,
+  ARM64V8,
+  I386,
+  I486,
+  I586,
+  I686,
+  X86_64,
+  X86_64H, // Haswell
+  PPC,
+  PPC64,
+  UNKNOWN_ARCH
 };
 
-constexpr const char *ArchNames[] = {
+constexpr const char *ARCHNAMES[] = {
   "armv4t", "armv5",  "armv6",   "armv7",  "armv7f",  "armv7k",  "armv7s",
   "amrv6m", "armv7m", "armv7em", "armv8",  "arm64",   "arm64v8", "i386",
   "i486",   "i586",   "i686",    "x86_64", "x86_64h", "ppc",     "ppc64",
   "unknown"
 };
 
-constexpr const char *getArchName(Arch arch) { return ArchNames[arch]; }
+constexpr const char *getArchName(ARCH arch) { return ARCHNAMES[arch]; }
 
-inline Arch parseArch(const char *arch) {
+inline ARCH parseArch(const char *arch) {
   size_t i = 0;
-  for (auto archname : ArchNames) {
-    if (!strcmp(arch, archname)) {
-      return static_cast<Arch>(i);
-    }
+  for (auto archname : ARCHNAMES) {
+    if (!strcmp(arch, archname))
+      return static_cast<ARCH>(i);
     ++i;
   }
-  return Arch::unknown;
+  return ARCH::UNKNOWN_ARCH;
 }
 
 //
 // Standard Library
 //
 
-enum StdLib {
-  unset,
-  libcxx,
-  libstdcxx
+enum CXXSTDLIB {
+  UNSET,
+  LIBCXX,
+  LIBSTDCXX
 };
 
-constexpr const char *StdLibNames[] = { "default", "libc++", "libstdc++" };
+constexpr const char *CXXSTDLIBNAMES[] = { "default", "libc++", "libstdc++" };
 
-constexpr const char *getStdLibString(StdLib stdlib) {
-  return StdLibNames[stdlib];
+constexpr const char *getStdLibString(CXXSTDLIB stdlib) {
+  return CXXSTDLIBNAMES[stdlib];
 }
 
 } // namespace tools

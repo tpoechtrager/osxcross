@@ -73,7 +73,9 @@ eval $(osxcross-conf)
   [[ "${lines[0]}" == *\ -target\ x86_64-apple-darwin*\ * ]]
   [[ "${lines[0]}" == *\ -mlinker-version=$OSXCROSS_LINKER_VERSION\ * ]]
   [[ "${lines[0]}" == *\ -isystem\ */clang/*.*/include\ * ]]
+  [[ "${lines[0]}" == *\ -nostdinc\ * ]]
   [[ "${lines[0]}" == *\ -isysroot\ */MacOSX10.*.sdk\ * ]]
+  [[ "${lines[0]}" == *\ -isystem\ */MacOSX10.*.sdk/usr/include\ * ]]
   [[ "${lines[0]}" == *\ -stdlib=*++*\ * ]]
   [[ "${lines[0]}" == *\ -mmacosx-version-min=10.* ]]
   [[ "${lines[0]}" == *\ -arch\ x86_64\ * ]]
@@ -92,6 +94,7 @@ eval $(osxcross-conf)
     [[ "${lines[0]}" != *\ -mlinker-version=*\ * ]]
     [[ "${lines[0]}" != *\ -isystem\ */clang/*.*/include\ * ]]
     [[ "${lines[0]}" != *\ -isysroot\ */MacOSX10.*.sdk\ * ]]
+    [[ "${lines[0]}" != *\ -isystem\ */MacOSX10.*.sdk/usr/include\ * ]]
     [[ "${lines[0]}" != *\ -stdlib=*++*\ * ]]
     [[ "${lines[0]}" == *\ -mmacosx-version-min=10.* ]]
     [[ "${lines[0]}" == *\ -m64\ * ]]
@@ -262,7 +265,7 @@ eval $(osxcross-conf)
     [[ "${lines[0]}" != *\ -stdlib=libc++\ * ]]
     [[ "${lines[0]}" != *\ -cxx-isystem\ */SDK/MacOSX10.*.sdk/usr/include/c++/v1\ * ]]
     [[ "${lines[0]}" == *\ -cxx-isystem\ */SDK/MacOSX10.*.sdk/usr/include/c++/4.*\ * ]]
-    [[ "${lines[0]}" == *\ -cxx-isystem\ */SDK/MacOSX10.*.sdk/usr/include/c++/4.*/*-apple-darwin*\ * ]]
+    #[[ "${lines[0]}" == *\ -cxx-isystem\ */SDK/MacOSX10.*.sdk/usr/include/c++/4.*/*-apple-darwin*\ * ]]
     [[ "${lines[0]}" == *\ -cxx-isystem\ */SDK/MacOSX10.*.sdk/usr/include/c++/4.*/backward\ * ]]
   }
 

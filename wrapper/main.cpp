@@ -89,12 +89,12 @@ bool versionmin(Target &target, const char *, const char *val, char **) {
 }
 
 bool arch(Target &target, const char *opt, const char *val, char **) {
-  Arch arch;
+  ARCH arch;
 
   if (!strcmp(opt, "-arch")) {
     arch = parseArch(val);
 
-    if (arch == Arch::unknown)
+    if (arch == ARCH::UNKNOWN_ARCH)
       warn << "'-arch': unknown architecture '" << val << "'"
            << warn.endl();
 
@@ -107,9 +107,9 @@ bool arch(Target &target, const char *opt, const char *val, char **) {
       err << "'" << opt << "' is not supported" << err.endl();
       return false;
     } else if (!strcmp(opt, "-m32")) {
-      arch = Arch::i386;
+      arch = ARCH::I386;
     } else if (!strcmp(opt, "-m64")) {
-      arch = Arch::x86_64;
+      arch = ARCH::X86_64;
     } else {
       __builtin_unreachable();
     }
@@ -129,19 +129,19 @@ bool stdlib(Target &target, const char *, const char *val, char **) {
 
   size_t i = 0;
 
-  for (auto stdlibname : StdLibNames) {
+  for (auto stdlibname : CXXSTDLIBNAMES) {
     if (!strcmp(val, stdlibname)) {
-      target.stdlib = static_cast<StdLib>(i);
+      target.stdlib = static_cast<CXXSTDLIB>(i);
       break;
     }
     ++i;
   }
 
-  if (i == (sizeof(StdLibNames) / sizeof(StdLibNames[0]))) {
+  if (i == (sizeof(CXXSTDLIBNAMES) / sizeof(CXXSTDLIBNAMES[0]))) {
     err << "value of '-stdlib=' must be ";
 
     for (size_t j = 0; j < i; ++j) {
-      err << "'" << StdLibNames[j] << "'";
+      err << "'" << CXXSTDLIBNAMES[j] << "'";
 
       if (j == i - 2)
         err << " or ";
@@ -162,8 +162,8 @@ bool language(Target &target, const char *, const char *val, char **) {
 }
 
 bool usegcclibstdcxx(Target &target, const char *, const char *, char **) {
-  target.stdlib = StdLib::libstdcxx;
-  target.usegcclibs = true;
+  target.stdlib = CXXSTDLIB::LIBSTDCXX;
+  target.usegcclibstcxx = true;
   return true;
 }
 
@@ -329,21 +329,21 @@ void detectCXXLib(Target &target) {
   if (target.compilername.size() <= 7)
     return;
 
-  StdLib prevstdlib = target.stdlib;
+  CXXSTDLIB prevstdlib = target.stdlib;
 
   if (endsWith(target.compilername, "-stdc++")) {
-    target.stdlib = StdLib::libstdcxx;
+    target.stdlib = CXXSTDLIB::LIBSTDCXX;
     target.compilername.resize(target.compilername.size() - 7);
   } else if (endsWith(target.compilername, "-gstdc++")) {
-    target.stdlib = StdLib::libstdcxx;
-    target.usegcclibs = true;
+    target.stdlib = CXXSTDLIB::LIBSTDCXX;
+    target.usegcclibstcxx = true;
     target.compilername.resize(target.compilername.size() - 8);
   } else if (endsWith(target.compilername, "-libc++")) {
-    target.stdlib = StdLib::libcxx;
+    target.stdlib = CXXSTDLIB::LIBCXX;
     target.compilername.resize(target.compilername.size() - 7);
   }
 
-  if (prevstdlib != StdLib::unset && prevstdlib != target.stdlib)
+  if (prevstdlib != CXXSTDLIB::UNSET && prevstdlib != target.stdlib)
     warn << "ignoring '-stdlib=" << getStdLibString(prevstdlib) << "'"
          << warn.endl();
 }
@@ -369,11 +369,11 @@ bool detectTarget(int argc, char **argv, Target &target) {
   p = strchr(cmd, '-');
   len = (p ? p : cmd) - cmd;
 
-  for (auto arch : ArchNames) {
+  for (auto arch : ARCHNAMES) {
     ++i;
 
     if (!strncmp(cmd, arch, len)) {
-      target.arch = static_cast<Arch>(i - 1);
+      target.arch = static_cast<ARCH>(i - 1);
       cmd += len;
 
       if (*cmd++ != '-')
@@ -417,11 +417,11 @@ bool detectTarget(int argc, char **argv, Target &target) {
   }
 
   if (!strncmp(cmd, "o32", 3))
-    target.arch = Arch::i386;
+    target.arch = ARCH::I386;
   else if (!strncmp(cmd, "o64h", 4))
-    target.arch = Arch::x86_64h;
+    target.arch = ARCH::X86_64H;
   else if (!strncmp(cmd, "o64", 3))
-    target.arch = Arch::x86_64;
+    target.arch = ARCH::X86_64;
   else
     return false;
 

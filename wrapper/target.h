@@ -105,8 +105,8 @@ struct Target {
   bool getMacPortsLibDir(std::string &path) const;
   bool getMacPortsFrameworksDir(std::string &path) const;
 
-  void addArch(const Arch arch);
-  bool haveArch(const Arch arch);
+  void addArch(const ARCH arch);
+  bool haveArch(const ARCH arch);
 
   bool hasLibCXX() const;
   bool libCXXIsDefaultCXXLib() const;
@@ -125,19 +125,28 @@ struct Target {
   void setCompilerPath();
   bool findClangIntrinsicHeaders(std::string &path);
 
-  void setupGCCLibs(Arch arch);
+  bool determineCXXStandardLibrary();
+  bool sanityChecks(const OSVersion &SDKOSNum);
+  bool setupClangOpts();
+  void setupGCCCXXStandardLibrary(ARCH arch);
+  bool setupCXXLib(const std::string &SDKPath, const OSVersion &SDKOSNum);
+  bool setupStandardIncludes(const std::string &SDKPath);
+  bool setupMacPortsIncludes();
+  bool setupMacOSXVersionMinFlag();
+  bool setupTargetArchFlags();
+  bool setupWorkarounds();
   bool setup();
 
   const char *vendor;
   const char *SDK;
-  Arch arch;
-  std::vector<Arch> targetarch;
+  ARCH arch;
+  std::vector<ARCH> targetarch;
   std::string target;
   OSVersion OSNum;
-  StdLib stdlib;
+  CXXSTDLIB stdlib;
   ClangVersion clangversion;
   GCCVersion gccversion;
-  bool usegcclibs;
+  bool usegcclibstcxx;
   int wliblto;
   Compiler compiler;
   std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
