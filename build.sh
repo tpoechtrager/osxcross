@@ -151,6 +151,7 @@ patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p1 < $PATCH_DIR/cctools-ld64-linux-ncpus.patch
 patch -p1 < $PATCH_DIR/cctools-ld64-qsort_r.patch
+patch -p1 < $PATCH_DIR/cctools-ld64-gcc6-build-fix.patch
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "
