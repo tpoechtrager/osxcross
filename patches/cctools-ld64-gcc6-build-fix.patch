@@ -1,0 +1,12 @@
+diff --git cctools/ld64/src/ld/code-sign-blobs/memutils.h cctools/ld64/src/ld/code-sign-blobs/memutils.h
+index 6b8697c..7059669 100644
+--- cctools/ld64/src/ld/code-sign-blobs/memutils.h
++++ cctools/ld64/src/ld/code-sign-blobs/memutils.h
+@@ -31,6 +31,7 @@
+ //#include <security_utilities/utilities.h>
+ #include <sys/types.h>
+ #include <stdlib.h>
++#include <stddef.h> // ld64-port
+ #include <algorithm>
+ 
+ #ifdef __GLIBCXX__ // ld64-port
