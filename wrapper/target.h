@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross Compiler Wrapper                                          *
- *  Copyright (C) 2014, 2015 by Thomas Poechtrager                     *
+ *  Copyright (C) 2014-2016 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -131,6 +131,7 @@ struct Target {
   ClangVersion clangversion;
   GCCVersion gccversion;
   bool usegcclibs;
+  int wliblto;
   Compiler compiler;
   std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
   std::string compilername;     // clang | gcc

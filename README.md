@@ -92,7 +92,7 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross
 
-\*\* Xcode up to 7.1.x is known to work.  
+\*\* Xcode up to 7.2.x is known to work.  
 \*\*\* If you get a dialog with a crossed circle, ignore it, you don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
@@ -218,6 +218,10 @@ You can build OSXCross with GCC this way:
 `CC=gcc CXX=g++ ./build.sh`
 
 You will need gcc/g++/gcc-objc 4.7+.
+
+### PROJECTS USING OSXCROSS: ###
+
+* [multiarch/crossbuild](https://github.com/multiarch/crossbuild), various cross-compilers (**Systems**: Linux, OS X, Windows, **Archs**: x86_64, i386, arm, ppc, mips) in Docker. OSXCross powers the Darwin builds.
 
 ### LICENSE: ####
   * scripts/wrapper: GPLv2

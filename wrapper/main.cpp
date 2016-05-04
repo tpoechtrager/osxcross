@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross Compiler Wrapper                                          *
- *  Copyright (C) 2014, 2015 by Thomas Poechtrager                     *
+ *  Copyright (C) 2014-2016 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -180,6 +180,11 @@ bool runprog(Target &target, const char *, const char *progname, char **cargs) {
   (*prog)(args.size() - 1, args.data(), target);
 }
 
+bool liblto(Target &target, const char *opt, const char *, char **) {
+  target.wliblto = !strcmp(opt, "-Wliblto");
+  return true;
+}
+
 bool checkincludepath(Target &, const char *opt, const char *path, char **) {
 #ifndef __APPLE__
   constexpr const char *DangerousIncludePaths[] = { "/usr/include",
@@ -244,6 +249,8 @@ constexpr struct Opt {
   {"-x", language, true, true},
   {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
   {"-foc-run-prog", runprog, true, false, "="}, // for internal use only
+  {"-Wliblto", liblto, false, true},
+  {"-Wno-liblto", liblto, false, true},
   {"-isystem", checkincludepath, true, true},
   {"-icxx-isystem", checkincludepath, true, true},
   {"-cxx-isystem", checkincludepath, true, true},

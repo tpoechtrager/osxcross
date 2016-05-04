@@ -52,7 +52,7 @@ source $BASE_DIR/tools/trap_exit.sh
 MIRROR="http://llvm.org"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=3.7.0
+  CLANG_VERSION=3.8.0
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then

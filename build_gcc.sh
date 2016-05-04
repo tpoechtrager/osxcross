@@ -13,7 +13,7 @@ eval $(tools/osxcross_conf.sh)
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=5.2.0
+  GCC_VERSION=6.1.0
   #GCC_VERSION=5-20140928 # snapshot
 fi
 

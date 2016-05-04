@@ -11,12 +11,6 @@ set -e
 export LC_ALL=C
 pushd "${0%/*}" &>/dev/null
 
-MIRROR="$OSXCROSS_MACPORTS_MIRROR"
-
-if [ -z "$MIRROR" ]; then
-  MIRROR="http://packages.macports.org"
-fi
-
 PUBKEYURL="https://svn.macports.org/repository/"
 PUBKEYURL+="macports/trunk/base/macports-pubkey.pem"
 
@@ -25,14 +19,11 @@ PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
 PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 
 PLATFORM=$(uname -s)
+ARCH="x86_64"
 
 if [ $PLATFORM == "FreeBSD" ]; then
   WGETOPTS="--ca-certificate="
   WGETOPTS+="/usr/local/share/certs/ca-root-nss.crt"
-fi
-
-if [ -n "$OSXCROSS_MACPORTS_ENABLE_HTTPS" ]; then
-  MIRROR=$(echo $MIRROR | sed 's/http:/https:/g')
 fi
 
 if [ -z "$BASHPID" ]; then
@@ -70,8 +61,8 @@ require()
 }
 
 if [ -z "$MACOSX_DEPLOYMENT_TARGET" ]; then
-  errorMsg "You must set MACOSX_DEPLOYMENT_TARGET first."
-  errorMsg "Please see README.MACPORTS."
+  errorMsg "you must set MACOSX_DEPLOYMENT_TARGET first."
+  errorMsg "please see README.MACPORTS."
   exit 1
 fi
 
@@ -113,6 +104,7 @@ fi
 
 PUBKEY="$ROOT/mp-pubkey.pem"
 INSTALLDB="$ROOT/INSTALLED"
+SELECTEDMIRROR="$ROOT/MIRROR"
 CACHE="$ROOT/cache"
 INSTALL="$ROOT/pkgs"
 TMP="$ROOT/tmp"
@@ -149,6 +141,45 @@ checkLock
 createDir "cache" $CACHE
 createDir "install" $INSTALL
 createDir "tmp" $TMP
+
+selectMirror()
+{
+  echo "available mirrors:"
+  echo ""
+  echo "1: packages.macports.org (United States)"
+  echo "2: mirrorservice.org (United Kingdom)"
+  echo "3: nue.de.packages.macports.org (Germany)"
+  echo "4: lil.fr.packages.macports.org (France)"
+  echo ""
+
+  local OK=0
+  local mirrorNumber
+
+  while [ $OK -ne 1 ]; do
+    echo -n "please enter the number of the mirror you want to use: "
+
+    if [ -n "$UNATTENDED" ]; then
+      echo "1"
+      mirrorNumber=1
+    else
+      read mirrorNumber
+    fi
+
+    case $mirrorNumber in
+      1) echo -n "http://packages.macports.org" > \
+          $SELECTEDMIRROR && OK=1 ;;
+      2) echo -n "http://www.mirrorservice.org/sites/packages.macports.org" > \
+          $SELECTEDMIRROR && OK=1 ;;
+      3) echo -n "http://nue.de.packages.macports.org/macports/packages" > \
+          $SELECTEDMIRROR && OK=1 ;;
+      4) echo -n "http://lil.fr.packages.macports.org" > \
+          $SELECTEDMIRROR && OK=1 ;;
+      *) echo "please enter a number between 1 and 4..." 1>&2 ;;
+    esac
+  done
+
+  MIRROR=$(cat $SELECTEDMIRROR)
+}
 
 getFileStdout()
 {
@@ -190,7 +221,7 @@ verifyFileIntegrity()
     exit 1
   fi
 
-  echo "verifying file integrity of $file"
+  echo "verifying file integrity of $file ..."
 
   set +e
 
@@ -232,7 +263,10 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | grep $OSXVERSION | uniq | tail -n1)
+  local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
+  fi
 
   verboseMsg " selected: $pkg"
 
@@ -477,13 +511,23 @@ removeDylibs()
 
 showHelpText()
 {
-  errorMsg "Please see README.MACPORTS"
+  errorMsg "please see README.MACPORTS"
 }
 
 main()
 {
   local args
   local cmd
+
+  MIRROR="$OSXCROSS_MACPORTS_MIRROR"
+
+  if [ -z "$MIRROR" ] && [ -f "$SELECTEDMIRROR" ]; then
+    MIRROR=$(cat $SELECTEDMIRROR | head -n1)
+  fi
+
+  if [ -z "$MIRROR" ]; then
+    selectMirror
+  fi
 
   for opt in $@; do
     if [[ $opt == -* ]]; then
@@ -499,6 +543,11 @@ main()
         exit
       elif [ $opt == "-l" -o $opt == "--ldflags" ]; then
         showLDFLAGS $2
+        exit
+      elif [ $opt == "-32" -o $opt == "--i386" ]; then
+        ARCH="i386"
+      elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
+        selectMirror
         exit
       elif [ $opt == "-h" -o $opt == "--help" ]; then
         showHelpText
@@ -544,6 +593,7 @@ main()
       echo "done"
       exit
     ;;
+
   esac
 
   local packages="$args"

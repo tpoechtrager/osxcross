@@ -92,6 +92,9 @@ osxcross-macports [...]
   * upgrade
      * Reinstalls the latest version of every package.
 
+  * select-mirror
+     * Switch to a different mirror.
+
 Useful flags:
 
   * '-v', '--verbose':

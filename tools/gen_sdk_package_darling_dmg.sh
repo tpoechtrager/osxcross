@@ -42,11 +42,14 @@ if [ ! -f $TARGET_DIR/SDK/tools/bin/darling-dmg ]; then
   rm -f have_darling_dmg
 fi
 
-if [ ! -f "have_darling_dmg" ]; then
+DARLING_DMG_REV="b7ce87bfe59c2ed758165c8650402f6d4c84d184"
+
+if [ ! -f "have_darling_dmg_$DARLING_DMG_REV" ]; then
 
 rm -rf darling-dmg*
 git clone https://github.com/LubosD/darling-dmg.git
 pushd darling-dmg &>/dev/null
+git reset --hard $DARLING_DMG_REV
 mkdir -p build
 pushd build &>/dev/null
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$TARGET_DIR/SDK/tools
@@ -54,7 +57,7 @@ $MAKE -j $JOBS install
 popd &>/dev/null
 popd &>/dev/null
 
-touch "have_darling_dmg"
+touch "have_darling_dmg_$DARLING_DMG_REV"
 
 fi
 
@@ -69,5 +72,7 @@ function cleanup() {
 
 trap cleanup EXIT
 
-$TARGET_DIR/SDK/tools/bin/darling-dmg $1 $TMP
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/SDK/tools/lib \
+  $TARGET_DIR/SDK/tools/bin/darling-dmg $1 $TMP
+
 XCODEDIR=$TMP ./tools/gen_sdk_package.sh

@@ -148,12 +148,15 @@ pushd cctools*/cctools &>/dev/null
 pushd .. &>/dev/null
 ./tools/fix_unistd_issue.sh 1>/dev/null
 popd &>/dev/null
-patch -p0 < $PATCH_DIR/ld64-antique-ubuntu.patch
 if [ $APPLY_LD64_ADD_PPC_SUPPORT_PATCH -eq 1 ]; then
   pushd .. &>/dev/null
   patch -p0 < $PATCH_DIR/ld64-add-ppc-support.patch
   popd &>/dev/null
 fi
+patch -p0 < $PATCH_DIR/ld64-antique-ubuntu.patch
+patch -p1 < $PATCH_DIR/cctools-ld64-linux-ncpus.patch
+patch -p1 < $PATCH_DIR/cctools-ld64-qsort_r.patch
+patch -p1 < $PATCH_DIR/cctools-ld64-gcc6-build-fix.patch
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "
