@@ -101,14 +101,14 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Ensure you have `clang` and `make` installed
-3. Run `./gen_sdk_package_p7zip.sh <xcode>.dmg`
+3. Run `./tools/gen_sdk_package_p7zip.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
 ##### Packing the SDK on Linux, Method 2 (works with Xcode >= 4.3): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Install `cmake`, `libxml2-dev` and `fuse`
-3. Run `./gen_sdk_package_darling_dmg.sh <xcode>.dmg`
+3. Run `./tools/gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
 ##### Packing the SDK on Linux, Method 3 (does *NOT* work with Xcode 4.3 or later!): #####
