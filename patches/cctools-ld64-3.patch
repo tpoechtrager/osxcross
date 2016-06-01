@@ -1,0 +1,11 @@
+--- misc/libtool.c
++++ misc/libtool.c
+@@ -1526,7 +1526,7 @@ void)
+ 			for(k = 0; k < archs[j].nmembers; k++){
+ 			    if(archs[j].members[k].mh == NULL &&
+ #ifdef LTO_SUPPORT
+-			       archs[j].members[k].lto_contents == TRUE &&
++			       archs[j].members[k].lto_contents == FALSE &&
+ #endif /* LTO_SUPPORT */
+ 			       archs[j].members[k].mh64 == NULL){
+ 				error("library member: %s(%.*s) is not an "
