@@ -74,7 +74,7 @@ if [ -z "$OSX_VERSION_MIN" ]; then
   fi
 fi
 
-OSXCROSS_VERSION=0.13
+OSXCROSS_VERSION=0.14
 
 X86_64H_SUPPORTED=0
 
@@ -130,8 +130,8 @@ function remove_locks()
 source $BASE_DIR/tools/trap_exit.sh
 
 # CCTOOLS
-LINKER_VERSION=253.9
-CCTOOLS="cctools-877.8-ld64-$LINKER_VERSION"
+LINKER_VERSION=264.3.102
+CCTOOLS="cctools-886-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
 CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' '\n' | \
                   tr '.' '\n' | tail -n3 | head -n1)
@@ -149,7 +149,6 @@ pushd .. &>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
-patch -p0 < $PATCH_DIR/cctools-ld64-3.patch
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "
