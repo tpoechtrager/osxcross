@@ -86,32 +86,32 @@ You can turn this behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 ##### Packaging the SDK on Mac OS X: #####
 
-1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%207.0.1) \*\*]
+1. [Download [Xcode](https://developer.apple.com/downloads/index.action?name=Xcode%207.3) \*\*]
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
 3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of OSXCross
 
-\*\* Xcode up to 7.2.x is known to work.  
+\*\* Xcode up to 7.3.x is known to work.  
 \*\*\* If you get a dialog with a crossed circle, ignore it, you don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on Linux, Cygwin (and others), Method 1 (works with Xcode >= 4.3): #####
-
-1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
-2. Ensure you have `clang` and `make` installed
-3. Run `./tools/gen_sdk_package_p7zip.sh <xcode>.dmg`
-4. Copy or move the SDK into the tarballs/ directory
-
-##### Packing the SDK on Linux, Method 2 (works with Xcode >= 4.3): #####
+##### Packing the SDK on Linux, Method 1 (works up to Xcode 7.3): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Install `cmake`, `libxml2-dev` and `fuse`
 3. Run `./tools/gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux, Method 3 (does *NOT* work with Xcode 4.3 or later!): #####
+##### Packing the SDK on Linux, Cygwin (and others), Method 2 (works up to Xcode 7.2): #####
+
+1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+2. Ensure you have `clang` and `make` installed
+3. Run `./tools/gen_sdk_package_p7zip.sh <xcode>.dmg`
+4. Copy or move the SDK into the tarballs/ directory
+
+##### Packing the SDK on Linux, Method 3 (works up to Xcode 4.2): #####
 
 1. Download Xcode 4.2 for Snow Leopard
 2. Ensure you are downloading the "Snow Leopard" version
