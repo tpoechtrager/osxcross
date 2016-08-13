@@ -1,9 +1,3 @@
-commit fb07e9db8009ba58cf1fafc031e3850b50c3dcca
-Author: Thomas Pöchtrager <t.poechtrager@gmail.com>
-Date:   Tue Aug 9 21:02:37 2016 +0200
-
-    Misc fixes & Cleanup
-
 diff --git cctools/ld64/src/3rd/helper.h cctools/ld64/src/3rd/helper.h
 index 7649666..a705ac3 100644
 --- cctools/ld64/src/3rd/helper.h
@@ -69,18 +63,20 @@ index 35121ce..1b9199c 100644
  	 * Get the address and size of the archive.
  	 */
 diff --git cctools/misc/nm.c cctools/misc/nm.c
-index e398f30..77de393 100644
+index e398f30..c860ae2 100644
 --- cctools/misc/nm.c
 +++ cctools/misc/nm.c
-@@ -527,7 +527,11 @@ void *cookie)
+@@ -527,7 +527,13 @@ void *cookie)
  	llvm_bundle_found = FALSE;
  #endif /* LTO_SUPPORT */
  
 -    memset(&process_flags, '\0', sizeof(process_flags)); /* cctools-port */
 +	/* cctools-port start */
 +	memset(&process_flags, '\0', sizeof(process_flags));
++#ifdef LTO_SUPPORT
 +	llvm_bundle_pointer = NULL;
 +	llvm_bundle_size = 0;
++#endif /* LTO_SUPPORT */
 +	/* cctools-port end */
  
  	cmd_flags = (struct cmd_flags *)cookie;
