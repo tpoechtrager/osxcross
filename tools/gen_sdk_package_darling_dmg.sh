@@ -26,7 +26,13 @@ require fusermount
 
 set +e
 
-modinfo fuse &>/dev/null
+command -v lsb_release 2>&1 > /dev/null
+
+if [[ $? -eq 0 ]] && [[ -n `lsb_release -a 2>&1 | grep -i ubuntu` ]]; then
+    echo "Using ubuntu, skip fuse module check"
+else
+    modinfo fuse &>/dev/null
+fi
 
 if [ $? -ne 0 ]; then
   echo "required kernel module 'fuse' not loaded" 1>&2
