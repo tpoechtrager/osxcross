@@ -131,9 +131,8 @@ On debian like systems you can install these using:
 
 ATTENTION:
 
-OSXCross links libgcc and libstdc++ statically by default (this affects
-`-foc-use-gcc-libstdc++` too).  You can turn this behavior off with
-`OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
+OSXCross links libgcc and libstdc++ statically by default.  You can turn this
+behavior off with `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
 
 The build also creates aliases `*-g++-libc++` which link with the `clang`
 implementation of the C++ standard library instead of the GCC version.  Don't
