@@ -28,15 +28,15 @@ set +e
 
 command -v lsb_release 2>&1 > /dev/null
 
-if [[ $? -eq 0 ]] && [[ -n `lsb_release -a 2>&1 | grep -i ubuntu` ]]; then
-    echo "Using ubuntu, skip fuse module check"
+if [[ $? -eq 0 ]] && [[ -n $(lsb_release -a 2>&1 | grep -i ubuntu) ]]; then
+  echo "Using ubuntu, skipping fuse module check"
 else
-    modinfo fuse &>/dev/null
+  modinfo fuse &>/dev/null
 fi
 
 if [ $? -ne 0 ]; then
-  echo "required kernel module 'fuse' not loaded" 1>&2
-  echo "please run 'insmod fuse' as root" 1>&2
+  echo "Required kernel module 'fuse' not loaded" 1>&2
+  echo "Please run 'insmod fuse' as root" 1>&2
   exit 1
 fi
 
