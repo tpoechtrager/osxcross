@@ -1,43 +1,19 @@
 #!/usr/bin/env bash
 
-set -e
-set -u
-
-# Print number of enabled CPUs.  Use this as a simple, platform-independent
-# replacement for nproc or ncpus.
 #
-# The shell script wraps a simple C++ tool which will be compiled on demand.
+# Print the number of enabled CPUs by either using nproc or ncpus.
+# If both commands fail, fall back to a platform-independent C++ solution.
+# If that also fails, just echo 1...
+#
 
+pushd "${0%/*}" &>/dev/null
 
-# This script's location.  The proper way to do this in bash is using
-# ${BASH_SOURCE[0]}; ignore the possibility of softlinks.
-script_dir=$(cd $(dirname ${BASH_SOURCE[0]}) && pwd)
+nproc 2>/dev/null && exit 0 || ncpus 2>/dev/null && exit 0 || {
+  if [ ! -f cpucount ]; then
+    c++ cpucount.cpp -std=c++0x -o cpucount &>/dev/null || { echo 1 && exit 0; }
+  fi
+}
 
-prog="$script_dir/cpucount"
-case "$(uname -s)" in
-  *NT* | CYGWIN*)
-    prog="${prog}.exe" ;;
-esac
+./cpucount
 
-if [ ! -f $prog ]
-then
-    # Don't have cpucount.  Build it.
-
-    if ! which c++ >/dev/null
-    then
-        # Can't compile cpucount.  Just give the safe answer.
-        echo 1
-        exit 0
-    fi
-
-    # Attempt to compile cpucount.cpp.
-    if ! c++ $prog.cpp -o $prog &>/dev/null
-    then
-        # Okay, that didn't work...  Try it with gcc/clang's option to force
-        # C++11.  Versions of gcc older than 6.x still default to C++98.
-        c++ $prog.cpp -std=c++11 -o $prog >/dev/null
-    fi
-fi
-
-# Now, at last: run cpucount.
-$prog
+popd &>/dev/null
