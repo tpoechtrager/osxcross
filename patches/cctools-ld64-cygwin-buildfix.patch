@@ -37,10 +37,12 @@ diff --git usage_examples/ios_toolchain/wrapper.c usage_examples/ios_toolchain/w
 index c102d79..b88d35a 100644
 --- usage_examples/ios_toolchain/wrapper.c
 +++ usage_examples/ios_toolchain/wrapper.c
-@@ -86,6 +86,7 @@ char *get_executable_path(char *epath, size_t buflen)
+@@ -85,7 +85,8 @@ char *get_executable_path(char *epath, size_t buflen)
+     if (!ok) return NULL;
      l = strlen(epath);
  #else
-     ssize_t l = readlink("/proc/self/exe", epath, buflen);
+-    ssize_t l = readlink("/proc/self/exe", epath, buflen);
++    ssize_t l = readlink("/proc/self/exe", epath, buflen - 1);
 +    if (l > 0) epath[l] = '\0';
  #endif
      if (l <= 0) return NULL;
