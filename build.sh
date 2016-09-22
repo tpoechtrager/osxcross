@@ -150,6 +150,9 @@ popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
 patch -p1 < $PATCH_DIR/cctools-ld64-misc-fixes.patch
+pushd .. &>/dev/null
+patch -p0 < $PATCH_DIR/cctools-ld64-cygwin-buildfix.patch
+popd &>/dev/null
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "

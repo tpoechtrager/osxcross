@@ -16,11 +16,12 @@ Click on setup-*.exe and install the following packages:
 
 For LTO support you will also need:
 
-`libllvm-devel`, `libllvm` and `gendef`
+`libllvm-devel`, `libllvm`, `libedit` and `libffi`
 
-The cygLTO.dll import library is missing, create it by hand:
+The Cygwin package of libLLVM lacks the LTO library, but you can create that dll
+by issuing the following command:
 
-`gendef /bin/cygLTO.dll && dlltool -d cygLTO.def -l /lib/libLTO.dll.a && rm cygLTO.def`
+`./tools/gen_cyglto_dll.sh`
 
 #### Step 2: ####
 
