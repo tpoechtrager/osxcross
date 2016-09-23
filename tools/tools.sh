@@ -63,14 +63,16 @@ if [[ $SCRIPT != *wrapper/build.sh ]]; then
     JOBS=$(tools/get_cpu_count.sh || echo 1)
   fi
 
-  if [ $SCRIPT != "build.sh" -a $SCRIPT != "build_clang.sh" -a \
+  if [ $SCRIPT != "build.sh" -a \
+       $SCRIPT != "build_clang.sh" -a \
        $SCRIPT != "mount_xcode_image.sh" -a \
        $SCRIPT != "gen_sdk_package_darling_dmg.sh" -a \
-       $SCRIPT != "gen_sdk_package_p7zip.sh" ]; then
+       $SCRIPT != "gen_sdk_package_p7zip.sh" -a \
+       $SCRIPT != "gen_cyglto_dll.sh" ]; then
     res=$(tools/osxcross_conf.sh)
 
     if [ $? -ne 0 ]; then
-      echo -n "you need to complete ./build.sh first, before you can start "
+      echo -n "you must run ./build.sh first before you can start "
       echo "building $DESC"
       exit 1
     fi
