@@ -52,7 +52,7 @@ source $BASE_DIR/tools/trap_exit.sh
 MIRROR="http://llvm.org"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=3.8.0
+  CLANG_VERSION=3.9.0
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
@@ -60,6 +60,7 @@ if [ -z "$INSTALLPREFIX" ]; then
 fi
 
 require wget
+require cmake
 
 function warn_if_installed()
 {
@@ -128,7 +129,9 @@ function build()
   stage=$1
   mkdir -p $stage
   pushd $stage &>/dev/null
-  ../configure --prefix=$INSTALLPREFIX --enable-optimized --disable-assertions
+  cmake .. \
+    -DCMAKE_INSTALL_PREFIX=$INSTALLPREFIX -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_ENABLE_ASSERTIONS=OFF
   $MAKE $2 -j $JOBS VERBOSE=1
   popd &>/dev/null
 }
@@ -136,10 +139,10 @@ function build()
 if [ -n "$DISABLE_BOOTSTRAP" ]; then
   build build
 else
-  build build_stage1 clang-only
+  build build_stage1 clang
 
-  export CC=$PWD/build_stage1/Release/bin/clang
-  export CXX=$PWD/build_stage1/Release/bin/clang++
+  export CC=$PWD/build_stage1/bin/clang
+  export CXX=$PWD/build_stage1/bin/clang++
 
   if [ -z "$PORTABLE" ]; then
     export CFLAGS="-march=native"
@@ -149,8 +152,8 @@ else
   build build_stage2
 
   if [ -n "$ENABLE_FULL_BOOTSTRAP" ]; then
-    CC=$PWD/build_stage2/Release/bin/clang \
-    CXX=$PWD/build_stage2/Release/bin/clang++ \
+    CC=$PWD/build_stage2/bin/clang \
+    CXX=$PWD/build_stage2/bin/clang++ \
     build build_stage3
   fi
 fi
