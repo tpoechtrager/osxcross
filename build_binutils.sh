@@ -10,7 +10,7 @@ eval $(tools/osxcross_conf.sh)
 
 # binutils version to build
 if [ -z "$BINUTILS_VERSION" ]; then
-  BINUTILS_VERSION=2.26
+  BINUTILS_VERSION=2.27
 fi
 
 # gdb version to build
