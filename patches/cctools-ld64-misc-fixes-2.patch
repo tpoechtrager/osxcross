@@ -200,3 +200,135 @@ index 156c21f..a823fa3 100755
      "ld64/Makefile") CONFIG_FILES="$CONFIG_FILES ld64/Makefile" ;;
      "ld64/src/Makefile") CONFIG_FILES="$CONFIG_FILES ld64/src/Makefile" ;;
      "ld64/src/3rd/Makefile") CONFIG_FILES="$CONFIG_FILES ld64/src/3rd/Makefile" ;;
+--- cctools/misc/Makefile.in
++++ cctools/misc/Makefile.in
+@@ -95,7 +95,8 @@
+ 	seg_hack$(EXEEXT) install_name_tool$(EXEEXT) indr$(EXEEXT) \
+ 	strip$(EXEEXT) nmedit$(EXEEXT) segedit$(EXEEXT) \
+ 	pagestuff$(EXEEXT) ranlib$(EXEEXT) codesign_allocate$(EXEEXT) \
+-	bitcode_strip$(EXEEXT)
++	bitcode_strip$(EXEEXT) ctf_insert$(EXEEXT) \
++	check_dylib$(EXEEXT) cmpdylib$(EXEEXT) inout$(EXEEXT)
+ subdir = misc
+ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
+ am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
+@@ -123,21 +124,41 @@
+ bitcode_strip_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(bitcode_strip_CFLAGS) \
+ 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
++am_check_dylib_OBJECTS = check_dylib.$(OBJEXT)
++check_dylib_OBJECTS = $(am_check_dylib_OBJECTS)
++check_dylib_LDADD = $(LDADD)
++check_dylib_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
++	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+ am_checksyms_OBJECTS = checksyms.$(OBJEXT)
+ checksyms_OBJECTS = $(am_checksyms_OBJECTS)
+ checksyms_LDADD = $(LDADD)
+ checksyms_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
+ 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
++am_cmpdylib_OBJECTS = cmpdylib.$(OBJEXT)
++cmpdylib_OBJECTS = $(am_cmpdylib_OBJECTS)
++cmpdylib_LDADD = $(LDADD)
++cmpdylib_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
++	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+ am_codesign_allocate_OBJECTS = codesign_allocate.$(OBJEXT)
+ codesign_allocate_OBJECTS = $(am_codesign_allocate_OBJECTS)
+ codesign_allocate_LDADD = $(LDADD)
+ codesign_allocate_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
+ 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
++am_ctf_insert_OBJECTS = ctf_insert.$(OBJEXT)
++ctf_insert_OBJECTS = $(am_ctf_insert_OBJECTS)
++ctf_insert_LDADD = $(LDADD)
++ctf_insert_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
++	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+ am_indr_OBJECTS = indr.$(OBJEXT)
+ indr_OBJECTS = $(am_indr_OBJECTS)
+ indr_LDADD = $(LDADD)
+ indr_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
+ 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
++am_inout_OBJECTS = inout.$(OBJEXT)
++inout_OBJECTS = $(am_inout_OBJECTS)
++inout_LDADD = $(LDADD)
++inout_DEPENDENCIES = $(top_builddir)/libstuff/libstuff.la \
++	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+ am_install_name_tool_OBJECTS = install_name_tool.$(OBJEXT)
+ install_name_tool_OBJECTS = $(am_install_name_tool_OBJECTS)
+ install_name_tool_LDADD = $(LDADD)
+@@ -247,19 +268,21 @@
+ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+ am__v_CCLD_0 = @echo "  CCLD    " $@;
+ am__v_CCLD_1 = 
+-SOURCES = $(bitcode_strip_SOURCES) $(checksyms_SOURCES) \
+-	$(codesign_allocate_SOURCES) $(indr_SOURCES) \
+-	$(install_name_tool_SOURCES) $(libtool_SOURCES) \
+-	$(lipo_SOURCES) $(nm_SOURCES) $(nmedit_SOURCES) \
+-	$(pagestuff_SOURCES) $(ranlib_SOURCES) \
++SOURCES = $(bitcode_strip_SOURCES) $(check_dylib_SOURCES) \
++	$(checksyms_SOURCES) $(cmpdylib_SOURCES) \
++	$(codesign_allocate_SOURCES) $(ctf_insert_SOURCES) \
++	$(indr_SOURCES) $(inout_SOURCES) $(install_name_tool_SOURCES) \
++	$(libtool_SOURCES) $(lipo_SOURCES) $(nm_SOURCES) \
++	$(nmedit_SOURCES) $(pagestuff_SOURCES) $(ranlib_SOURCES) \
+ 	$(redo_prebinding_SOURCES) $(seg_addr_table_SOURCES) \
+ 	$(seg_hack_SOURCES) $(segedit_SOURCES) $(size_SOURCES) \
+ 	$(strings_SOURCES) $(strip_SOURCES)
+-DIST_SOURCES = $(bitcode_strip_SOURCES) $(checksyms_SOURCES) \
+-	$(codesign_allocate_SOURCES) $(indr_SOURCES) \
+-	$(install_name_tool_SOURCES) $(libtool_SOURCES) \
+-	$(lipo_SOURCES) $(nm_SOURCES) $(nmedit_SOURCES) \
+-	$(pagestuff_SOURCES) $(ranlib_SOURCES) \
++DIST_SOURCES = $(bitcode_strip_SOURCES) $(check_dylib_SOURCES) \
++	$(checksyms_SOURCES) $(cmpdylib_SOURCES) \
++	$(codesign_allocate_SOURCES) $(ctf_insert_SOURCES) \
++	$(indr_SOURCES) $(inout_SOURCES) $(install_name_tool_SOURCES) \
++	$(libtool_SOURCES) $(lipo_SOURCES) $(nm_SOURCES) \
++	$(nmedit_SOURCES) $(pagestuff_SOURCES) $(ranlib_SOURCES) \
+ 	$(redo_prebinding_SOURCES) $(seg_addr_table_SOURCES) \
+ 	$(seg_hack_SOURCES) $(segedit_SOURCES) $(size_SOURCES) \
+ 	$(strings_SOURCES) $(strip_SOURCES)
+@@ -460,6 +483,10 @@
+ codesign_allocate_SOURCES = codesign_allocate.c
+ bitcode_strip_SOURCES = bitcode_strip.c
+ bitcode_strip_CFLAGS = -DALLOW_ARCHIVES $(AM_CFLAGS)
++ctf_insert_SOURCES = ctf_insert.c
++check_dylib_SOURCES = check_dylib.c
++cmpdylib_SOURCES = cmpdylib.c
++inout_SOURCES = inout.c
+ all: all-am
+ 
+ .SUFFIXES:
+@@ -547,18 +574,34 @@
+ 	@rm -f bitcode_strip$(EXEEXT)
+ 	$(AM_V_CCLD)$(bitcode_strip_LINK) $(bitcode_strip_OBJECTS) $(bitcode_strip_LDADD) $(LIBS)
+ 
++check_dylib$(EXEEXT): $(check_dylib_OBJECTS) $(check_dylib_DEPENDENCIES) $(EXTRA_check_dylib_DEPENDENCIES) 
++	@rm -f check_dylib$(EXEEXT)
++	$(AM_V_CCLD)$(LINK) $(check_dylib_OBJECTS) $(check_dylib_LDADD) $(LIBS)
++
+ checksyms$(EXEEXT): $(checksyms_OBJECTS) $(checksyms_DEPENDENCIES) $(EXTRA_checksyms_DEPENDENCIES) 
+ 	@rm -f checksyms$(EXEEXT)
+ 	$(AM_V_CCLD)$(LINK) $(checksyms_OBJECTS) $(checksyms_LDADD) $(LIBS)
+ 
++cmpdylib$(EXEEXT): $(cmpdylib_OBJECTS) $(cmpdylib_DEPENDENCIES) $(EXTRA_cmpdylib_DEPENDENCIES) 
++	@rm -f cmpdylib$(EXEEXT)
++	$(AM_V_CCLD)$(LINK) $(cmpdylib_OBJECTS) $(cmpdylib_LDADD) $(LIBS)
++
+ codesign_allocate$(EXEEXT): $(codesign_allocate_OBJECTS) $(codesign_allocate_DEPENDENCIES) $(EXTRA_codesign_allocate_DEPENDENCIES) 
+ 	@rm -f codesign_allocate$(EXEEXT)
+ 	$(AM_V_CCLD)$(LINK) $(codesign_allocate_OBJECTS) $(codesign_allocate_LDADD) $(LIBS)
+ 
++ctf_insert$(EXEEXT): $(ctf_insert_OBJECTS) $(ctf_insert_DEPENDENCIES) $(EXTRA_ctf_insert_DEPENDENCIES) 
++	@rm -f ctf_insert$(EXEEXT)
++	$(AM_V_CCLD)$(LINK) $(ctf_insert_OBJECTS) $(ctf_insert_LDADD) $(LIBS)
++
+ indr$(EXEEXT): $(indr_OBJECTS) $(indr_DEPENDENCIES) $(EXTRA_indr_DEPENDENCIES) 
+ 	@rm -f indr$(EXEEXT)
+ 	$(AM_V_CCLD)$(LINK) $(indr_OBJECTS) $(indr_LDADD) $(LIBS)
+ 
++inout$(EXEEXT): $(inout_OBJECTS) $(inout_DEPENDENCIES) $(EXTRA_inout_DEPENDENCIES) 
++	@rm -f inout$(EXEEXT)
++	$(AM_V_CCLD)$(LINK) $(inout_OBJECTS) $(inout_LDADD) $(LIBS)
++
+ install_name_tool$(EXEEXT): $(install_name_tool_OBJECTS) $(install_name_tool_DEPENDENCIES) $(EXTRA_install_name_tool_DEPENDENCIES) 
+ 	@rm -f install_name_tool$(EXEEXT)
+ 	$(AM_V_CCLD)$(LINK) $(install_name_tool_OBJECTS) $(install_name_tool_LDADD) $(LIBS)

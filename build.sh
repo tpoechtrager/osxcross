@@ -130,7 +130,7 @@ function remove_locks()
 source $BASE_DIR/tools/trap_exit.sh
 
 # CCTOOLS
-CCTOOLS_PATCH_REV=1
+CCTOOLS_PATCH_REV=2
 LINKER_VERSION=264.3.102
 CCTOOLS="cctools-886-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
