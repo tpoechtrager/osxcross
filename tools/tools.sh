@@ -149,13 +149,17 @@ function extract()
 
 if [[ $PLATFORM == CYGWIN* ]]; then
 
-# Work around Cygwin brokenness.
-function ln()
+function create_symlink()
 {
-  [[ $1 == -* ]] && rm -f $3
-  $(which ln) $@
+  cp -f $1 $2
 }
-export -f ln
+
+else
+
+function create_symlink()
+{
+  ln -sf $1 $2
+}
 
 fi
 

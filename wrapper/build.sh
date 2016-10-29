@@ -16,7 +16,11 @@ if [ -z "$OSXCROSS_VERSION" ]; then
 fi
 set -e
 
-EXESUFFIX=""
+if [[ $PLATFORM == CYGWIN* ]]; then
+  EXESUFFIX=".exe"
+else
+  EXESUFFIX=""
+fi
 
 function create_wrapper_link
 {
@@ -36,31 +40,31 @@ function create_wrapper_link
   #  -> x86_64h-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "${1}${EXESUFFIX}"
   fi
 
-  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
     "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
-  verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
     "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
   if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
      ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   fi
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "o32-${1}${EXESUFFIX}"
-    verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "o64-${1}${EXESUFFIX}"
 
     if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
        ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-      verbose_cmd ln -sf "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
         "o64h-${1}${EXESUFFIX}"
     fi
   fi

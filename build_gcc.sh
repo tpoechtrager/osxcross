@@ -128,12 +128,18 @@ source tools/tools.sh
 
 pushd $OSXCROSS_TARGET_DIR/bin &>/dev/null
 
-if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
-  mv x86_64-apple-$OSXCROSS_TARGET-gcc x86_64-apple-$OSXCROSS_TARGET-base-gcc
-  mv x86_64-apple-$OSXCROSS_TARGET-g++ x86_64-apple-$OSXCROSS_TARGET-base-g++
+if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX ]; then
+  mv x86_64-apple-$OSXCROSS_TARGET-gcc$EXESUFFIX \
+     x86_64-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX
 
-  ln -sf x86_64-apple-$OSXCROSS_TARGET-base-gcc i386-apple-$OSXCROSS_TARGET-base-gcc
-  ln -sf x86_64-apple-$OSXCROSS_TARGET-base-g++ i386-apple-$OSXCROSS_TARGET-base-g++
+  mv x86_64-apple-$OSXCROSS_TARGET-g++$EXESUFFIX \
+     x86_64-apple-$OSXCROSS_TARGET-base-g++$EXESUFFIX
+
+  create_symlink x86_64-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX \
+                 i386-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX
+
+  create_symlink x86_64-apple-$OSXCROSS_TARGET-base-g++$EXESUFFIX \
+                 i386-apple-$OSXCROSS_TARGET-base-g++$EXESUFFIX
 fi
 
 echo "compiling wrapper ..."

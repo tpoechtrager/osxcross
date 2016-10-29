@@ -168,12 +168,12 @@ CCTOOLS=($CCTOOLS)
 if [ $X86_64H_SUPPORTED -eq 1 ]; then
   for CCTOOL in ${CCTOOLS[@]}; do
     CCTOOL_X86_64H=$(echo "$CCTOOL" | $SED 's/x86_64/x86_64h/g')
-    ln -sf $CCTOOL $CCTOOL_X86_64H
+    create_symlink $CCTOOL $CCTOOL_X86_64H
   done
 fi
 for CCTOOL in ${CCTOOLS[@]}; do
   CCTOOL_I386=$(echo "$CCTOOL" | $SED 's/x86_64/i386/g')
-  ln -sf $CCTOOL $CCTOOL_I386
+  create_symlink $CCTOOL $CCTOOL_I386
 done
 popd &>/dev/null
 
@@ -182,9 +182,9 @@ fi
 
 # MacPorts symlinks
 pushd $TARGET_DIR/bin &>/dev/null # The BSD ln command doesn't support '-r'
-ln -sf $BASE_DIR/tools/osxcross-macports osxcross-macports
-ln -sf $BASE_DIR/tools/osxcross-macports osxcross-mp
-ln -sf $BASE_DIR/tools/osxcross-macports omp
+create_symlink $BASE_DIR/tools/osxcross-macports osxcross-macports
+create_symlink $BASE_DIR/tools/osxcross-macports osxcross-mp
+create_symlink $BASE_DIR/tools/osxcross-macports omp
 popd &>/dev/null
 
 SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION*)
@@ -265,7 +265,7 @@ fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
-ln -s \
+create_symlink \
   $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
   usr/include 2>/dev/null
 [ ! -f "usr/include/float.h" ] && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
