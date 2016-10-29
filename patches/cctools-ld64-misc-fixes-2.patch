@@ -1,0 +1,202 @@
+diff --git cctools/Makefile.am cctools/Makefile.am
+index 9f69d04..be83f0a 100644
+--- cctools/Makefile.am
++++ cctools/Makefile.am
+@@ -1,7 +1,7 @@
+ if ISDARWIN
+-SUBDIRS=libstuff ar as misc otool ld64 $(LD_CLASSIC)
++SUBDIRS=libstuff ar as misc otool ld64
+ else
+-SUBDIRS=libstuff ar as misc libobjc2 otool ld64 $(LD_CLASSIC)
++SUBDIRS=libstuff ar as misc libobjc2 otool ld64
+ endif
+ 
+ ACLOCAL_AMFLAGS = -I m4
+diff --git cctools/as/driver.c cctools/as/driver.c
+index b06d085..92410c7 100644
+--- cctools/as/driver.c
++++ cctools/as/driver.c
+@@ -283,7 +283,7 @@ char **envp)
+ 	    run_clang = 1;
+ 
+ #ifndef DISABLE_CLANG_AS /* cctools-port */
+-	if(getenv("NO_CLANG_AS") != NULL) /* cctools-port */
++	if(getenv("CCTOOLS_NO_CLANG_AS") != NULL) /* cctools-port */
+ 	    run_clang = 0;
+ 
+ 	/*
+@@ -298,9 +298,13 @@ char **envp)
+ 	    arch_flag.cputype == CPU_TYPE_ARM)){
+ #if 0 /* cctools port */
+ 	    as = makestr(prefix, CLANG, NULL);
+-#else
+-	    as = find_clang();
+ #endif
++	    /* cctools-port start */
++#ifndef __APPLE__
++	    char *target_triple = getenv("CCTOOLS_CLANG_AS_TARGET_TRIPLE");
++#endif /* ! __APPLE__ */
++	    as = find_clang();
++	    /* cctools-port end */
+ 	    if(!as || access(as, F_OK) != 0){ /* cctools-port: added  !as || */
+ 		printf("%s: assembler (%s) not installed\n", progname,
+ 		       as ? as : "clang"); /* cctools-port:
+@@ -364,10 +368,12 @@ char **envp)
+ 	    new_argv[j] = "-c";
+ 	    j++;
+ 	    /* cctools-port start */
++#ifndef __APPLE__
+ 	    new_argv[j] = "-target";
+ 	    j++;
+-	    new_argv[j] = "unknown-apple-darwin";
++	    new_argv[j] = target_triple ? target_triple : "unknown-apple-darwin";
+ 	    j++;
++#endif /* ! __APPLE__ */
+ 	    /* cctools-port end */
+ 	    new_argv[j] = NULL;
+ 	    if(execute(new_argv, verbose))
+diff --git cctools/configure.ac cctools/configure.ac
+index 5219e3d..a6a3dd4 100644
+--- cctools/configure.ac
++++ cctools/configure.ac
+@@ -358,8 +358,6 @@ if test "x$isdarwin" != "xyes"; then
+   AC_CONFIG_FILES([libobjc2/Makefile])
+ fi
+ 
+-AC_CONFIG_FILES([ld/Makefile])
+-
+ AC_CONFIG_FILES([ld64/Makefile])
+ AC_CONFIG_FILES([ld64/src/Makefile])
+ AC_CONFIG_FILES([ld64/src/3rd/Makefile])
+diff --git cctools/misc/Makefile.am cctools/misc/Makefile.am
+index c0b7be8..5256aa2 100644
+--- cctools/misc/Makefile.am
++++ cctools/misc/Makefile.am
+@@ -16,7 +16,11 @@ bin_PROGRAMS =  \
+ 	pagestuff \
+ 	ranlib \
+ 	codesign_allocate \
+-	bitcode_strip
++	bitcode_strip \
++	ctf_insert \
++	check_dylib \
++	cmpdylib \
++	inout
+ 
+ LDADD =  \
+ 	$(top_builddir)/libstuff/libstuff.la \
+@@ -46,3 +50,7 @@ ranlib_CFLAGS = -DRANLIB $(AM_CFLAGS)
+ codesign_allocate_SOURCES = codesign_allocate.c
+ bitcode_strip_SOURCES= bitcode_strip.c
+ bitcode_strip_CFLAGS = -DALLOW_ARCHIVES $(AM_CFLAGS)
++ctf_insert_SOURCES= ctf_insert.c
++check_dylib_SOURCES= check_dylib.c
++cmpdylib_SOURCES= cmpdylib.c
++inout_SOURCES= inout.c
+diff --git usage_examples/ios_toolchain/README usage_examples/ios_toolchain/README
+index ac51229..fc85462 100644
+--- usage_examples/ios_toolchain/README
++++ usage_examples/ios_toolchain/README
+@@ -7,7 +7,7 @@ USAGE:
+ Please ensure you have read and understood the Xcode license terms before
+ building this toolchain: https://www.apple.com/legal/sla/docs/xcode.pdf.
+ 
+-./build.sh /path/to/sdk.tar.* <target cpu>
++[LLVM_DSYMUTIL=llvm-dsymutil] ./build.sh /path/to/sdk.tar.* <target cpu>
+ 
+ Target CPU should be one of armv6, armv7, armv7s and arm64.
+ 
+diff --git usage_examples/ios_toolchain/build.sh usage_examples/ios_toolchain/build.sh
+index 156c21f..a823fa3 100755
+--- usage_examples/ios_toolchain/build.sh
++++ usage_examples/ios_toolchain/build.sh
+@@ -5,6 +5,14 @@ pushd "${0%/*}" &>/dev/null
+ 
+ PLATFORM=$(uname -s)
+ 
++if [ -z "$LLVM_DSYMUTIL" ]; then
++    LLVM_DSYMUTIL=llvm-dsymutil
++fi
++
++if [ -z "$JOBS" ]; then
++    JOBS=$(nproc 2>/dev/null || ncpus 2>/dev/null || echo 1)
++fi
++
+ set -e
+ 
+ function verbose_cmd
+@@ -29,7 +37,7 @@ function extract()
+             bzip2 -dc $1 | tar $tarflags -
+             ;;
+         *)
+-            echo "unhandled archive type"
++            echo "unhandled archive type" 1>&2
+             exit 1
+             ;;
+     esac
+@@ -80,7 +88,26 @@ echo ""
+ echo "*** building wrapper ***"
+ echo ""
+ 
+-echo "int main(){return 0;}" | cc -xc -O2 -o $TARGETDIR/bin/dsymutil -
++OK=0
++
++set +e
++which $LLVM_DSYMUTIL &>/dev/null
++if [ $? -eq 0 ]; then
++    case $($LLVM_DSYMUTIL --version | \
++           grep "LLVM version" | head -1 | awk '{print $3}') in
++        3.8*|3.9*|4.0*) OK=1 ;;
++    esac
++fi
++set -e
++
++if [ $OK -eq 1 ]; then
++    ln -sf $(which $LLVM_DSYMUTIL) $TARGETDIR/bin/dsymutil
++    pushd $TARGETDIR/bin &>/dev/null
++    ln -sf $TRIPLE-lipo lipo
++    popd &>/dev/null
++else
++    echo "int main(){return 0;}" | cc -xc -O2 -o $TARGETDIR/bin/dsymutil -
++fi
+ 
+ verbose_cmd cc -O2 -Wall -Wextra -pedantic wrapper.c \
+     -DTARGET_CPU=\"\\\"$2\\\"\" \
+@@ -100,7 +127,7 @@ mkdir -p tmp
+ pushd tmp &>/dev/null
+ git clone https://github.com/tpoechtrager/ldid.git
+ pushd ldid &>/dev/null
+-make INSTALLPREFIX=$TARGETDIR -j4 install
++make INSTALLPREFIX=$TARGETDIR -j$JOBS install
+ popd &>/dev/null
+ popd &>/dev/null
+ 
+@@ -112,7 +139,7 @@ pushd ../../cctools &>/dev/null
+ git clean -fdx . &>/dev/null || true
+ ./autogen.sh
+ ./configure --target=$TRIPLE --prefix=$TARGETDIR
+-make -j4 && make install
++make -j$JOBS && make install
+ popd &>/dev/null
+ 
+ echo ""
+--- cctools/configure
++++ cctools/configure
+@@ -17722,9 +17722,6 @@
+
+ fi
+
+-ac_config_files="$ac_config_files ld/Makefile"
+-
+-
+ ac_config_files="$ac_config_files ld64/Makefile"
+
+ ac_config_files="$ac_config_files ld64/src/Makefile"
+@@ -18881,7 +18878,6 @@
+     "misc/Makefile") CONFIG_FILES="$CONFIG_FILES misc/Makefile" ;;
+     "otool/Makefile") CONFIG_FILES="$CONFIG_FILES otool/Makefile" ;;
+     "libobjc2/Makefile") CONFIG_FILES="$CONFIG_FILES libobjc2/Makefile" ;;
+-    "ld/Makefile") CONFIG_FILES="$CONFIG_FILES ld/Makefile" ;;
+     "ld64/Makefile") CONFIG_FILES="$CONFIG_FILES ld64/Makefile" ;;
+     "ld64/src/Makefile") CONFIG_FILES="$CONFIG_FILES ld64/src/Makefile" ;;
+     "ld64/src/3rd/Makefile") CONFIG_FILES="$CONFIG_FILES ld64/src/3rd/Makefile" ;;

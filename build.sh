@@ -130,13 +130,14 @@ function remove_locks()
 source $BASE_DIR/tools/trap_exit.sh
 
 # CCTOOLS
+CCTOOLS_PATCH_REV=1
 LINKER_VERSION=264.3.102
 CCTOOLS="cctools-886-ld64-$LINKER_VERSION"
 CCTOOLS_TARBALL=$(ls $TARBALL_DIR/$CCTOOLS*.tar.* | head -n1)
 CCTOOLS_REVHASH=$(echo $(basename "$CCTOOLS_TARBALL") | tr '_' '\n' | \
                   tr '.' '\n' | tail -n3 | head -n1)
 
-if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
+if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET_${CCTOOLS_PATCH_REV}" ]; then
 
 rm -rf cctools*
 rm -rf xar*
@@ -149,9 +150,11 @@ pushd .. &>/dev/null
 popd &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-1.patch
 patch -p0 < $PATCH_DIR/cctools-ld64-2.patch
-patch -p1 < $PATCH_DIR/cctools-ld64-misc-fixes.patch
+patch -p1 < $PATCH_DIR/cctools-ld64-misc-fixes-1.patch
 pushd .. &>/dev/null
 patch -p0 < $PATCH_DIR/cctools-ld64-cygwin-buildfix.patch
+patch -p0 < $PATCH_DIR/cctools-ld64-misc-fixes-2.patch
+rm -r cctools/ld
 popd &>/dev/null
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
@@ -176,6 +179,7 @@ for CCTOOL in ${CCTOOLS[@]}; do
   create_symlink $CCTOOL $CCTOOL_I386
 done
 popd &>/dev/null
+
 
 fi
 # CCTOOLS END
@@ -212,7 +216,7 @@ fi
 fi
 # XAR END
 
-if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET" ]; then
+if [ ! -f "have_cctools_${CCTOOLS_REVHASH}_$TARGET_${CCTOOLS_PATCH_REV}" ]; then
 
 function check_cctools()
 {
@@ -227,7 +231,7 @@ function check_cctools()
 check_cctools i386
 check_cctools x86_64
 
-touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET"
+touch "have_cctools_${CCTOOLS_REVHASH}_$TARGET_${CCTOOLS_PATCH_REV}"
 
 echo ""
 
