@@ -27,14 +27,23 @@ wget https://raw.githubusercontent.com/llvm-mirror/llvm/release_$VERSION/tools/l
 wget https://raw.githubusercontent.com/llvm-mirror/llvm/release_$VERSION/tools/lto/LTODisassembler.cpp
 wget https://raw.githubusercontent.com/llvm-mirror/llvm/release_$VERSION/tools/lto/lto.exports
 
-echo "{" > cyglto.exports
-echo "  global:" >> cyglto.exports
+echo "{"               > cyglto.exports
+echo "  global:"      >> cyglto.exports
 while read p; do
-  echo "   $p;" >> cyglto.exports
+  echo "   $p;"       >> cyglto.exports
 done < lto.exports
-echo "   LLVM*;" >> cyglto.exports
-echo "  local: *;" >> cyglto.exports
-echo "};" >> cyglto.exports
+echo "   LLVM*;"      >> cyglto.exports
+echo "  local: *;"    >> cyglto.exports
+echo "};"             >> cyglto.exports
+
+if [ $ARCH == "x86_64" ]; then
+  # https://github.com/tpoechtrager/osxcross/issues/91
+  mkdir -p llvm/LTO
+  echo "#undef off_t"                               > llvm/LTO/LTOModule.h
+  echo "#define off_t long long"                   >> llvm/LTO/LTOModule.h
+  echo "#include_next \"llvm/LTO/LTOModule.h\""    >> llvm/LTO/LTOModule.h
+  CXXFLAGS="-I $TMP $CXXFLAGS"
+fi
 
 popd &>/dev/null
 
@@ -42,8 +51,8 @@ set -x
 
 g++ -shared \
  -L$LIBDIR -I$INCDIR $CXXFLAGS $LDFLAGS \
- -Wl,--whole-archive $LIBS -Wl,--no-whole-archive $SYSLIBS \
  $TMP/lto.cpp $TMP/LTODisassembler.cpp -Wl,-version-script,$TMP/cyglto.exports \
+ -Wl,--whole-archive $LIBS -Wl,--no-whole-archive $SYSLIBS \
  -o /bin/cygLTO.dll -Wl,--out-implib,/lib/libLTO.dll.a
 
 rm -rf $TMP
