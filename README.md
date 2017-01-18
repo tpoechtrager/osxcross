@@ -7,14 +7,26 @@ Linux, *BSD, and Cygwin.
 
 ### HOW DOES IT WORK? ###
 
-[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html)
-and is now available on nearly every Linux distribution,
-so we just need a proper
-[port](https://github.com/tpoechtrager/cctools-port)
-of the [cctools](http://www.opensource.apple.com/tarballs/cctools)
-(ld, lipo, ...) and the OS X SDK.
+For cross-compiling for OS X you need
+* the Clang/LLVM compiler
+* the the [cctools](http://www.opensource.apple.com/tarballs/cctools)
+  (ld, lipo, …), and
+* the OSX SDK.
 
-If you want, then you can build an up-to-date vanilla GCC as well.
+[Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html)
+and is now available on nearly every Linux distribution, so we just
+need a proper [port](https://github.com/tpoechtrager/cctools-port) of
+the cctools and the OS X SDK.
+
+OSXCross includes a collection of scripts for preparing the SDK and
+building the cctools.
+
+It also includes scripts for optionally building
+* Clang using gcc (for the case your distribution does not include it),
+* an up-to-date vanilla GCC as a cross-compiler for target OS X,
+* the "compiler-rt" runtime library, and
+* the `llvm-dsymutil` tool required for debugging.
+
 
 ### WHAT CAN I BUILD WITH IT? ###
 
@@ -38,17 +50,18 @@ Then ensure you have the following installed on your system:
 
 `Clang 3.2+`, `patch`, `libxml2-devel` (<=10.6 only) and the `bash shell`.
 
+You can run 'sudo tools/get\_dependencies.sh' to get these (and the
+optional packages) automatically.
+
 *Optional:*
 
-`llvm-devel`: For Link Time Optimization support
-`uuid-devel`: For ld64 `-random_uuid` support
-`llvm-devel` + `xar-devel`: For ld64 `-bitcode_bundle` support
+- `llvm-devel`: For Link Time Optimization support
+- `uuid-devel`: For ld64 `-random_uuid` support
+- `llvm-devel` + `xar-devel`: For ld64 `-bitcode_bundle` support
 
 You can find xar [here](https://github.com/mackyle/xar).
 Do not install libxar-dev on Ubuntu, it's a different package.
 
-\--
-You can run 'sudo tools/get\_dependencies.sh' to get these automatically.
 
 ##### Building Clang #####
 
