@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#
+# Build and install gcc/gcc++ as a cross-compiler with target OSX,
+# using `clang`.
+#
+# You may want to run this script if you want to build software using
+# gcc. Please refer to the README.md for details.
+#
 
 pushd "${0%/*}" &>/dev/null
 

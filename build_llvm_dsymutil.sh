@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Build and install the `llvm-dsymutil` tool required for debugging.
+#
+# Please refer to README.DEBUGGING.md for details.
+#
 
 pushd "${0%/*}" &>/dev/null
 

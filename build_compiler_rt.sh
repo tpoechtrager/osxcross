@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# Build and install the "compiler-rt" runtime library.
+#
+# This requires that you already finished `build.sh`.
+# Please refer to README.COMPILER-RT.md for details.
+#
 
 pushd "${0%/*}" &>/dev/null
 

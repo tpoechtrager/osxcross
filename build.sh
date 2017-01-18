@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# Build and install the cctools the SDK and macports.
+#
+# This script requires the OS X SDK and the Clang/LLVM compiler.
+#
+
 
 pushd "${0%/*}" &>/dev/null
 
