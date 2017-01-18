@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+#
+# Mount a Xcode .dmg (using fuse) and run gen_sdk_package.sh.
+#
+# Works up to Xcode 7.3
+#
+# This script uses darling-dmg and fuse to mount the .dmg, thus
+# avoiding to actually unpack it.
+# darling-dmg will be downloaded and compiled if missing.
+#
 
 pushd "${0%/*}/.." &>/dev/null
 source tools/tools.sh

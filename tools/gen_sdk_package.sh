@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# OS X SDK packaging script
+#
+# Package the OS X SDKs into a tar file to be used by `build.sh`.
+#
 
 export LC_ALL=C
 

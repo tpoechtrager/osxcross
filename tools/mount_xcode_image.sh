@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Mount a Xcode .dmg (requires root) and run gen_sdk_package.sh.
+#
+# Works up to Xcode 4.2
+#
 
 if [ $(uname -s) != "Linux" ]; then
   echo "This script must be run on Linux"

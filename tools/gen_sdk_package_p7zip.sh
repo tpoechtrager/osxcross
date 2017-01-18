@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+#
+# Extract required files from a Xcode .dmg using p7zip and run
+# gen_sdk_package.sh.
+#
+# Works up to Xcode 7.2
+#
+# p7zip will be downloaded and compiled if missing.
+#
 
 pushd "${0%/*}/.." &>/dev/null
 source tools/tools.sh
