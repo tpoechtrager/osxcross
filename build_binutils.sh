@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#
+# Build and install the GNU binutils and the GNU Debugger (gdb) for
+# target OS X.
+#
+# You may want to run this script if you want to build software using
+# gcc. Please refer to the README.md for details.
+#
 
 pushd "${0%/*}" &>/dev/null
 

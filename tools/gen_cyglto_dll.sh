@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# Build and install the LTO library, which the Cygwin package of
+# libLLVM is lacking.
+#
 
 pushd "${0%/*}/.." &>/dev/null
 source tools/tools.sh

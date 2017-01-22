@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+#
+# Build and install Clang/LLVM, using `gcc`.
+#
+# You only need to run this if your distribution does not provide
+# clang - or if you want to build your own version from a recent
+# source tree.
+#
 
 pushd "${0%/*}" &>/dev/null
 
