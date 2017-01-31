@@ -65,6 +65,11 @@ if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) == 1 ] &&
   patch -p1 < $PATCH_DIR/gcc-pr66035.patch
 fi
 
+if [ $(osxcross-cmp $GCC_VERSION '==' 6.3.0) == 1 ]; then
+    # https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/darwin-driver.c?r1=244010&r2=244009&pathrev=244010
+    patch -p1 < $PATCH_DIR/darwin-driver.c.patch
+fi
+
 mkdir -p build
 pushd build &>/dev/null
 
