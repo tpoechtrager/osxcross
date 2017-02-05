@@ -59,7 +59,7 @@ source $BASE_DIR/tools/trap_exit.sh
 MIRROR="http://llvm.org"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=3.9.0
+  CLANG_VERSION=3.9.1
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
