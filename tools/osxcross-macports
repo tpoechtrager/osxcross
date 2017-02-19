@@ -81,9 +81,8 @@ case $MACOSX_DEPLOYMENT_TARGET in
   10.8*  ) OSXVERSION="darwin_12" ;;
   10.9*  ) OSXVERSION="darwin_13" ;;
   10.10* ) OSXVERSION="darwin_14" ;;
-  # "Downgrade" 10.11 to 10.10 until
-  # there are packages for 10.11
-  10.11* ) OSXVERSION="darwin_14" ;;
+  10.11* ) OSXVERSION="darwin_15" ;;
+  10.12* ) OSXVERSION="darwin_16" ;;
        * ) unsupportedDepTarget ;;
 esac
 
@@ -307,7 +306,7 @@ installPkg()
   LASTPKGNAME=$pkgname
 
   if [ $(pkgInstalled $pkgname) -eq 1 ]; then
-    continue
+    return
   fi
 
   echo "searching package $pkgname ..."
@@ -348,8 +347,8 @@ installPkg()
 
   if [ -d opt/local ]; then
     verboseMsg " fixing permissions ..."
-    find opt/local -type d -exec chmod 770 {} \;
-    find opt/local -type f -exec chmod 660 {} \;
+    find opt/local -type d -exec chmod 755 {} \;
+    find opt/local -type f -exec chmod 644 {} \;
     if [ -d opt/local/lib ]; then
       if [ -n "$STATIC" ]; then
         verboseMsg " "
@@ -358,6 +357,9 @@ installPkg()
       else
         find opt/local/lib -type f -name "*.dylib" -exec chmod +x {} \;
       fi
+    fi
+    if [ -d opt/local/bin ]; then
+      find opt/local/bin -type f -exec chmod +x {} \;
     fi
     set +e
     cp -r opt $INSTALL
