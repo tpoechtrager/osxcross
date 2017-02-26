@@ -110,8 +110,15 @@ the build:
 
 (This will search 'tarballs' for your SDK and then build in its own directory.)
 
-**Once this is done:** add `<path>/target/bin` to your PATH variable so that
-you can invoke the cross-compiler.
+This installs the toolchain into <path>/target.  If you want to install
+somewhere else, set the `TARGET_DIR` variable, for example:
+
+```shell
+    TARGET_DIR=/opt/osxcross ./build.sh
+```
+
+**Once this is done:** add `<path>/target/bin` (or `$TARGET_DIR/bin`) to your
+PATH variable so that you can invoke the cross-compiler.
 
 That's it. See usage examples below.
 

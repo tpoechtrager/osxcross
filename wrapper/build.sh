@@ -7,7 +7,7 @@ popd &>/dev/null
 
 set +e
 if [ -z "$OSXCROSS_VERSION" ]; then
-  eval $(../target/bin/osxcross-conf 2>/dev/null)
+  eval $("$TARGET_DIR/bin/osxcross-conf" 2>/dev/null)
 
   if [ -n "$OSXCROSS_SDK_VERSION" ] &&
      [ $(osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8) -eq 1 ]; then
@@ -107,7 +107,7 @@ fi
 
 function compile_wrapper()
 {
-  mkdir -p ../target ../target/bin
+  mkdir -p "$TARGET_DIR" "$TARGET_DIR/bin"
   export PLATFORM
   export CXX
 
@@ -125,7 +125,7 @@ fi
 
 verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
 
-pushd "../target/bin" &>/dev/null
+pushd "$TARGET_DIR/bin" &>/dev/null
 
 if [ $TARGETCOMPILER = "clang" ]; then
   create_wrapper_link clang 2
