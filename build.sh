@@ -206,8 +206,14 @@ if [ $NEED_XAR -ne 0 ]; then
 extract $TARBALL_DIR/xar*.tar.gz 2
 
 pushd xar* &>/dev/null
-[ $PLATFORM == "NetBSD" ] && patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
-CFLAGS+=" -w" ./configure --prefix=$TARGET_DIR
+if [ $PLATFORM == "NetBSD" ]; then
+  patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
+fi
+patch -p0 < $PATCH_DIR/xar-ext2.patch
+# https://github.com/tpoechtrager/osxcross/issues/109
+ac_cv_lib_crypto_OpenSSL_add_all_ciphers=yes \
+CFLAGS+=" -w" \
+  ./configure --prefix=$TARGET_DIR
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
 popd &>/dev/null
