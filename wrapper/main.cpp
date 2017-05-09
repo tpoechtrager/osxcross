@@ -167,6 +167,11 @@ bool usegcclibstdcxx(Target &target, const char *, const char *, char **) {
   return true;
 }
 
+bool compilerpath(Target &target, const char *, const char *path, char **) {
+  target.compilerpath = path;
+  return true;
+}
+
 bool runprog(Target &target, const char *, const char *progname, char **cargs) {
   auto *prog = program::getprog(progname);
 
@@ -258,6 +263,7 @@ constexpr struct Opt {
   {"-icxx-isystem", checkincludepath, true, true},
   {"-cxx-isystem", checkincludepath, true, true},
   {"-I", checkincludepath, true, true},
+  {"-foc-compiler-path", compilerpath, true, false, "="} // sets a custom path for the compiler
 };
 
 bool parse(int argc, char **argv, Target &target) {

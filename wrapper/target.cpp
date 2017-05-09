@@ -289,10 +289,15 @@ void Target::setCompilerPath() {
     compilerexecname += "-";
     compilerexecname += compilername;
   } else {
-    if (!realPath(compilername.c_str(), compilerpath, ignoreCCACHE))
-      compilerpath = compilername;
+    if (!compilerpath.empty()) {
+      compilerpath += "/";
+      compilerpath += compilername;
+    } else {
+      if (!realPath(compilername.c_str(), compilerpath, ignoreCCACHE))
+        compilerpath = compilername;
 
-    compilerexecname += compilername;
+      compilerexecname += compilername;
+    }
   }
 }
 
