@@ -409,6 +409,10 @@ do {                                                                           \
   TRYDIR2("/../include/clang");
   TRYDIR2("/usr/include/clang");
 
+  if (!intrinsicpath.empty()) {
+    TRYDIR2(intrinsicpath);
+  }
+
   return false;
 #undef TRYDIR
 #undef TRYDIR2
