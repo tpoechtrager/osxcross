@@ -289,14 +289,7 @@ bool parse(int argc, char **argv, Target &target) {
     char *arg = argv[i];
 
     if (*arg != '-') {
-      // Check if the argument has spaces, we need to add back the quotes if
-      // that's the case
-      std::string argument = arg;
-      if (argument.find_first_of("\t\n ") != std::string::npos) {
-        argument = "\"" + argument + "\"";
-      }
-
-      target.args.push_back(argument);
+      target.args.push_back(arg);
       continue;
     }
 
