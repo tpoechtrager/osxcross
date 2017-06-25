@@ -167,6 +167,16 @@ bool usegcclibstdcxx(Target &target, const char *, const char *, char **) {
   return true;
 }
 
+bool compilerpath(Target &target, const char *, const char *path, char **) {
+  target.compilerpath = path;
+  return true;
+}
+
+bool intrinsicpath(Target &target, const char *, const char *path, char **) {
+  target.intrinsicpath = path;
+  return true;
+}
+
 bool runprog(Target &target, const char *, const char *progname, char **cargs) {
   auto *prog = program::getprog(progname);
 
@@ -258,6 +268,13 @@ constexpr struct Opt {
   {"-icxx-isystem", checkincludepath, true, true},
   {"-cxx-isystem", checkincludepath, true, true},
   {"-I", checkincludepath, true, true},
+
+  // sets a custom path for the compiler
+  {"-foc-compiler-path", compilerpath, true, false, "="},
+
+  // specifies an additional directory to search when looking for clang's
+  // intrinsic paths
+  {"-foc-intrinsic-path", intrinsicpath, true, false, "="}
 };
 
 bool parse(int argc, char **argv, Target &target) {

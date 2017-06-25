@@ -289,10 +289,15 @@ void Target::setCompilerPath() {
     compilerexecname += "-";
     compilerexecname += compilername;
   } else {
-    if (!realPath(compilername.c_str(), compilerpath, ignoreCCACHE))
-      compilerpath = compilername;
+    if (!compilerpath.empty()) {
+      compilerpath += "/";
+      compilerpath += compilername;
+    } else {
+      if (!realPath(compilername.c_str(), compilerpath, ignoreCCACHE))
+        compilerpath = compilername;
 
-    compilerexecname += compilername;
+      compilerexecname += compilername;
+    }
   }
 }
 
@@ -403,6 +408,10 @@ do {                                                                           \
 
   TRYDIR2("/../include/clang");
   TRYDIR2("/usr/include/clang");
+
+  if (!intrinsicpath.empty()) {
+    TRYDIR2(intrinsicpath);
+  }
 
   return false;
 #undef TRYDIR

@@ -149,6 +149,7 @@ struct Target {
   string_vector args;
   const char *language;
   char execpath[PATH_MAX + 1];
+  std::string intrinsicpath;
 };
 
 } // namespace target
