@@ -52,8 +52,9 @@ case $CLANG_VERSION in
   3.8*) BRANCH=release_38; USE_CMAKE=1; ;;
   3.9*) BRANCH=release_39; USE_CMAKE=1; ;;
   4.0*) BRANCH=release_40; USE_CMAKE=1; ;;
-  5.0*) BRANCH=master; USE_CMAKE=1; ;;
-  * ) echo "Unsupported Clang version, must be >= 3.2 and <= 4.0" 1>&2; exit 1;
+  5.0*) BRANCH=release_50; USE_CMAKE=1; ;;
+  6.0*) BRANCH=master; USE_CMAKE=1; ;;
+  * ) echo "Unsupported Clang version, must be >= 3.2 and <= 6.0" 1>&2; exit 1;
 esac
 
 if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
@@ -111,6 +112,9 @@ if [ $USE_CMAKE -eq 1 ]; then
 
   $SED -i "s/COMMAND ld /COMMAND xcrun ld /g" \
     cmake/Modules/CompilerRTDarwinUtils.cmake
+
+  $SED -i "s/COMMAND codesign /COMMAND true /g" \
+    cmake/Modules/AddCompilerRT.cmake
 
   mkdir build
   pushd build &>/dev/null
