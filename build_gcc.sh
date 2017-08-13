@@ -42,16 +42,16 @@ if [ ! -f "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
-  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
 else
-  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
 fi
 popd &>/dev/null
 
 echo "cleaning up ..."
 rm -rf gcc* 2>/dev/null
 
-extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2" 1
+extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.gz" 1
 echo ""
 
 pushd gcc*$GCC_VERSION* &>/dev/null
@@ -65,11 +65,15 @@ if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) == 1 ] &&
   patch -p1 < $PATCH_DIR/gcc-pr66035.patch
 fi
 
+if [ $(osxcross-cmp $GCC_VERSION '>=' 6.1.0) == 1 ] &&
+   [ $(osxcross-cmp $GCC_VERSION '<=' 6.3.0) == 1 ]; then
+  # https://gcc.gnu.org/ml/gcc-patches/2016-09/msg00129.html
+  patch -p1 < $PATCH_DIR/gcc-6-buildfix.patch
+fi
+
 if [ $(osxcross-cmp $GCC_VERSION '==' 6.3.0) == 1 ]; then
-    # https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/darwin-driver.c?r1=244010&r2=244009&pathrev=244010
-    patch -p1 < $PATCH_DIR/darwin-driver.c.patch
-    # https://gcc.gnu.org/ml/gcc-patches/2016-09/msg00129.html
-    patch -p1 < $PATCH_DIR/gcc-6.3.0-buildfix.patch
+  # https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/darwin-driver.c?r1=244010&r2=244009&pathrev=244010
+  patch -p1 < $PATCH_DIR/darwin-driver.c.patch
 fi
 
 mkdir -p build
