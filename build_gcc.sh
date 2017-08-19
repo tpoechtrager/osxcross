@@ -42,9 +42,9 @@ if [ ! -f "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
-  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
+  wget -nd -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
 else
-  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
+  wget -nd -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
 fi
 popd &>/dev/null
 
