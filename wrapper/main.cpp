@@ -474,8 +474,20 @@ int main(int argc, char **argv) {
   if (char *p = getenv("OSXCROSS_UNIT_TEST")) {
     unittest = atoi(p);
 
-    if ((p = getenv("OSXCROSS_PROG_NAME")))
+    if ((p = getenv("OSXCROSS_PROG_NAME"))){
       argv[0] = p;
+    }
+  }
+
+  // workaround for projects using distcc + pump, which cleans the environment and dereferences symlinks to the compiler
+  // the application name may be given as argv[1] (first argument), in which case $0 ends with "wrapper", as we check here
+  const int argv0_len( strlen(argv[0]));
+  if( 
+    ( argv0_len > 8 && strstr( argv[0] + argv0_len - 8, "wrapper"))
+    || ( argv0_len > 11 && strstr( argv[0] + argv0_len - 11, "wrapper.exe"))
+  ) {
+    --argc;
+    argv += 1;
   }
 
   if (!detectTarget(argc, argv, target)) {

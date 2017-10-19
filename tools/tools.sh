@@ -6,7 +6,7 @@ BASE_DIR=$PWD
 
 TARBALL_DIR=$BASE_DIR/tarballs
 BUILD_DIR=$BASE_DIR/build
-TARGET_DIR=$BASE_DIR/target
+TARGET_DIR=${TARGET_DIR:-$BASE_DIR/target}
 PATCH_DIR=$BASE_DIR/patches
 SDK_DIR=$TARGET_DIR/SDK
 
@@ -161,6 +161,16 @@ function create_symlink()
   ln -sf $1 $2
 }
 
+function create_wrapper_script()
+{
+  FP=$1
+  if [[ -e $TARGET_DIR/bin/$1 ]]; then
+    FP=$TARGET_DIR/bin/$1
+  fi
+  echo -e "#!/bin/bash\n#unfortunately necessary for pump, which discards user's LD_LIBRARY_PATH\nexport LD_LIBRARY_PATH=\${LD_LIBRARY_PATH:=$LD_LIBRARY_PATH}\n$FP "`basename $2`' "$@"' > $TARGET_DIR/bin/$2
+  chmod a+x $TARGET_DIR/bin/$2
+}
+
 fi
 
 function verbose_cmd()
@@ -171,7 +181,7 @@ function verbose_cmd()
 
 function test_compiler()
 {
-  echo -ne "testing $1 ... "
+  echo -ne "testing $1 $2 -O2 -Wall -o test "`which $1`
   $1 $2 -O2 -Wall -o test
   rm test
   echo "works"

@@ -7,7 +7,7 @@ popd &>/dev/null
 
 set +e
 if [ -z "$OSXCROSS_VERSION" ]; then
-  eval $(../target/bin/osxcross-conf 2>/dev/null)
+  eval $($TARGET_DIR/bin/osxcross-conf 2>/dev/null)
 
   if [ -n "$OSXCROSS_SDK_VERSION" ] &&
      [ $(osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8) -eq 1 ]; then
@@ -40,31 +40,31 @@ function create_wrapper_link
   #  -> x86_64h-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "${1}${EXESUFFIX}"
   fi
 
-  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+  verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
     "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
-  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+  verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
     "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
 
   if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
      ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
   fi
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "o32-${1}${EXESUFFIX}"
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+    verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
       "o64-${1}${EXESUFFIX}"
 
     if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
        ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
+      verbose_cmd create_wrapper_script "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
         "o64h-${1}${EXESUFFIX}"
     fi
   fi
@@ -107,7 +107,7 @@ fi
 
 function compile_wrapper()
 {
-  mkdir -p ../target ../target/bin
+  mkdir -p $TARGET_DIR/bin
   export PLATFORM
   export CXX
 
@@ -125,7 +125,7 @@ fi
 
 verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
 
-pushd "../target/bin" &>/dev/null
+pushd "$TARGET_DIR/bin" &>/dev/null
 
 if [ $TARGETCOMPILER = "clang" ]; then
   create_wrapper_link clang 2
