@@ -3,7 +3,7 @@
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
 The goal of OSXCross is to provide a well working OS X cross toolchain for
-Linux, *BSD, and Cygwin.
+Linux, \*BSD, and Cygwin.
 
 ### HOW DOES IT WORK? ###
 
