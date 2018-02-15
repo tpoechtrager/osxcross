@@ -794,17 +794,31 @@ bool Target::setup() {
     }
   }
 
-  if (isClang() && clangversion >= ClangVersion(3, 8)) {
-    //
-    // Silence:
-    // warning: libLTO.dylib relative to clang installed dir not found;
-    //          using 'ld' default search path instead
-    //
-    // '-flto' will of course work nevertheless, it's just a buggy
-    // cross-compilation warning.
-    //
-    if (wliblto == -1)
-      fargs.push_back("-Wno-liblto");
+  if (isClang()) {
+    if (clangversion >= ClangVersion(3, 8)) {
+      //
+      // Silence:
+      // warning: libLTO.dylib relative to clang installed dir not found;
+      //          using 'ld' default search path instead
+      //
+      // '-flto' will of course work nevertheless, it's just a buggy
+      // cross-compilation warning.
+      //
+      if (wliblto == -1)
+        fargs.push_back("-Wno-liblto");
+    }
+  } else if (isGCC()) {
+    if (args.empty() || (args.size() == 1 && args[0] == "-v")) {
+      //
+      // HACK:
+      // Discard all arguments besides the first one
+      // (which is <arch>-apple-darwinXX-gcc) to fix the issue
+      // described in #135.
+      //
+
+      while (fargs.size() > 1)
+        fargs.erase(fargs.end() - 1);
+    }
   }
 
   return true;

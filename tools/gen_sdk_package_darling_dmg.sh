@@ -57,7 +57,7 @@ if [ ! -f $TARGET_DIR/SDK/tools/bin/darling-dmg ]; then
   rm -f have_darling_dmg
 fi
 
-DARLING_DMG_REV="b7ce87bfe59c2ed758165c8650402f6d4c84d184"
+DARLING_DMG_REV="4e3a2ede86d4e3c63bcc97d7280dd8613d70cde2"
 
 if [ ! -f "have_darling_dmg_$DARLING_DMG_REV" ]; then
 
