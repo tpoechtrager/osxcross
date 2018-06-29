@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Mount a Xcode .dmg (using fuse) and run gen_sdk_package.sh.
+# Mount an Xcode .dmg (using fuse) and run gen_sdk_package.sh.
 #
 # Works up to Xcode 7.3
 #
@@ -57,7 +57,7 @@ if [ ! -f $TARGET_DIR/SDK/tools/bin/darling-dmg ]; then
   rm -f have_darling_dmg
 fi
 
-DARLING_DMG_REV="4e3a2ede86d4e3c63bcc97d7280dd8613d70cde2"
+DARLING_DMG_REV="991a1c19d67e30ad1099fc871c4f9e702dd4d489"
 
 if [ ! -f "have_darling_dmg_$DARLING_DMG_REV" ]; then
 
