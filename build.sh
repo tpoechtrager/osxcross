@@ -325,6 +325,18 @@ elif [ $(osxcross-cmp $OSX_VERSION_MIN "<" 10.4) -eq 1  ]; then
   exit 1
 fi
 
+# CMAKE
+
+echo "installing CMake"
+
+cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
+cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
+chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
+create_symlink osxcross-cmake "$TARGET_DIR/bin/i386-apple-$TARGET-cmake"
+create_symlink osxcross-cmake "$TARGET_DIR/bin/x86_64-apple-$TARGET-cmake"
+
+# CMAKE END
+
 unset MACOSX_DEPLOYMENT_TARGET
 
 test_compiler o32-clang $BASE_DIR/oclang/test.c
