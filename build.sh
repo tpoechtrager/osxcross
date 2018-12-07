@@ -163,7 +163,8 @@ echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 [ -z "$USE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
-./configure $CONFFLAGS
+# https://github.com/tpoechtrager/osxcross/issues/156
+CXX="$CXX -DNDEBUG" ./configure $CONFFLAGS
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
 popd &>/dev/null
