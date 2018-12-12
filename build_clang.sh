@@ -99,7 +99,7 @@ pushd $TARBALL_DIR &>/dev/null
 
 if [ -z "$PKGCOMPRESSOR" ]; then
   PKGCOMPRESSOR="tar.xz"
-  [ $CLANG_VERSION == "3.4" ] && PKGCOMPRESSOR="tar.gz"
+  [ $CLANG_VERSION == "3.4.2" ] && PKGCOMPRESSOR="tar.gz"
 fi
 
 LLVM_PKG="$MIRROR/${CLANG_VERSION}/"
