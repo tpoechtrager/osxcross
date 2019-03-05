@@ -44,6 +44,11 @@ get_debian_deps()
   libssl-dev bash patch make  tar xz-utils bzip2 gzip sed cpio libbz2-dev
 }
 
+get_arch_deps()
+{
+ pacman -S clang llvm libxml2 openssl bash patch make tar bzip2 gzip sed cpio xz
+}
+
 unknown()
 {
  echo "Unknown system type. Please get dependencies by hand "
@@ -67,6 +72,8 @@ if [ -e /etc/issue ]; then
   get_fedora_deps
  elif [ "`grep -i mageia /etc/issue`" ]; then
   get_mageia_deps
+ elif [ "`grep -i arch /etc/issue`" ]; then
+  get_arch_deps
  else
   unknown
  fi
