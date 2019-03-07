@@ -4,6 +4,8 @@
 # this assumes you are running as root or are using sudo
 #
 
+USER="$(stat --format=%U .)"
+
 get_fedora_deps()
 {
  yum install clang llvm-devel libxml2-devel libuuid-devel openssl-devel \
@@ -44,6 +46,11 @@ get_debian_deps()
   libssl-dev bash patch make  tar xz-utils bzip2 gzip sed cpio libbz2-dev
 }
 
+get_arch_deps()
+{
+ pacman -S clang llvm libxml2 openssl bash patch make tar bzip2 gzip sed cpio xz
+}
+
 unknown()
 {
  echo "Unknown system type. Please get dependencies by hand "
@@ -67,6 +74,11 @@ if [ -e /etc/issue ]; then
   get_fedora_deps
  elif [ "`grep -i mageia /etc/issue`" ]; then
   get_mageia_deps
+ elif [ "`grep -i arch /etc/issue`" ]; then
+  echo "Running pacman to install dependencies..."
+  get_arch_deps
+  echo "Downloading and Installing uuid..."
+  sudo -u $USER -- sh -c 'git clone https://aur.archlinux.org/uuid.git /tmp/uuid; pushd /tmp/uuid; makepkg -srci; popd; rm -rf /tmp/uuid'
  else
   unknown
  fi
