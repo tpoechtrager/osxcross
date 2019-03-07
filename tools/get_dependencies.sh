@@ -4,6 +4,8 @@
 # this assumes you are running as root or are using sudo
 #
 
+USER="$(cat /etc/passwd | grep '/home' | cut -d: -f1 | head -1)"
+
 get_fedora_deps()
 {
  yum install clang llvm-devel libxml2-devel libuuid-devel openssl-devel \
@@ -73,7 +75,10 @@ if [ -e /etc/issue ]; then
  elif [ "`grep -i mageia /etc/issue`" ]; then
   get_mageia_deps
  elif [ "`grep -i arch /etc/issue`" ]; then
+  echo "Running pacman to install dependencies..."
   get_arch_deps
+  echo "Downloading and Installing uuid..."
+  sudo -u $USER -- sh -c 'git clone https://aur.archlinux.org/uuid.git /tmp/uuid; pushd /tmp/uuid; makepkg -srci; popd; rm -rf /tmp/uuid'
  else
   unknown
  fi
