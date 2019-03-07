@@ -4,7 +4,7 @@
 # this assumes you are running as root or are using sudo
 #
 
-USER="$(env | grep 'USER' | cut -d '=' -f2 | head -1)"
+USER="$(stat --format=%U .)"
 
 get_fedora_deps()
 {
