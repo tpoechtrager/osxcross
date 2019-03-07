@@ -4,7 +4,7 @@
 # this assumes you are running as root or are using sudo
 #
 
-USER="$(cat /etc/passwd | grep '/home' | cut -d: -f1 | head -1)"
+USER="$(env | grep 'USER' | cut -d '=' -f2 | head -1)"
 
 get_fedora_deps()
 {
