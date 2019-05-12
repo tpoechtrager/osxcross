@@ -262,7 +262,11 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  if [ $ARCH != "i386-x86_64" ]; then
+    local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | grep --invert-match universal | uniq | tail -n1)
+  else
+    local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  fi
   if [ -z "$pkg" ]; then
     pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
   fi
