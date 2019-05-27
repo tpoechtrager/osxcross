@@ -48,9 +48,9 @@ pushd p7zip &>/dev/null
 if [ -n "$CC" ] && [ -n "$CXX" ]; then
   [[ $CC == *clang* ]] && CC="$CC -Qunused-arguments"
   [[ $CXX == *clang* ]] && CXX="$CXX -Qunused-arguments"
-  $MAKE 7z -j $JOBS CC="$CC" CXX="$CXX"
+  $MAKE 7z -j $JOBS CC="$CC" CXX="$CXX -std=gnu++03"
 else
-  $MAKE 7z -j $JOBS
+  $MAKE 7z -j $JOBS CXX="c++ -std=gnu++03"
 fi
 $MAKE install DEST_HOME=$TARGET_DIR/SDK/tools
 find $TARGET_DIR/SDK/tools/share -type f -exec chmod 0664 {} \;

@@ -93,7 +93,10 @@ case $SDK_VERSION in
   10.9*) TARGET=darwin13; X86_64H_SUPPORTED=1; ;;
   10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; ;;
   10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; ;;
-  *) echo "Invalid SDK Version" && exit 1 ;;
+  10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; ;;
+  10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; ;;
+  10.14*) TARGET=darwin18; X86_64H_SUPPORTED=1; ;;
+*) echo "Invalid SDK Version" && exit 1 ;;
 esac
 
 export TARGET
@@ -160,7 +163,8 @@ echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 [ -z "$USE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
-./configure $CONFFLAGS
+# https://github.com/tpoechtrager/osxcross/issues/156
+CXX="$CXX -DNDEBUG" ./configure $CONFFLAGS
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
 popd &>/dev/null
@@ -321,6 +325,18 @@ elif [ $(osxcross-cmp $OSX_VERSION_MIN "<" 10.4) -eq 1  ]; then
   trap "" EXIT
   exit 1
 fi
+
+# CMAKE
+
+echo "installing CMake"
+
+cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
+cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
+chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
+create_symlink osxcross-cmake "$TARGET_DIR/bin/i386-apple-$TARGET-cmake"
+create_symlink osxcross-cmake "$TARGET_DIR/bin/x86_64-apple-$TARGET-cmake"
+
+# CMAKE END
 
 unset MACOSX_DEPLOYMENT_TARGET
 

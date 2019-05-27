@@ -40,8 +40,7 @@ if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
     {
       echo "Your GCC installation is too old to build recent clang releases."
       echo "Building clang 3.4.2 instead."
-      CLANG_VERSION=3.4
-      CLANG_VERSION_PATCH=.2
+      CLANG_VERSION=3.4.2
     }
   } || \
   {
@@ -56,7 +55,7 @@ fi
 
 source $BASE_DIR/tools/trap_exit.sh
 
-MIRROR="http://llvm.org"
+MIRROR="http://releases.llvm.org"
 
 if [ -z "$CLANG_VERSION" ]; then
   CLANG_VERSION=3.9.1
@@ -100,13 +99,13 @@ pushd $TARBALL_DIR &>/dev/null
 
 if [ -z "$PKGCOMPRESSOR" ]; then
   PKGCOMPRESSOR="tar.xz"
-  [ $CLANG_VERSION == "3.4" ] && PKGCOMPRESSOR="tar.gz"
+  [ $CLANG_VERSION == "3.4.2" ] && PKGCOMPRESSOR="tar.gz"
 fi
 
-LLVM_PKG="$MIRROR/releases/${CLANG_VERSION}/"
+LLVM_PKG="$MIRROR/${CLANG_VERSION}/"
 LLVM_PKG+="llvm-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
  
-CLANG_PKG="$MIRROR/releases/${CLANG_VERSION}/"
+CLANG_PKG="$MIRROR/${CLANG_VERSION}/"
 CLANG_PKG+="cfe-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
 
 wget -c $LLVM_PKG

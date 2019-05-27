@@ -548,6 +548,8 @@ main()
         exit
       elif [ $opt == "-32" -o $opt == "--i386" ]; then
         ARCH="i386"
+      elif [ $opt == "-universal" -o $opt == "--universal" ]; then
+        ARCH="i386-x86_64"
       elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
         selectMirror
         exit
