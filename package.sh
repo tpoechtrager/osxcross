@@ -39,7 +39,6 @@ else
 
   cp -r $BASEDIR/target/* .
   cp $BASEDIR/build/cctools*/cctools/APPLE_LICENSE CCTOOLS.LICENSE
-  cp $BASEDIR/oclang/find_intrinsic_headers.sh bin/osxcross-fix-intrinsic-headers
 
   READMEINSTALL="README_INSTALL"
 
