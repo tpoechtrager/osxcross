@@ -40,55 +40,36 @@ if [ ! -f $TARGET_DIR/SDK/tools/bin/7z ]; then
   rm -f have_p7zip
 fi
 
-if [ ! -f "have_p7zip" ]; then
 
-rm -rf p7zip*
-git clone https://github.com/tpoechtrager/p7zip.git
-pushd p7zip &>/dev/null
-if [ -n "$CC" ] && [ -n "$CXX" ]; then
-  [[ $CC == *clang* ]] && CC="$CC -Qunused-arguments"
-  [[ $CXX == *clang* ]] && CXX="$CXX -Qunused-arguments"
-  $MAKE 7z -j $JOBS CC="$CC" CXX="$CXX -std=gnu++03"
-else
-  $MAKE 7z -j $JOBS CXX="c++ -std=gnu++03"
+get_sources https://github.com/tpoechtrager/p7zip.git master
+
+if [ $f_res -eq 1 ]; then
+  pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+
+  if [ -n "$CC" ] && [ -n "$CXX" ]; then
+    [[ $CC == *clang* ]] && CC="$CC -Qunused-arguments"
+    [[ $CXX == *clang* ]] && CXX="$CXX -Qunused-arguments"
+    $MAKE 7z -j $JOBS CC="$CC" CXX="$CXX -std=gnu++98"
+  else
+    $MAKE 7z -j $JOBS CXX="c++ -std=gnu++98"
+  fi
+
+  $MAKE install DEST_HOME=$TARGET_DIR_SDK_TOOLS
+  find $TARGET_DIR_SDK_TOOLS/share -type f -exec chmod 0664 {} \;
+  find $TARGET_DIR_SDK_TOOLS/share -type d -exec chmod 0775 {} \;
+  popd &>/dev/null
+  build_success
 fi
-$MAKE install DEST_HOME=$TARGET_DIR/SDK/tools
-find $TARGET_DIR/SDK/tools/share -type f -exec chmod 0664 {} \;
-find $TARGET_DIR/SDK/tools/share -type d -exec chmod 0775 {} \;
+
 popd &>/dev/null
 
-touch "have_p7zip"
+create_tmp_dir
 
-fi
-
-popd &>/dev/null
-
-#/tmp is prone to run out of space
-#TMP=$(mktemp -d /tmp/XXXXXXXXX)
-
-for i in {1..100}; do
-  TMP="tmp_$RANDOM"
-  [ -e $TMP ] && continue
-  mkdir $TMP && break
-done
-
-if [ ! -d $TMP ]; then
-  echo "cannot create $PWD/$TMP directory" 1>&2
-  exit 1
-fi
-
-function cleanup() {
-  popd &>/dev/null || true
-  rm -rf $TMP
-}
-
-trap cleanup EXIT
-
-pushd $TMP &>/dev/null
+pushd $TMP_DIR &>/dev/null
 
 set +e
 
-$TARGET_DIR/SDK/tools/bin/7z x \
+$TARGET_DIR_SDK_TOOLS/bin/7z x \
   $XCODEDMG \
   "*/Xcode*.app/Contents/Developer/Platforms/MacOSX.platform" \
   "*/Xcode*.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain"
@@ -96,7 +77,7 @@ $TARGET_DIR/SDK/tools/bin/7z x \
 [ $? -ne 0 -a $? -ne 2 ] && exit 1
 
 if [ -z "$(ls -A)" ]; then
-  $TARGET_DIR/SDK/tools/bin/7z x $XCODEDMG "*/Packages/MacOSX*.pkg"
+  $TARGET_DIR_SDK_TOOLS/bin/7z x $XCODEDMG "*/Packages/MacOSX*.pkg"
   [ $? -ne 0 -a $? -ne 2 ] && exit 1
 fi
 
@@ -106,5 +87,5 @@ set -e
 
 popd &>/dev/null
 
-XCODEDIR="$TMP/$(ls $TMP | grep "code" | head -n1)" \
+XCODEDIR="$TMP_DIR/$(ls $TMP_DIR | grep "code" | head -n1)" \
   ./tools/gen_sdk_package.sh

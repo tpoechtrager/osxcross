@@ -61,9 +61,10 @@ int dsymutil(int argc, char **argv, Target &target) {
     debug = 1;
   } else {
     if (!realPath("osxcross-llvm-dsymutil", dsymutil) &&
-        !realPath("llvm-dsymutil", dsymutil)) {
+        !realPath("llvm-dsymutil", dsymutil) &&
+        !realPath("dsymutil", dsymutil)) {
       if (debug)
-        dbg << "dsymutil: cannot find [osxcross-]llvm-dsymutil in PATH"
+        dbg << "dsymutil: cannot find [osxcross-][llvm-]dsymutil in PATH"
             << dbg.endl();
       return 0;
     }
@@ -89,9 +90,7 @@ int dsymutil(int argc, char **argv, Target &target) {
   }
 
   LLVMDsymutilVersionStr += constexprStrLen("LLVM version ");
-
   LLVMDsymutilVersion = parseLLVMVersion(LLVMDsymutilVersionStr);
-
   constexpr LLVMVersion RequiredLLVMDsymutilVersion(3, 8);
 
   if (LLVMDsymutilVersion < RequiredLLVMDsymutilVersion) {

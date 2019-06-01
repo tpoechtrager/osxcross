@@ -24,14 +24,8 @@ fi
 
 mkdir -p $BUILD_DIR
 
-require git
-require cmake
-require $MAKE
 require modinfo
 require fusermount
-
-[ -n "$CC" ] && require $CC
-[ -n "$CXX" ] && require $CXX
 
 set +e
 
@@ -53,41 +47,34 @@ set -e
 
 pushd $BUILD_DIR &>/dev/null
 
-if [ ! -f $TARGET_DIR/SDK/tools/bin/darling-dmg ]; then
-  rm -f have_darling_dmg
-fi
+FULL_CLONE=1 \
+  get_sources https://github.com/LubosD/darling-dmg.git master
 
-DARLING_DMG_REV="991a1c19d67e30ad1099fc871c4f9e702dd4d489"
-
-if [ ! -f "have_darling_dmg_$DARLING_DMG_REV" ]; then
-
-rm -rf darling-dmg*
-git clone https://github.com/LubosD/darling-dmg.git
-pushd darling-dmg &>/dev/null
-git reset --hard $DARLING_DMG_REV
-mkdir -p build
-pushd build &>/dev/null
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$TARGET_DIR/SDK/tools
-$MAKE -j $JOBS install
-popd &>/dev/null
-popd &>/dev/null
-
-touch "have_darling_dmg_$DARLING_DMG_REV"
-
+if [ $f_res -eq 1 ]; then
+  pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+  git reset --hard 5f64bc9a3795e0a1c307e9beb099f9035fdd864f
+  mkdir -p build
+  pushd build &>/dev/null
+  $CMAKE .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$TARGET_DIR_SDK_TOOLS
+  $MAKE -j $JOBS install
+  popd &>/dev/null
+  popd &>/dev/null
+  build_success
 fi
 
 popd &>/dev/null # build dir
 
 TMP=$(mktemp -d /tmp/XXXXXXXXX)
 
-function cleanup() {
+function cleanup()
+{
   fusermount -u $TMP || true
   rm -rf $TMP
 }
 
 trap cleanup EXIT
 
-LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/SDK/tools/lib \
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR_SDK_TOOLS/lib \
   $TARGET_DIR/SDK/tools/bin/darling-dmg $1 $TMP
 
 XCODEDIR=$TMP ./tools/gen_sdk_package.sh

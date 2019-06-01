@@ -1,0 +1,19 @@
+--- a/usr/include/c++/v1/__hash_table	2019-01-10 10:05:42.219730024 +0000
++++ b/usr/include/c++/v1/__hash_table	2019-01-10 10:09:08.881538038 +0000
+@@ -1164,6 +1164,7 @@
+     _NOEXCEPT_(
+         is_nothrow_default_constructible<__bucket_list>::value &&
+         is_nothrow_default_constructible<__first_node>::value &&
++        is_nothrow_default_constructible<__node_allocator>::value &&
+         is_nothrow_default_constructible<hasher>::value &&
+         is_nothrow_default_constructible<key_equal>::value)
+     : __p2_(0),
+@@ -1232,6 +1233,7 @@
+         _NOEXCEPT_(
+             is_nothrow_move_constructible<__bucket_list>::value &&
+             is_nothrow_move_constructible<__first_node>::value &&
++            is_nothrow_move_constructible<__node_allocator>::value &&
+             is_nothrow_move_constructible<hasher>::value &&
+             is_nothrow_move_constructible<key_equal>::value)
+     : __bucket_list_(_VSTD::move(__u.__bucket_list_)),
+

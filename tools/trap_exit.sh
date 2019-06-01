@@ -18,12 +18,10 @@ function _exit()
     echo ""
     echo "exiting with abnormal exit code ($EC)"
     test -n "$OCDEBUG" || echo "run 'OCDEBUG=1 ./$SCRIPT' to enable debug messages"
-    declare -f -F remove_locks &>/dev/null && \
-    {
-      echo "removing stale locks..."
-      remove_locks
-    }
-    echo "if it is happening the first time, then just re-run the script"
+    if [ -n "$CURRENT_BUILD_PROJECT_NAME" ]; then
+      ## Build failed. Rebuild everything ##
+      rm -f "build/*_built_successfully"
+    fi
     echo ""
     test $SCRIPT = "build.sh" && check_for_bug_1242300
   fi

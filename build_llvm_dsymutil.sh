@@ -16,27 +16,22 @@ require cmake
 
 pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
-if [ ! -e llvm-dsymutil/.clone_complete ]; then
-  rm -rf llvm-dsymutil
-  # Vanilla llvm-dsymutil with a few patches on top for OSXCross
-  git clone https://github.com/tpoechtrager/llvm-dsymutil.git --depth 1
+get_sources https://github.com/tpoechtrager/llvm-dsymutil.git master
+
+if [ $f_res -eq 1 ]; then
+  pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+
+  mkdir build
+  pushd build &>/dev/null
+
+  $CMAKE .. \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64" \
+    -DLLVM_ENABLE_ASSERTIONS=Off
+
+  $MAKE -f tools/dsymutil/Makefile -j$JOBS
+  cp bin/llvm-dsymutil $OSXCROSS_TARGET_DIR/bin/osxcross-llvm-dsymutil
+  echo "installed llvm-dsymutil to $OSXCROSS_TARGET_DIR/bin/osxcross-llvm-dsymutil"
+
+  build_success
 fi
-
-pushd llvm-dsymutil &>/dev/null
-
-git clean -fdx
-touch .clone_complete
-git pull
-
-mkdir build
-pushd build &>/dev/null
-
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64" \
-  -DLLVM_ENABLE_ASSERTIONS=Off
-
-$MAKE -f tools/dsymutil/Makefile -j$JOBS
-cp bin/llvm-dsymutil $OSXCROSS_TARGET_DIR/bin/osxcross-llvm-dsymutil
-
-echo "installed llvm-dsymutil to $OSXCROSS_TARGET_DIR/bin/osxcross-llvm-dsymutil"

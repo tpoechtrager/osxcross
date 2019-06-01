@@ -228,12 +228,13 @@ bool Target::hasLibCXX() const { return getSDKOSNum() >= OSVersion(10, 7); }
 
 bool Target::libCXXIsDefaultCXXLib() const {
   OSVersion OSNum = this->OSNum;
+  OSVersion SDKOSNum = getSDKOSNum();
 
   if (!OSNum.Num())
-    OSNum = getSDKOSNum();
+    OSNum = SDKOSNum;
 
   return stdlib != libstdcxx && hasLibCXX() && !isGCC() &&
-         OSNum >= OSVersion(10, 9);
+         (OSNum >= OSVersion(10, 9) || SDKOSNum >= OSVersion(10, 14));
 }
 
 bool Target::isCXX() {
@@ -506,14 +507,18 @@ bool Target::setup() {
 
   if (!OSNum.Num()) {
     if (haveArch(Arch::x86_64h)) {
-      OSNum = OSVersion(10, 8); // Default to 10.8 for x86_64h
+      // Default to >= 10.8 for x86_64h
+      OSVersion defaultMinTarget = getDefaultMinTarget();
+      std::max(defaultMinTarget, OSVersion(10, 8));
       if (SDKOSNum < OSNum) {
         err << "'" << getArchName(arch) << "' requires Mac OS X SDK "
             << OSNum.shortStr() << " (or later)" << err.endl();
         return false;
       }
     } else if (stdlib == StdLib::libcxx) {
-      OSNum = OSVersion(10, 7); // Default to 10.7 for libc++
+      // Default to >= 10.7 for libc++
+      OSVersion defaultMinTarget = getDefaultMinTarget();
+      OSNum = std::max(defaultMinTarget, OSVersion(10, 7));
     } else {
       OSNum = getDefaultMinTarget();
     }
@@ -547,6 +552,20 @@ bool Target::setup() {
       err << "libc++ requires '-mmacosx-version-min=10.7' (or later)"
           << err.endl();
       return false;
+    }
+  }
+
+  if (SDKOSNum >= OSVersion(10, 14)) {
+    if (!isGCC() && !usegcclibs && stdlib == StdLib::libstdcxx) {
+        err << "Mac OS X SDK '>= 10.14' does not support libstdc++ anymore"
+            << err.endl();
+        return false;
+    }
+
+    if (haveArch(Arch::i386)) {
+        err << "Mac OS X SDK '>= 10.14' does not support i386 anymore"
+            << err.endl();
+        return false;
     }
   }
 
@@ -702,7 +721,10 @@ bool Target::setup() {
       if (!isGCH()) {
         fargs.push_back("-lc");
         fargs.push_back("-lc++");
-        fargs.push_back("-lgcc_s.10.5");
+        if (SDKOSNum <= OSVersion(10, 13)) {
+          // SDK 10.14 does not have -lgcc_s anymore
+          fargs.push_back("-lgcc_s.10.5");
+        }
       }
     } else if (stdlib != StdLib::libcxx && !isGCH() &&
                !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {

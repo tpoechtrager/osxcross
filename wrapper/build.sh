@@ -9,18 +9,33 @@ set +e
 if [ -z "$OSXCROSS_VERSION" ]; then
   eval $(../target/bin/osxcross-conf 2>/dev/null)
 
-  if [ -n "$OSXCROSS_SDK_VERSION" ] &&
-     [ $(osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8) -eq 1 ]; then
-    X86_64H_SUPPORTED=1
+  if [ -n "$OSXCROSS_SDK_VERSION" ]; then
+    if [ -z "$X86_64H_SUPPORTED" ]; then
+      if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION ">=" 10.8) -eq 1 ]; then
+        X86_64H_SUPPORTED=1
+      else
+        X86_64H_SUPPORTED=0
+      fi
+    fi
+    if [ -z "$I386_SUPPORTED" ]; then
+      if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<=" 10.13) -eq 1 ]; then
+        I386_SUPPORTED=1
+      else
+        I386_SUPPORTED=0
+      fi
+    fi
   fi
 fi
 set -e
 
-if [[ $PLATFORM == CYGWIN* ]]; then
-  EXESUFFIX=".exe"
-else
-  EXESUFFIX=""
+if [ -z "$I386_SUPPORTED" ]; then
+  I386_SUPPORTED=1
 fi
+
+if [ -z "$X86_64H_SUPPORTED" ]; then
+  X86_64H_SUPPORTED=0
+fi
+
 
 function create_wrapper_link
 {
@@ -40,32 +55,37 @@ function create_wrapper_link
   #  -> x86_64h-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-      "${1}${EXESUFFIX}"
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+      "${1}"
   fi
 
-  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-    "i386-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+  if [ $I386_SUPPORTED -eq 1 ]; then
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+      "i386-apple-${OSXCROSS_TARGET}-${1}"
+  fi
 
-  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-    "x86_64-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+    "x86_64-apple-${OSXCROSS_TARGET}-${1}"
 
-  if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
+  if [ $X86_64H_SUPPORTED -eq 1 ] &&
      ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-      "x86_64h-apple-${OSXCROSS_TARGET}-${1}${EXESUFFIX}"
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+      "x86_64h-apple-${OSXCROSS_TARGET}-${1}"
   fi
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-      "o32-${1}${EXESUFFIX}"
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-      "o64-${1}${EXESUFFIX}"
+    if [ $I386_SUPPORTED -eq 1 ]; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+        "o32-${1}"
+    fi
 
-    if [ -n "$X86_64H_SUPPORTED" ] && [ $X86_64H_SUPPORTED -eq 1 ] &&
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+      "o64-${1}"
+
+    if [ $X86_64H_SUPPORTED -eq 1 ] &&
        ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper${EXESUFFIX}" \
-        "o64h-${1}${EXESUFFIX}"
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+        "o64h-${1}"
     fi
   fi
 }
@@ -123,7 +143,7 @@ if [ -n "$BWCOMPILEONLY" ]; then
   exit 0
 fi
 
-verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper${EXESUFFIX}"
+verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper"
 
 pushd "../target/bin" &>/dev/null
 

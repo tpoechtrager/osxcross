@@ -3,7 +3,7 @@
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
 The goal of OSXCross is to provide a well working OS X cross toolchain for
-Linux, \*BSD, and Cygwin.
+Linux and FreeBSD.
 
 ### HOW DOES IT WORK? ###
 
@@ -40,28 +40,23 @@ See [README.MACPORTS](README.MACPORTS.md) for more.
 
 ### INSTALLATION: ###
 
-*Windows/Cygwin users should follow [README.CYGWIN](README.CYGWIN.md).*
-
 Move your
 [packaged SDK](https://github.com/tpoechtrager/osxcross#packaging-the-sdk)
 to the tarballs/ directory.
 
 Then ensure you have the following installed on your system:
 
-`Clang 3.2+`, `patch`, `libxml2-devel` (<=10.6 only) and the `bash shell`.
+`Clang 3.4+`, `cmake`, `git`, `patch`, `Python`, `libssl-devel` (openssl)  
+`lzma-devel`, `libxml2-devel`(<=10.6 only) and the `bash shell`.
 
 You can run 'sudo tools/get\_dependencies.sh' to get these (and the
-optional packages) automatically.
+optional packages) automatically. (outdated)
 
 *Optional:*
 
 - `llvm-devel`: For Link Time Optimization support
+- `llvm-devel`: For ld64 `-bitcode_bundle` support
 - `uuid-devel`: For ld64 `-random_uuid` support
-- `llvm-devel` + `xar-devel`: For ld64 `-bitcode_bundle` support
-
-You can find xar [here](https://github.com/mackyle/xar).
-Do not install libxar-dev on Ubuntu, it's a different package.
-
 
 ##### Building Clang #####
 
@@ -159,35 +154,48 @@ use these variants unless you know what you're doing.
 
 ##### Packaging the SDK on Mac OS X: #####
 
-1. [Download [Xcode](https://download.developer.apple.com/Developer_Tools/Xcode_7.3/Xcode_7.3.dmg) \*\*]
+1. [Download [Xcode](https://developer.apple.com/download/more/) \*\*]
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
 3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of
    OSXCross.
 
-\*\* Xcode up to 7.3.x is known to work.
+\*\*  
+Xcode up to 10.2.x is known to work.  
+Use Firefox if you have problems with signing in.
 
-\*\*\* If you get a dialog with a crossed circle, ignore it.  You don't need
-to install Xcode.
+\*\*\*  
+If you get a dialog with a crossed circle, ignore it.  
+You don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on Linux, Method 1 (works up to Xcode 7.3): #####
+##### Packing the SDK on Linux, Method 1 (Xcode > 8.0): #####
+
+This method may require up to 20 GB of free disk space.  
+An SSD is recommended for this method.
+
+1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+2. Install ... 
+3. Run `./tools/gen_sdk_package_pbzx.sh <xcode>.xip`
+4. Copy or move the SDK into the tarballs/ directory
+
+##### Packing the SDK on Linux, Method 2 (works up to Xcode 7.3): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Install `cmake`, `libxml2-dev` and `fuse`
 3. Run `./tools/gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux, Cygwin (and others), Method 2 (works up to Xcode 7.2): #####
+##### Packing the SDK on Linux (and others), Method 3 (works up to Xcode 7.2): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Ensure you have `clang` and `make` installed
 3. Run `./tools/gen_sdk_package_p7zip.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux, Method 3 (works up to Xcode 4.2): #####
+##### Packing the SDK on Linux, Method 4 (works up to Xcode 4.2): #####
 
 1. Download Xcode 4.2 for Snow Leopard
 2. Ensure you are downloading the "Snow Leopard" version
@@ -248,20 +256,23 @@ Usage Examples:
   * C++98: `o32-clang++ -stdlib=libc++ test.cpp -o test`
   * C++11: `o32-clang++ -stdlib=libc++ -std=c++11 test1.cpp -o test`
   * C++14: `o32-clang++ -stdlib=libc++ -std=c++14 test1.cpp -o test`
-  * C++1z: `o32-clang++ -stdlib=libc++ -std=c++1z test1.cpp -o test`
+  * C++17: `o32-clang++ -stdlib=libc++ -std=c++17 test1.cpp -o test`
+  * C++2a: `o32-clang++ -stdlib=libc++ -std=c++2a test1.cpp -o test`
 
 * Clang (shortcut):
 
   * C++98: `o32-clang++-libc++ test.cpp -o test`
   * C++11: `o32-clang++-libc++ -std=c++11 test.cpp -o test`
   * C++14: `o32-clang++-libc++ -std=c++14 test.cpp  -o test`
-  * C++1z: `o32-clang++-libc++ -std=c++1z test.cpp  -o test`
+  * C++17: `o32-clang++-libc++ -std=c++17 test.cpp  -o test`
+  * C++2a: `o32-clang++-libc++ -std=c++2a test.cpp  -o test`
 
 * GCC
 
   * C++11: `o32-g++-libc++ -std=c++11 test.cpp`
   * C++14: `o32-g++-libc++ -std=c++14 test.cpp -o test`
-  * C++1z: `o32-g++-libc++ -std=c++1z test.cpp -o test`
+  * C++17: `o32-g++-libc++ -std=c++17 test.cpp -o test`
+  * C++2a: `o32-g++-libc++ -std=c++2a test.cpp -o test`
 
 ##### Building test1.cpp and test2.cpp with LTO (Link Time Optimization): #####
 
@@ -281,7 +292,9 @@ Usage Examples:
 
 ### DEPLOYMENT TARGET: ###
 
-The default deployment target is `Mac OS X 10.5`.
+The default deployment target is:  
+SDK <= 10.13: `Mac OS X 10.5`  
+SDK >= 10.14: `Mac OS X 10.9`
 
 However, there are several ways to override the default value:
 

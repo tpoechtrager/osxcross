@@ -20,7 +20,7 @@ eval $(tools/osxcross_conf.sh)
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=8.2.0
+  GCC_VERSION=9.1.0
   #GCC_VERSION=5-20140928 # snapshot
 fi
 
@@ -42,16 +42,16 @@ if [ ! -f "have_gcc_${GCC_VERSION}_${OSXCROSS_TARGET}" ]; then
 
 pushd $OSXCROSS_TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
-  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
+  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 else
-  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
+  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 fi
 popd &>/dev/null
 
 echo "cleaning up ..."
 rm -rf gcc* 2>/dev/null
 
-extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.gz" 1
+extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.xz" 1
 echo ""
 
 pushd gcc*$GCC_VERSION* &>/dev/null
@@ -102,14 +102,18 @@ if [ -n "$ENABLE_FORTRAN" ]; then
   LANGS+=",fortran"
 fi
 
+if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<=" 10.13) -eq 1 ]; then
+  EXTRACONFFLAGS+="--with-multilib-list=m32,m64 --enable-multilib "
+else
+  EXTRACONFFLAGS+="--disable-multilib "
+fi
+
 ../configure \
   --target=x86_64-apple-$OSXCROSS_TARGET \
   --with-sysroot=$OSXCROSS_SDK \
   --disable-nls \
   --enable-languages=$LANGS \
   --without-headers \
-  --enable-multilib \
-  --with-multilib-list=m32,m64 \
   --enable-lto \
   --enable-checking=release \
   --disable-libstdcxx-pch \
@@ -146,18 +150,21 @@ source tools/tools.sh
 
 pushd $OSXCROSS_TARGET_DIR/bin &>/dev/null
 
-if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX ]; then
-  mv x86_64-apple-$OSXCROSS_TARGET-gcc$EXESUFFIX \
-     x86_64-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX
 
-  mv x86_64-apple-$OSXCROSS_TARGET-g++$EXESUFFIX \
-     x86_64-apple-$OSXCROSS_TARGET-base-g++$EXESUFFIX
+if [ ! -f i386-apple-$OSXCROSS_TARGET-base-gcc ]; then
+  mv x86_64-apple-$OSXCROSS_TARGET-gcc \
+    x86_64-apple-$OSXCROSS_TARGET-base-gcc
 
-  create_symlink x86_64-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX \
-                 i386-apple-$OSXCROSS_TARGET-base-gcc$EXESUFFIX
+  mv x86_64-apple-$OSXCROSS_TARGET-g++ \
+    x86_64-apple-$OSXCROSS_TARGET-base-g++
 
-  create_symlink x86_64-apple-$OSXCROSS_TARGET-base-g++$EXESUFFIX \
-                 i386-apple-$OSXCROSS_TARGET-base-g++$EXESUFFIX
+  if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<=" 10.13) -eq 1 ]; then
+    create_symlink x86_64-apple-$OSXCROSS_TARGET-base-gcc \
+                  i386-apple-$OSXCROSS_TARGET-base-gcc
+
+    create_symlink x86_64-apple-$OSXCROSS_TARGET-base-g++ \
+                  i386-apple-$OSXCROSS_TARGET-base-g++
+  fi
 fi
 
 echo "compiling wrapper ..."
@@ -175,10 +182,12 @@ popd &>/dev/null # wrapper dir
 
 echo ""
 
-test_compiler o32-gcc $BASE_DIR/oclang/test.c
-test_compiler o64-gcc $BASE_DIR/oclang/test.c
+if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<=" 10.13) -eq 1 ]; then
+  test_compiler o32-gcc $BASE_DIR/oclang/test.c
+  test_compiler o32-g++ $BASE_DIR/oclang/test.cpp
+fi
 
-test_compiler o32-g++ $BASE_DIR/oclang/test.cpp
+test_compiler o64-gcc $BASE_DIR/oclang/test.c
 test_compiler o64-g++ $BASE_DIR/oclang/test.cpp
 
 echo ""
