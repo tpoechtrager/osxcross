@@ -171,11 +171,16 @@ fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
-create_symlink \
-  $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h \
-  usr/include 2>/dev/null
-[ ! -f "usr/include/float.h" ] && cp -f $BASE_DIR/oclang/quirks/float.h usr/include
-[ $PLATFORM == "FreeBSD" ] && cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
+if [ $PLATFORM == "FreeBSD" ]; then
+  files=$(echo $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h)
+  for file in $files; do
+    create_symlink $file usr/include
+  done
+  cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
+fi
+if [ ! -f "usr/include/float.h" ]; then
+  cp -f $BASE_DIR/oclang/quirks/float.h usr/include
+fi
 set -e
 popd &>/dev/null
 
