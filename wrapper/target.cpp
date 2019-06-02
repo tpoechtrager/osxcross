@@ -509,7 +509,7 @@ bool Target::setup() {
     if (haveArch(Arch::x86_64h)) {
       // Default to >= 10.8 for x86_64h
       OSVersion defaultMinTarget = getDefaultMinTarget();
-      std::max(defaultMinTarget, OSVersion(10, 8));
+      OSNum = std::max(defaultMinTarget, OSVersion(10, 8));
       if (SDKOSNum < OSNum) {
         err << "'" << getArchName(arch) << "' requires Mac OS X SDK "
             << OSNum.shortStr() << " (or later)" << err.endl();
