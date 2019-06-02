@@ -17,12 +17,12 @@ eval $(tools/osxcross_conf.sh)
 
 # binutils version to build
 if [ -z "$BINUTILS_VERSION" ]; then
-  BINUTILS_VERSION=2.27
+  BINUTILS_VERSION=2.32
 fi
 
 # gdb version to build
 if [ -z "$GDB_VERSION" ]; then
-  GDB_VERSION=7.11.1
+  GDB_VERSION=8.3
 fi
 
 # mirror
