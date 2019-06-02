@@ -1,25 +1,25 @@
 /****************************** v1.0 *********************************/
 
-Changed:
- * Updated cctools to 921
- * Updated ld64 to 409.12
-
- * Support has been removed for:
-   -> Platform:
-   --> Cygwin and all BSDs besides FreeBSD
-   -> Other:
-   --> Building OSXCross with GCC is no longer possible due to
-       extensive use of clang extensions in ld64.
-
- * cctools, ld64 and apple-libtapi are now git clone'd and no longer
-   come with OSXCross itself.
-
- * wrapper: Added support for MacOS 10.14 SDK
-
 Added:
- * Support for TAPIv2 nand TAPIv3 stubs
- * gen_sdk_package_pbzx.sh: Supports latest Xcode images
- 
+ * Support for TAPIv3 stubs (including "zippering" target)
+ * Support for Mac OS X SDKs up to 10.14
+ * SDK packaging script for ".xip" Xcode images
+   -> tools/gen_sdk_package_pbzx.sh <xcode.xip> 
+   --> tested up to Xcode 10.2.1
+
+Fixed:
+ * Implemented fix for https://github.com/tpoechtrager/osxcross/issues/171
+ * Implemented fix for https://github.com/tpoechtrager/osxcross/issues/178
+ * Implemented fix for https://github.com/tpoechtrager/osxcross/issues/182
+
+Changed:
+ * cctools, ld64, apple-libtapi and xar are now "git clone"'d
+   and no longer come with OSXCross.
+ * Updated cctools to 921 and ld64 to 409.12
+
+Removed:
+ * Support for Cygwin and *BSD (besides FreeBSD)
+ * Support for building OSXCross with GCC
 
 /****************************** v0.15 ********************************/
 
