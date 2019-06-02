@@ -59,22 +59,45 @@ pushd gcc*$GCC_VERSION* &>/dev/null
 rm -f $OSXCROSS_TARGET_DIR/bin/*-gcc*
 rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 
-if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) == 1 ] &&
-   [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) == 1 ]; then
+if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) -eq 1 ] &&
+   [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66035
   patch -p1 < $PATCH_DIR/gcc-pr66035.patch
 fi
 
-if [ $(osxcross-cmp $GCC_VERSION '>=' 6.1.0) == 1 ] &&
-   [ $(osxcross-cmp $GCC_VERSION '<=' 6.3.0) == 1 ]; then
+if [ $(osxcross-cmp $GCC_VERSION '>=' 6.1.0) -eq 1 ] &&
+   [ $(osxcross-cmp $GCC_VERSION '<=' 6.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/ml/gcc-patches/2016-09/msg00129.html
   patch -p1 < $PATCH_DIR/gcc-6-buildfix.patch
 fi
 
-if [ $(osxcross-cmp $GCC_VERSION '==' 6.3.0) == 1 ]; then
+if [ $(osxcross-cmp $GCC_VERSION '==' 6.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/darwin-driver.c?r1=244010&r2=244009&pathrev=244010
   patch -p1 < $PATCH_DIR/darwin-driver.c.patch
 fi
+
+if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION '>=' 10.14) -eq 1 ] &&
+   [ $(osxcross-cmp $GCC_VERSION '<' 9.0.0) -eq 1 ]; then
+  files_to_patch=(
+    libsanitizer/asan/asan_mac.cc
+    libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc
+    libsanitizer/sanitizer_common/sanitizer_posix.cc
+    libsanitizer/sanitizer_common/sanitizer_mac.cc
+    gcc/ada/init.c
+    gcc/config/darwin-driver.c
+  )
+
+  for file in ${files_to_patch[*]}; do
+    if [ -f $file ]; then
+      echo patching $PWD/$file
+      $SED -i 's/#include <sys\/sysctl.h>/#define _Atomic volatile\n#include <sys\/sysctl.h>\n#undef _Atomic/g' $file
+      $SED -i 's/#include <sys\/mount.h>/#define _Atomic volatile\n#include <sys\/mount.h>\n#undef _Atomic/g' $file
+    fi
+  done
+
+  echo ""
+fi
+
 
 mkdir -p build
 pushd build &>/dev/null
