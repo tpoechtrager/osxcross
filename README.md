@@ -5,6 +5,8 @@
 The goal of OSXCross is to provide a well working OS X cross toolchain for
 Linux and FreeBSD.
 
+OSXCross works **on** x86, x86_64, ARM and AArch64.
+
 ### HOW DOES IT WORK? ###
 
 For cross-compiling for OS X you need
@@ -293,6 +295,7 @@ Usage Examples:
 ### DEPLOYMENT TARGET: ###
 
 The default deployment target is:  
+
 SDK <= 10.13: `Mac OS X 10.5`  
 SDK >= 10.14: `Mac OS X 10.9`
 
