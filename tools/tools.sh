@@ -20,25 +20,6 @@ if [ $PLATFORM == CYGWIN* ]; then
   exit 1
 fi
 
-if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "DragonFly" ]; then
-  MAKE=gmake
-  SED=gsed
-else
-  MAKE=make
-  SED=sed
-fi
-
-if [ -z "$CC" ]; then
-  export CC="clang"
-fi
-
-if [ -z "$CXX" ]; then
-  export CXX="clang++"
-fi
-
-if [ -z "$CMAKE" ]; then
-  CMAKE="cmake"
-fi
 
 function require()
 {
@@ -58,9 +39,36 @@ function require()
   set -e
 }
 
+if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "DragonFly" ]; then
+  MAKE=gmake
+  SED=gsed
+else
+  MAKE=make
+  SED=sed
+fi
 
-require $CC
-require $CXX
+if [ -z "$USESYSTEMCOMPILER" ]; then
+  if [ -z "$CC" ]; then
+    export CC="clang"
+  fi
+
+  if [ -z "$CXX" ]; then
+    export CXX="clang++"
+  fi
+fi
+
+if [ -z "$CMAKE" ]; then
+  CMAKE="cmake"
+fi
+
+if [ -n "$CC" ]; then
+  require $CC
+fi
+
+if [ -n "$CXX" ]; then
+  require $CXX
+fi
+
 require $SED
 require $MAKE
 require $CMAKE
