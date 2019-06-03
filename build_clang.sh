@@ -58,7 +58,7 @@ source $BASE_DIR/tools/trap_exit.sh
 MIRROR="http://releases.llvm.org"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=3.9.1
+  CLANG_VERSION=8.0.0
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
@@ -136,8 +136,10 @@ function build()
   mkdir -p $stage
   pushd $stage &>/dev/null
   cmake .. \
-    -DCMAKE_INSTALL_PREFIX=$INSTALLPREFIX -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_ENABLE_ASSERTIONS=OFF
+    -DCMAKE_INSTALL_PREFIX=$INSTALLPREFIX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_ENABLE_ASSERTIONS=OFF \
+    -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=1
   $MAKE $2 -j $JOBS VERBOSE=1
   popd &>/dev/null
 }
