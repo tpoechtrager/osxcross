@@ -16,43 +16,6 @@ source tools/tools.sh
 
 mkdir -p $BUILD_DIR
 
-if [[ $(uname -s) == CYGWIN* ]]; then
-  DISABLE_BOOTSTRAP=1
-fi
-
-if [ -z "$SKIP_GCC_CHECK" ]; then
-if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
-  set +e
-  which "g++${GCC_SUFFIX}" &>/dev/null && \
-  {
-    export CC="gcc${GCC_SUFFIX}"
-    export CXX="g++${GCC_SUFFIX}"
-    test="
-    #define GCC_VERSION_AT_LEAST(major, minor, patch)                    \
-      (defined(__GNUC__) &&                                              \
-      (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) >= \
-      (major * 10000 + minor * 100 + patch))
-
-    #if !GCC_VERSION_AT_LEAST(4, 7, 0)
-      not_gcc_47_or_later
-    #endif"
-    echo "$test" | $CXX -fsyntax-only -xc++ - &>/dev/null || \
-    {
-      echo "Your GCC installation is too old to build recent clang releases."
-      echo "Building clang 3.4.2 instead."
-      CLANG_VERSION=3.4.2
-    }
-  } || \
-  {
-    echo "Can not detect GCC installation." 1>&2
-    echo "You may want to try 'GCC_SUFFIX=<suffix> $0'" 1>&2
-    echo "(i.e. GCC_SUFFIX=-4.7 $0)" 1>&2
-    exit 1
-  }
-  set -e
-fi
-fi
-
 source $BASE_DIR/tools/trap_exit.sh
 
 MIRROR="http://releases.llvm.org"
