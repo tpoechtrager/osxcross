@@ -11,17 +11,16 @@ OSXCross works **on** x86, x86_64, ARM and AArch64.
 
 For cross-compiling for OS X you need
 * the Clang/LLVM compiler
-* the the [cctools](http://www.opensource.apple.com/tarballs/cctools)
-  (ld, lipo, …), and
+* the cctools (lipo, otool, nm, ar, ...) and ld64
 * the OSX SDK.
 
 [Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html)
 and is now available on nearly every Linux distribution, so we just
 need a proper [port](https://github.com/tpoechtrager/cctools-port) of
-the cctools and the OS X SDK.
+the cctools/ld64 and the OS X SDK.
 
 OSXCross includes a collection of scripts for preparing the SDK and
-building the cctools.
+building the cctools/ld64.
 
 It also includes scripts for optionally building
 * Clang using gcc (for the case your distribution does not include it),
@@ -49,7 +48,7 @@ to the tarballs/ directory.
 Then ensure you have the following installed on your system:
 
 `Clang 3.4+`, `cmake`, `git`, `patch`, `Python`, `libssl-devel` (openssl)  
-`lzma-devel`, `libxml2-devel`(<=10.6 only) and the `bash shell`.
+`lzma-devel`, `libxml2-devel` and the `bash shell`.
 
 You can run 'sudo tools/get\_dependencies.sh' to get these (and the
 optional packages) automatically. (outdated)
@@ -59,6 +58,13 @@ optional packages) automatically. (outdated)
 - `llvm-devel`: For Link Time Optimization support
 - `llvm-devel`: For ld64 `-bitcode_bundle` support
 - `uuid-devel`: For ld64 `-random_uuid` support
+
+On Ubuntu trusty you must upgrade CMake to >= 3.2.3 first. Or do this:
+
+```shell
+    curl -sSL https://cmake.org/files/v3.14/cmake-3.14.5-Linux-x86_64.tar.gz | sudo tar -xzC /opt
+    export PATH=/opt/cmake-3.14.5-Linux-x86_64/:$PATH
+```
 
 ##### Building Clang #####
 
@@ -83,12 +89,6 @@ else, set the `INSTALLPREFIX` variable.  For example:
 ```shell
     INSTALLPREFIX=/opt/clang ./build_clang.sh
 ```
-
-On debian-like systems you can also use [llvm.org/apt](http://llvm.org/apt) to
-get a newer version of clang.
-But be careful, that repository is known to cause
-[troubles](https://github.com/tpoechtrager/osxcross/issues/16).
-
 
 ##### Building OSXCross #####
 
@@ -179,7 +179,7 @@ This method may require up to 20 GB of free disk space.
 An SSD is recommended for this method.
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
-2. Install ... 
+2. Install `clang`, `make`, `libssl-devel`, `lzma-devel` and `libxml2-devel`
 3. Run `./tools/gen_sdk_package_pbzx.sh <xcode>.xip`
 4. Copy or move the SDK into the tarballs/ directory
 
