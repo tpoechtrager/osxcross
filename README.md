@@ -1,4 +1,4 @@
-## OS X Cross toolchain for Linux, *BSD and Cygwin ##
+## OS X Cross toolchain for Linux and FreeBSD ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
@@ -63,7 +63,7 @@ On Ubuntu trusty you must upgrade CMake to >= 3.2.3 first. Or do this:
 
 ```shell
     curl -sSL https://cmake.org/files/v3.14/cmake-3.14.5-Linux-x86_64.tar.gz | sudo tar -xzC /opt
-    export PATH=/opt/cmake-3.14.5-Linux-x86_64/:$PATH
+    export PATH=/opt/cmake-3.14.5-Linux-x86_64/bin:$PATH
 ```
 
 ##### Building Clang #####
@@ -156,7 +156,7 @@ use these variants unless you know what you're doing.
 
 ##### Packaging the SDK on Mac OS X: #####
 
-1. [Download [Xcode](https://developer.apple.com/download/more/) \*\*]
+1. [Download Xcode: https://xcodereleases.com] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
 3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
@@ -164,16 +164,16 @@ use these variants unless you know what you're doing.
    OSXCross.
 
 \*\*  
-Xcode up to 10.2.x is known to work.  
-Use Firefox if you have problems with signing in.
+-- Xcode up to 11.0.0 Beta is known to work.  
+-- Use Firefox if you have problems signing in.
 
 \*\*\*  
-If you get a dialog with a crossed circle, ignore it.  
-You don't need to install Xcode.
+-- If you get a dialog with a crossed circle, ignore it.  
+-- You don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
-##### Packing the SDK on Linux, Method 1 (Xcode > 8.0): #####
+##### Packing the SDK on Linux - Method 1 (Xcode > 8.0): #####
 
 This method may require up to 20 GB of free disk space.  
 An SSD is recommended for this method.
@@ -183,21 +183,21 @@ An SSD is recommended for this method.
 3. Run `./tools/gen_sdk_package_pbzx.sh <xcode>.xip`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux, Method 2 (works up to Xcode 7.3): #####
+##### Packing the SDK on Linux - Method 2 (works up to Xcode 7.3): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Install `cmake`, `libxml2-dev` and `fuse`
 3. Run `./tools/gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux (and others), Method 3 (works up to Xcode 7.2): #####
+##### Packing the SDK on Linux (and others) - Method 3 (works up to Xcode 7.2): #####
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
 2. Ensure you have `clang` and `make` installed
 3. Run `./tools/gen_sdk_package_p7zip.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
-##### Packing the SDK on Linux, Method 4 (works up to Xcode 4.2): #####
+##### Packing the SDK on Linux - Method 4 (works up to Xcode 4.2): #####
 
 1. Download Xcode 4.2 for Snow Leopard
 2. Ensure you are downloading the "Snow Leopard" version
