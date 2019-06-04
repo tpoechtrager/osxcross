@@ -51,7 +51,7 @@ popd &>/dev/null
 echo "cleaning up ..."
 rm -rf gcc* 2>/dev/null
 
-extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.xz" 1
+extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.xz"
 echo ""
 
 pushd gcc*$GCC_VERSION* &>/dev/null
@@ -89,7 +89,7 @@ if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION '>=' 10.14) -eq 1 ] &&
 
   for file in ${files_to_patch[*]}; do
     if [ -f $file ]; then
-      echo patching $PWD/$file
+      echo "patching $PWD/$file"
       $SED -i 's/#include <sys\/sysctl.h>/#define _Atomic volatile\n#include <sys\/sysctl.h>\n#undef _Atomic/g' $file
       $SED -i 's/#include <sys\/mount.h>/#define _Atomic volatile\n#include <sys\/mount.h>\n#undef _Atomic/g' $file
     fi

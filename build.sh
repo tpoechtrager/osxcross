@@ -158,7 +158,8 @@ popd &>/dev/null
 ## Extract SDK and move it to $SDK_DIR ##
 
 SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION*)
-extract $SDK 1 1
+echo ""
+extract $SDK
 
 rm -rf $SDK_DIR/MacOSX$SDK_VERSION* 2>/dev/null
 if [ "$(ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; then

@@ -82,12 +82,14 @@ echo "cleaning up ..."
 
 rm -rf llvm* 2>/dev/null
 
-extract "$TARBALL_DIR/$(basename $LLVM_PKG)" 2 0
+extract "$TARBALL_DIR/$(basename $LLVM_PKG)"
 
 pushd llvm* &>/dev/null
 pushd tools &>/dev/null
 
-extract "$TARBALL_DIR/$(basename $CLANG_PKG)" 1
+extract "$TARBALL_DIR/$(basename $CLANG_PKG)"
+echo ""
+
 [ -e clang* ] && mv clang* clang
 [ -e cfe* ] && mv cfe* clang
 

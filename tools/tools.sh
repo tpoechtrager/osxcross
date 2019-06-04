@@ -158,7 +158,6 @@ function verify_sdk_version()
 
 function extract()
 {
-  test $# -ge 2 -a $# -lt 4 && test $2 -eq 2 && echo ""
   echo "extracting $(basename $1) ..."
 
   local tarflags
@@ -187,10 +186,6 @@ function extract()
       exit 1
       ;;
   esac
-
-  if [ $# -eq 2 -o $# -eq 4 ]; then
-    echo ""
-  fi
 }
 
 
