@@ -119,6 +119,7 @@ if [ $f_res -eq 1 ]; then
   if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     CONFFLAGS+="--with-libtapi=$TARGET_DIR "
   fi
+  CONFFLAGS+="--with-libxar=$TARGET_DIR "
   [ -z "$USE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
   [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
   # https://github.com/tpoechtrager/osxcross/issues/156
