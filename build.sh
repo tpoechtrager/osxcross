@@ -32,6 +32,7 @@ case $SDK_VERSION in
   10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
   10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
   10.14*) TARGET=darwin18; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  10.15*) TARGET=darwin19; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
 *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
@@ -102,8 +103,6 @@ if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
 fi
 
 ## cctools and ld64 ##
-
-echo "TODO: --with-xar=..."
 
 get_sources https://github.com/tpoechtrager/cctools-port.git 921-ld64-409.12
 
