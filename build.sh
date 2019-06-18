@@ -150,9 +150,10 @@ fi
 ## MacPorts ##
 
 pushd $TARGET_DIR/bin &>/dev/null
-create_symlink $BASE_DIR/tools/osxcross-macports osxcross-macports
-create_symlink $BASE_DIR/tools/osxcross-macports osxcross-mp
-create_symlink $BASE_DIR/tools/osxcross-macports omp
+rm -f osxcross-macports
+cp $BASE_DIR/tools/osxcross-macports osxcross-macports
+create_symlink osxcross-macports osxcross-mp
+create_symlink osxcross-macports omp
 popd &>/dev/null
 
 ## Extract SDK and move it to $SDK_DIR ##
@@ -175,7 +176,8 @@ set +e
 if [ $PLATFORM == "FreeBSD" ]; then
   files=$(echo $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h)
   for file in $files; do
-    create_symlink $file usr/include
+    rm -f usr/include/$(basename $file)
+    cp $file usr/include
   done
   cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
 fi
