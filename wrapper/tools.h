@@ -161,7 +161,8 @@ typedef bool (*realpathcmp)(const char *file, const struct stat &st);
 bool isExecutable(const char *f, const struct stat &);
 bool ignoreCCACHE(const char *f, const struct stat &);
 bool realPath(const char *file, std::string &result,
-              realpathcmp cmp1 = nullptr, realpathcmp cmp2 = nullptr);
+              realpathcmp cmp1 = nullptr, realpathcmp cmp2 = nullptr,
+              const size_t maxSymobolicLinkDepth = 1000);
 bool getPathOfCommand(const char *command, std::string &result,
                       realpathcmp cmp = nullptr);
 

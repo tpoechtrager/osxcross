@@ -74,7 +74,7 @@ bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
 
   if (!fileExists(toolpath.c_str())) {
     // Fall back to system executables so 'xcrun git status' etc. works.
-    if (!isxcodetool && realPath(tool, toolpath))
+    if (!isxcodetool && realPath(tool, toolpath, nullptr, nullptr, 0))
       return true;
 
     err << "xcrun: cannot find '" << tool << "' executable" << err.endl();
@@ -200,14 +200,16 @@ int xcrun(int argc, char **argv, Target &target) {
   if (getenv("xcrun_log"))
     showCommand = true;
 
-  constexpr const char *ENVVARS[] = {
-    "DEVELOPER_DIR", "TOOLCHAINS", "xcrun_verbose"
-  };
+  if (!getenv("OSXCROSS_XCRUN_NO_ENV_WARNING")) {
+    constexpr const char *ENVVARS[] = {
+      "DEVELOPER_DIR", "TOOLCHAINS", "xcrun_verbose"
+    };
 
-  for (const char *evar : ENVVARS) {
-    if (getenv(evar)) {
-      warn << "xcrun: ignoring environment variable "
-           << "'" << evar << "'" << warn.endl();
+    for (const char *evar : ENVVARS) {
+      if (getenv(evar)) {
+        warn << "xcrun: ignoring environment variable "
+            << "'" << evar << "'" << warn.endl();
+      }
     }
   }
 

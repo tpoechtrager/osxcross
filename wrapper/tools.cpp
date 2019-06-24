@@ -344,7 +344,8 @@ bool ignoreCCACHE(const char *f, const struct stat &) {
 }
 
 bool realPath(const char *file, std::string &result,
-              realpathcmp cmp1, realpathcmp cmp2) {
+              realpathcmp cmp1, realpathcmp cmp2,
+              const size_t maxSymbolicLinkDepth) {
   char *PATH = getenv("PATH");
   const char *p = PATH ? PATH : "";
   struct stat st;
@@ -362,6 +363,9 @@ bool realPath(const char *file, std::string &result,
     result += file;
 
     if (!stat(result.c_str(), &st)) {
+      if (maxSymbolicLinkDepth == 0)
+        return true;
+
       char buf[PATH_MAX + 1];
 
       if (realpath(result.c_str(), buf)) {
@@ -379,6 +383,7 @@ bool realPath(const char *file, std::string &result,
         else
           ++pathlen; // PATHDIV
 
+
         memcpy(path, result.c_str(), pathlen); // not null terminated
 
         while ((len = readlink(result.c_str(), buf, PATH_MAX)) != -1) {
@@ -390,7 +395,7 @@ bool realPath(const char *file, std::string &result,
             pathlen = strrchr(buf, PATHDIV) - buf + 1; // + 1: PATHDIV
             memcpy(path, buf, pathlen);
           }
-          if (++n >= 1000) {
+          if (++n >= maxSymbolicLinkDepth) {
             err << result << ": too many levels of symbolic links"
                 << err.endl();
             result.clear();
