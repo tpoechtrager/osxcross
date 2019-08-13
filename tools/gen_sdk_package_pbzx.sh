@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+xcode=`readlink -e $1` # make absolute path name
+
 pushd "${0%/*}/.." &>/dev/null
 source tools/tools.sh
 
@@ -39,7 +41,7 @@ pushd $TMP_DIR &>/dev/null
 echo "Extracting $1 (this may take several minutes) ..."
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
-  verbose_cmd "$TARGET_DIR/bin/xar -xf $1 -C $TMP_DIR"
+  verbose_cmd "$TARGET_DIR/bin/xar -xf ${xcode} -C $TMP_DIR"
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
   verbose_cmd "$TARGET_DIR/SDK/tools/bin/pbzx -n Content | cpio -i"
