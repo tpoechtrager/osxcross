@@ -189,6 +189,28 @@ function extract()
 }
 
 
+function get_exec_dir()
+{
+  local dirs=$(dirs)
+  echo ${dirs##* }
+}
+
+function make_absolute_path()
+{
+  local current_path
+
+  if [ $# -eq 1 ]; then
+    current_path=$PWD
+  else
+    current_path=$2
+  fi
+
+  case $1 in
+    /*) echo "$1" ;;
+     *) echo "${current_path}/$1" ;;
+  esac
+}
+
 function cleanup_tmp_dir()
 {
   if [ -n "$OC_KEEP_TMP_DIR" ]; then

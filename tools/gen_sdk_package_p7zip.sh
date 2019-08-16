@@ -21,10 +21,7 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-case $1 in
-  /*) XCODEDMG="$1" ;;
-  *) XCODEDMG="$PWD/$1" ;;
-esac
+XCODEDMG=$(make_absolute_path $1 $(get_exec_dir))
 
 mkdir -p $BUILD_DIR
 

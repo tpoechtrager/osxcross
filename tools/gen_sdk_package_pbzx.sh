@@ -15,6 +15,8 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
+XCODE=$(make_absolute_path $1 $(get_exec_dir))
+
 mkdir -p $BUILD_DIR
 pushd $BUILD_DIR &>/dev/null
 
@@ -36,10 +38,10 @@ create_tmp_dir
 
 pushd $TMP_DIR &>/dev/null
 
-echo "Extracting $1 (this may take several minutes) ..."
+echo "Extracting $XCODE (this may take several minutes) ..."
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
-  verbose_cmd "$TARGET_DIR/bin/xar -xf $1 -C $TMP_DIR"
+  verbose_cmd "$TARGET_DIR/bin/xar -xf $XCODE -C $TMP_DIR"
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
   verbose_cmd "$TARGET_DIR/SDK/tools/bin/pbzx -n Content | cpio -i"

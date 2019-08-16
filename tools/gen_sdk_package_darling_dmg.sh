@@ -22,6 +22,8 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
+XCODEDMG=$(make_absolute_path $1 $(get_exec_dir))
+
 mkdir -p $BUILD_DIR
 
 require modinfo
@@ -75,6 +77,6 @@ function cleanup()
 trap cleanup EXIT
 
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR_SDK_TOOLS/lib \
-  $TARGET_DIR/SDK/tools/bin/darling-dmg $1 $TMP
+  $TARGET_DIR/SDK/tools/bin/darling-dmg $XCODEDMG $TMP
 
 XCODEDIR=$TMP ./tools/gen_sdk_package.sh
