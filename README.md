@@ -156,7 +156,7 @@ use these variants unless you know what you're doing.
 
 ##### Packaging the SDK on Mac OS X: #####
 
-1. [Download Xcode: https://xcodereleases.com] \*\*
+1. [Download Xcode: https://developer.apple.com/download/more] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
 3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
