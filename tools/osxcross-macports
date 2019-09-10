@@ -240,6 +240,7 @@ verifyFileIntegrity()
 getPkgUrl()
 {
   local pkgname="$1"
+  local pkgversion="$2"
   local pkgs
   local pkg
 
@@ -264,9 +265,17 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  if [[ -z $pkgversion ]]; then
+    local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  else
+    local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | grep $pkgversion | uniq | tail -n1)
+  fi
   if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
+    if [[ -z $pkgversion ]]; then
+      pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
+    else
+      pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | grep $pkgversion | uniq | tail -n1)
+    fi
   fi
 
   verboseMsg " selected: $pkg"
@@ -304,6 +313,7 @@ pkgInstalled()
 installPkg()
 {
   local pkgname="$1"
+  local pkgversion="$2"
 
   LASTPKGNAME=$pkgname
 
@@ -313,7 +323,7 @@ installPkg()
 
   echo "searching package $pkgname ..."
 
-  local pkgurl=$(getPkgUrl "$pkgname")
+  local pkgurl=$(getPkgUrl "$pkgname" "$pkgversion")
   local pkgfile=$(echo "$pkgurl" | awk -F'/' '{print $NF}')
 
   if [ -z "$pkgurl" ]; then
@@ -389,15 +399,29 @@ installPkg()
 
 installPkgs()
 {
-  local packages="$1"
+  local packagesString="$1"
+  IFS=' ' read -r -a packages <<< "$packagesString"
 
-  for pkgname in $packages; do
+  for (( pkgId=0; pkgId<${#packages[@]}; pkgId++ )); do
+    local pkgname=${packages[$pkgId]}
     if [ $(pkgInstalled $pkgname) == "1" ]; then
       errorMsg "$pkgname is already installed"
+      if [[ $pkgId -lt $(( ${#packages[@]} - 1 )) ]] && [[ ${packages[$(( $pkgId + 1 ))]} = @* ]]; then
+        pkgId=$(( $pkgId + 1 ))
+      fi
       continue
     fi
-    installPkg $pkgname
-    echo "installed $pkgname"
+    local pkgversion=""
+    if [[ $pkgId -lt $(( ${#packages[@]} - 1 )) ]] && [[ ${packages[$(( $pkgId + 1 ))]} = @* ]]; then
+      pkgversion=${packages[$(( $pkgId + 1 ))]}
+      pkgId=$(( $pkgId + 1 ))
+    fi
+    installPkg $pkgname ${pkgversion:1}
+    if [ -z "$pkgversion" ]; then
+      echo "installed $pkgname with latest version"
+    else
+      echo "installed $pkgname with version ${pkgversion:1}"
+    fi
     rm -f $INSTALL/+*
   done
 }

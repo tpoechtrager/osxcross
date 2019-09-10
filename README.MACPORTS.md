@@ -74,9 +74,9 @@ This will simply re-install the latest  version of all your installed packages.
 
 osxcross-macports [...]
 
-  * install &lt;pkg1&gt; [&lt;pkg2&gt; [...]]
-     * Install <package name> and its deps.
-
+  * install &lt;pkg1&gt; [&lt;@versionpkg1&gt;] [&lt;pkg2&gt; [&lt;@versionpkg2&gt;] [...]]
+     * Install &lt;pkg1&gt; and its deps. You can optionnaly specify the version wanted for each package.
+     
   * search &lt;pkg&gt;
      * Prints a list of matching package names.
 
