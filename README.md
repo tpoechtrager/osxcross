@@ -255,7 +255,7 @@ Usage Examples:
 
 * Clang:
 
-  * C++98: `o32-clang++ -stdlib=libc++ test.cpp -o test`
+  * C++98: `o32-clang++ -stdlib=libc++ -std=c++98 test.cpp -o test`
   * C++11: `o32-clang++ -stdlib=libc++ -std=c++11 test1.cpp -o test`
   * C++14: `o32-clang++ -stdlib=libc++ -std=c++14 test1.cpp -o test`
   * C++17: `o32-clang++ -stdlib=libc++ -std=c++17 test1.cpp -o test`
@@ -263,7 +263,7 @@ Usage Examples:
 
 * Clang (shortcut):
 
-  * C++98: `o32-clang++-libc++ test.cpp -o test`
+  * C++98: `o32-clang++-libc++ -std=c++98 test.cpp -o test`
   * C++11: `o32-clang++-libc++ -std=c++11 test.cpp -o test`
   * C++14: `o32-clang++-libc++ -std=c++14 test.cpp  -o test`
   * C++17: `o32-clang++-libc++ -std=c++17 test.cpp  -o test`
