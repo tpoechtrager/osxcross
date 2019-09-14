@@ -35,21 +35,22 @@ CLANG_DARWIN_LIB_DIR="${CLANG_LIB_DIR}/lib/darwin"
 USE_CMAKE=0
 
 case $CLANG_VERSION in
-  3.2*) BRANCH=release_32 ;;
-  3.3*) BRANCH=release_33 ;;
-  3.4*) BRANCH=release_34 ;;
-  3.5*) BRANCH=release_35 ;;
-  3.6*) BRANCH=release_36 ;;
-  3.7*) BRANCH=release_37 ;;
-  3.8*) BRANCH=release_38; USE_CMAKE=1; ;;
-  3.9*) BRANCH=release_39; USE_CMAKE=1; ;;
-  4.0*) BRANCH=release_40; USE_CMAKE=1; ;;
-  5.0*) BRANCH=release_50; USE_CMAKE=1; ;;
-  6.0*) BRANCH=release_60; USE_CMAKE=1; ;;
-  7.* ) BRANCH=release_70; USE_CMAKE=1; ;;
-  8.* ) BRANCH=release_80; USE_CMAKE=1; ;;
-  9.* ) BRANCH=master;     USE_CMAKE=1; ;;
-  *   ) echo "Unsupported Clang version, must be >= 3.2 and <= 9.0" 1>&2; exit 1;
+  3.2* ) BRANCH=release_32 ;;
+  3.3* ) BRANCH=release_33 ;;
+  3.4* ) BRANCH=release_34 ;;
+  3.5* ) BRANCH=release_35 ;;
+  3.6* ) BRANCH=release_36 ;;
+  3.7* ) BRANCH=release_37 ;;
+  3.8* ) BRANCH=release_38; USE_CMAKE=1; ;;
+  3.9* ) BRANCH=release_39; USE_CMAKE=1; ;;
+  4.0* ) BRANCH=release_40; USE_CMAKE=1; ;;
+  5.0* ) BRANCH=release_50; USE_CMAKE=1; ;;
+  6.0* ) BRANCH=release_60; USE_CMAKE=1; ;;
+  7.*  ) BRANCH=release_70; USE_CMAKE=1; ;;
+  8.*  ) BRANCH=release_80; USE_CMAKE=1; ;;
+  9.*  ) BRANCH=release_90; USE_CMAKE=1; ;;
+  10.* ) BRANCH=master;     USE_CMAKE=1; ;;
+     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 10.0" 1>&2; exit 1;
 esac
 
 if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
