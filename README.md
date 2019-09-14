@@ -164,7 +164,7 @@ use these variants unless you know what you're doing.
    OSXCross.
 
 \*\*  
--- Xcode up to 11.0.0 Beta is known to work.  
+-- Xcode up to 11 GM is known to work.  
 -- Use Firefox if you have problems signing in.
 
 \*\*\*  
@@ -175,7 +175,7 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 
 ##### Packing the SDK on Linux - Method 1 (Xcode > 8.0): #####
 
-This method may require up to 20 GB of free disk space.  
+This method may require up to 25 GB of free disk space.  
 An SSD is recommended for this method.
 
 1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
