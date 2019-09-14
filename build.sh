@@ -260,6 +260,15 @@ if [ $(osxcross-cmp ${SDK_VERSION/u/} ">=" 10.7) -eq 1 ]; then
     fi
     fi
   fi
+  if [ -f "usr/include/Availability.h" ]; then
+    if [ $(osxcross-cmp $SDK_VERSION "==" 10.15) -eq 1 ]; then
+      # 10.15 comes with a broken Availability.h header file
+      # which breaks building GCC
+      set +e
+      cat $PATCH_DIR/gcc_availability.h >> usr/include/Availability.h
+      set -e
+    fi
+  fi
   popd &>/dev/null
   echo ""
   if [ $I386_SUPPORTED -eq 1 ]; then

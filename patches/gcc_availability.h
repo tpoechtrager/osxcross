@@ -1,0 +1,10 @@
+#ifndef  __AVAILABILITY_HACK__
+#define  __AVAILABILITY_HACK__
+
+#ifndef __OSX_AVAILABLE_STARTING
+#define __OSX_AVAILABLE_STARTING(...)
+#define __OSX_AVAILABLE_BUT_DEPRECATED(...)
+#define __OSX_AVAILABLE_BUT_DEPRECATED_MSG(...)
+#endif
+
+#endif
