@@ -21,7 +21,7 @@ source $BASE_DIR/tools/trap_exit.sh
 MIRROR="https://releases.llvm.org"
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=8.0.0
+  CLANG_VERSION=9.0.0
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
