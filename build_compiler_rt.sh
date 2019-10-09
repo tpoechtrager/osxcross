@@ -111,8 +111,11 @@ if [ $f_res -eq 1 ]; then
     pushd build &>/dev/null
 
     CC=$(xcrun -f clang) CXX=$(xcrun -f clang++) $CMAKE .. \
-      -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Darwin \
-      -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) -DCMAKE_AR=$(xcrun -f ar)
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_SYSTEM_NAME=Darwin \
+      -DCMAKE_LIPO=$(xcrun -f lipo) \
+      -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
+      -DCMAKE_AR=$(xcrun -f ar)
 
     $MAKE -j $JOBS $EXTRA_MAKE_FLAGS
 
