@@ -25,7 +25,7 @@ if [ -z "$GCC_VERSION" ]; then
 fi
 
 # GCC mirror
-GCC_MIRROR="ftp://ftp.fu-berlin.de/unix/languages/gcc"
+GCC_MIRROR="https://mirror.koddos.net/gcc"
 
 require wget
 

@@ -26,7 +26,7 @@ if [ -z "$GDB_VERSION" ]; then
 fi
 
 # mirror
-MIRROR="ftp://sourceware.org/pub"
+MIRROR="https://ftp.gnu.org/gnu"
 
 require wget
 
@@ -41,7 +41,7 @@ function build_and_install()
 {
   if [ ! -f "have_$1_$2_${OSXCROSS_TARGET}" ]; then
     pushd $OSXCROSS_TARBALL_DIR &>/dev/null
-    wget -c "$MIRROR/$1/releases/$1-$2.tar.gz"
+    wget -c "$MIRROR/$1/$1-$2.tar.gz"
     popd &>/dev/null
 
     echo "cleaning up ..."
