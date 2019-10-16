@@ -132,6 +132,7 @@ else
 fi
 
 ../configure \
+  --host=x86_64-apple-$OSXCROSS_TARGET \
   --target=x86_64-apple-$OSXCROSS_TARGET \
   --with-sysroot=$OSXCROSS_SDK \
   --disable-nls \
