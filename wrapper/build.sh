@@ -171,7 +171,10 @@ create_wrapper_link pkg-config
 
 if [ "$PLATFORM" != "Darwin" ]; then
   create_wrapper_link sw_vers 1
-  create_wrapper_link dsymutil 1
+  which dsymutil &>/dev/null
+  if [ $? -ne 0 ]; then
+    create_wrapper_link dsymutil 1
+  fi
   create_wrapper_link xcrun 1
 fi
 
