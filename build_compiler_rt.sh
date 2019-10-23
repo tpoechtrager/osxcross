@@ -98,6 +98,14 @@ if [ $f_res -eq 1 ]; then
 \ \ \ \ \ \ \ 'COMMAND xcrun -sdk ${sdk_name} --show-sdk-path/g' \
       cmake/Modules/CompilerRTDarwinUtils.cmake
 
+    $SED -i 's/COMMAND xcodebuild -version -sdk ${sdk_name}.internal SDKVersion/'\
+\ \ \ \ \ \ \ 'COMMAND xcrun -sdk ${sdk_name}.internal --show-sdk-version/g' \
+      cmake/Modules/CompilerRTDarwinUtils.cmake
+
+    $SED -i 's/COMMAND xcodebuild -version -sdk ${sdk_name}.internal SDKVersion/'\
+\ \ \ \ \ \ \ 'COMMAND xcrun -sdk ${sdk_name} --show-sdk-version/g' \
+      cmake/Modules/CompilerRTDarwinUtils.cmake
+
     $SED -i "s/COMMAND lipo /COMMAND xcrun lipo /g" \
       cmake/Modules/CompilerRTDarwinUtils.cmake
 
