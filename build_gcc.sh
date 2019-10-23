@@ -15,8 +15,6 @@ DESC=gcc
 USESYSTEMCOMPILER=1
 source tools/tools.sh
 
-eval $(tools/osxcross_conf.sh)
-
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
@@ -198,7 +196,7 @@ export OSXCROSS_TARGET
 export OSXCROSS_OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
 export OSXCROSS_LINKER_VERSION=$OSXCROSS_LINKER_VERSION
 
-TARGETCOMPILER=gcc \
+TARGET_DIR=$OSXCROSS_TARGET_DIR TARGETCOMPILER=gcc \
   $BASE_DIR/wrapper/build.sh 1>/dev/null
 
 popd &>/dev/null # wrapper dir
