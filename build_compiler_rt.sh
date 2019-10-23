@@ -76,7 +76,7 @@ if [ $f_res -eq 1 ]; then
 
   if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<=" 10.11) -eq 1 ]; then
     # https://github.com/tpoechtrager/osxcross/issues/178
-    patch -p1 < $PATCH_DIR/compiler-rt_clock-gettime.patch
+    patch -p1 < $OSXCROSS_PATCH_DIR/compiler-rt_clock-gettime.patch
   fi
 
   EXTRA_MAKE_FLAGS=""

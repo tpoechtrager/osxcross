@@ -62,18 +62,18 @@ rm -f $OSXCROSS_TARGET_DIR/bin/*-g++*
 if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) -eq 1 ] &&
    [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66035
-  patch -p1 < $PATCH_DIR/gcc-pr66035.patch
+  patch -p1 < $OSXCROSS_PATCH_DIR/gcc-pr66035.patch
 fi
 
 if [ $(osxcross-cmp $GCC_VERSION '>=' 6.1.0) -eq 1 ] &&
    [ $(osxcross-cmp $GCC_VERSION '<=' 6.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/ml/gcc-patches/2016-09/msg00129.html
-  patch -p1 < $PATCH_DIR/gcc-6-buildfix.patch
+  patch -p1 < $OSXCROSS_PATCH_DIR/gcc-6-buildfix.patch
 fi
 
 if [ $(osxcross-cmp $GCC_VERSION '==' 6.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/darwin-driver.c?r1=244010&r2=244009&pathrev=244010
-  patch -p1 < $PATCH_DIR/darwin-driver.c.patch
+  patch -p1 < $OSXCROSS_PATCH_DIR/darwin-driver.c.patch
 fi
 
 if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION '>=' 10.14) -eq 1 ] &&
@@ -152,7 +152,7 @@ GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
 pushd $OSXCROSS_TARGET_DIR/x86_64-apple-$OSXCROSS_TARGET/include &>/dev/null
 pushd c++/${GCC_VERSION}* &>/dev/null
 
-cat $OSXCROSS_TARGET_DIR/../patches/libstdcxx.patch | \
+cat $OSXCROSS_PATCH_DIR/libstdcxx.patch | \
   $SED "s/darwin13/$OSXCROSS_TARGET/g" | \
   patch -p0 -l &>/dev/null || true
 
