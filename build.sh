@@ -5,7 +5,7 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
-OSXCROSS_VERSION=1.0
+VERSION=1.1
 
 pushd "${0%/*}" &>/dev/null
 
@@ -47,7 +47,7 @@ fi
 export TARGET
 
 echo ""
-echo "Building OSXCross toolchain, Version: $OSXCROSS_VERSION"
+echo "Building OSXCross toolchain, Version: $VERSION"
 echo ""
 echo "OS X SDK Version: $SDK_VERSION, Target: $TARGET"
 echo "Minimum targeted OS X Version: $OSX_VERSION_MIN"
@@ -104,12 +104,12 @@ fi
 
 ## cctools and ld64 ##
 
-get_sources https://github.com/tpoechtrager/cctools-port.git 921-ld64-409.12
+CCTOOLS_VERSION=927.0.2
+LINKER_VERSION=450.3
 
-LINKER_VERSION=$(cat \
-  $CURRENT_BUILD_PROJECT_NAME/cctools/ld64/src/3rd/helper.c | \
-  grep ldVersionString | head -n1 | awk '{print $6}' | tr ':' '\n' | \
-  tr '\\' '\n' | tr '-' '\n' | tr '\n' ' '| awk '{print $3}')
+get_sources \
+  https://github.com/tpoechtrager/cctools-port.git \
+  $CCTOOLS_VERSION-ld64-$LINKER_VERSION
 
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME/cctools &>/dev/null
@@ -143,6 +143,8 @@ if [ $f_res -eq 1 ]; then
       create_symlink $CCTOOL $CCTOOL_I386
     done
   fi
+  # For unpatched dsymutil. There is currently no way around it.
+  create_symlink x86_64-apple-$TARGET-lipo lipo
   popd &>/dev/null
 fi
 
@@ -173,7 +175,7 @@ fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
-if [ $PLATFORM == "FreeBSD" ]; then
+if [ $PLATFORM == "FreeBSD" ] || [ $PLATFORM == "OpenBSD" ]; then
   files=$(echo $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h)
   for file in $files; do
     rm -f usr/include/$(basename $file)
@@ -193,15 +195,6 @@ popd &>/dev/null
 
 build_msg "wrapper"
 
-export X86_64H_SUPPORTED
-export I386_SUPPORTED
-
-export OSXCROSS_VERSION
-export OSXCROSS_TARGET=$TARGET
-export OSXCROSS_OSX_VERSION_MIN=$OSX_VERSION_MIN
-export OSXCROSS_LINKER_VERSION=$LINKER_VERSION
-export OSXCROSS_BUILD_DIR=$BUILD_DIR
-
 OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
 OSXCROSS_ENV="$TARGET_DIR/bin/osxcross-env"
 rm -f $OSXCROSS_CONF $OSXCROSS_ENV
@@ -211,11 +204,20 @@ if [ "$PLATFORM" != "Darwin" ]; then
   set +e
   eval $(cat $BUILD_DIR/cctools*/cctools/config.log | grep LLVM_LIB_DIR | head -n1)
   set -e
-  export OSXCROSS_LIBLTO_PATH=$LLVM_LIB_DIR
+  export LIBLTO_PATH=$LLVM_LIB_DIR
 fi
 
-$BASE_DIR/wrapper/build.sh 1>/dev/null
+export VERSION
+export TARGET
+export BUILD_DIR
+export OSX_VERSION_MIN
+export LIBLTO_PATH
+export LINKER_VERSION
+export X86_64H_SUPPORTED
+export I386_SUPPORTED
+export TOP_BUILD_SCRIPT=1
 
+$BASE_DIR/wrapper/build_wrapper.sh
 
 echo ""
 

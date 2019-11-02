@@ -311,14 +311,6 @@ can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 x86\_64h defaults to `Mac OS X 10.8` and requires clang 3.5+.
 x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
 
-### BUILDING OSXCROSS WITH GCC: ###
-
-You can build OSXCross with GCC this way:
-
-`CC=gcc CXX=g++ ./build.sh`
-
-You will need gcc/g++/gcc-objc 4.7+.
-
 ### PROJECTS USING OSXCROSS: ###
 
 * [multiarch/crossbuild](https://github.com/multiarch/crossbuild): various

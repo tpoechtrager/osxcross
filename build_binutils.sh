@@ -30,33 +30,33 @@ MIRROR="https://ftp.gnu.org/gnu"
 
 require wget
 
-pushd $OSXCROSS_BUILD_DIR &>/dev/null
+pushd $BUILD_DIR &>/dev/null
 
 function remove_locks()
 {
-  rm -rf $OSXCROSS_BUILD_DIR/have_binutils*
+  rm -rf $BUILD_DIR/have_binutils*
 }
 
 function build_and_install()
 {
-  if [ ! -f "have_$1_$2_${OSXCROSS_TARGET}" ]; then
-    pushd $OSXCROSS_TARBALL_DIR &>/dev/null
+  if [ ! -f "have_$1_$2_${TARGET}" ]; then
+    pushd $TARBALL_DIR &>/dev/null
     wget -c "$MIRROR/$1/$1-$2.tar.gz"
     popd &>/dev/null
 
     echo "cleaning up ..."
     rm -rf $1* 2>/dev/null
 
-    extract "$OSXCROSS_TARBALL_DIR/$1-$2.tar.gz" 1
+    extract "$TARBALL_DIR/$1-$2.tar.gz" 1
 
     pushd $1*$2* &>/dev/null
     mkdir -p build
     pushd build &>/dev/null
 
     ../configure \
-      --target=x86_64-apple-$OSXCROSS_TARGET \
-      --program-prefix=x86_64-apple-$OSXCROSS_TARGET- \
-      --prefix=$OSXCROSS_TARGET_DIR/binutils \
+      --target=x86_64-apple-$TARGET \
+      --program-prefix=x86_64-apple-$TARGET- \
+      --prefix=$TARGET_DIR/binutils \
       --disable-nls \
       --disable-werror
 
@@ -65,7 +65,7 @@ function build_and_install()
 
     popd &>/dev/null
     popd &>/dev/null
-    touch "have_$1_$2_${OSXCROSS_TARGET}"
+    touch "have_$1_$2_${TARGET}"
   fi
 }
 
@@ -75,5 +75,5 @@ build_and_install binutils $BINUTILS_VERSION
 build_and_install gdb $GDB_VERSION
 
 echo ""
-echo "installed binutils and gdb to $OSXCROSS_TARGET_DIR/binutils"
+echo "installed binutils and gdb to $TARGET_DIR/binutils"
 echo ""

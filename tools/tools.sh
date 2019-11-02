@@ -2,20 +2,48 @@
 
 export LC_ALL="C"
 
-BASE_DIR=$PWD
+function set_path_vars()
+{
+  if [ -n "$OSXCROSS_VERSION" ]; then
+    export VERSION=$OSXCROSS_VERSION
+    export TARGET=$OSXCROSS_TARGET
+    export BASE_DIR=$OSXCROSS_BASE_DIR
+    export TARBALL_DIR=$OSXCROSS_TARBALL_DIR
+    export BUILD_DIR=$OSXCROSS_BUILD_DIR
+    export TARGET_DIR=$OSXCROSS_TARGET_DIR
+    export TARGET_DIR_SDK_TOOLS=$OSXCROSS_TARGET_DIR/SDK/tools
+    export PATCH_DIR=$OSXCROSS_PATCH_DIR
+    export SDK_DIR=$OSXCROSS_SDK_DIR
+    export SDK_VERSION=$OSXCROSS_SDK_VERSION
+    export SDK=$OSXCROSS_SDK
+    export LIBLTO_PATH=$OSXCROSS_LIBLTO_PATH
+    export LINKER_VERSION=$OSXCROSS_LINKER_VERSION
+    # Do not use these
+    unset OSXCROSS_VERSION OSXCROSS_OSX_VERSION_MIN
+    unset OSXCROSS_TARGET OSXCROSS_BASE_DIR
+    unset OSXCROSS_SDK_VERSION OSXCROSS_SDK
+    unset OSXCROSS_SDK_DIR OSXCROSS_TARBALL_DIR
+    unset OSXCROSS_PATCH_DIR OSXCROSS_TARGET_DIR
+    unset OSXCROSS_BUILD_DIR OSXCROSS_CCTOOLS_PATH
+    unset OSXCROSS_LIBLTO_PATH OSXCROSS_LINKER_VERSION
+  else
+    export BASE_DIR=$PWD
+    export TARBALL_DIR=$PWD/tarballs
+    export BUILD_DIR=$PWD/build
+    export TARGET_DIR=${TARGET_DIR:-$BASE_DIR/target}
+    export TARGET_DIR_SDK_TOOLS=$TARGET_DIR/SDK/tools
+    export PATCH_DIR=$PWD/patches
+    export SDK_DIR=$TARGET_DIR/SDK
+  fi
+}
 
-TARBALL_DIR=$BASE_DIR/tarballs
-BUILD_DIR=$BASE_DIR/build
-TARGET_DIR=${TARGET_DIR:-$BASE_DIR/target}
-TARGET_DIR_SDK_TOOLS=$TARGET_DIR/SDK/tools
-PATCH_DIR=$BASE_DIR/patches
-SDK_DIR=$TARGET_DIR/SDK
+set_path_vars
 
 PLATFORM=$(uname -s)
 ARCH=$(uname -m)
 SCRIPT=$(basename $0)
 
-if [ $PLATFORM == CYGWIN* ]; then
+if [[ $PLATFORM == CYGWIN* ]]; then
   echo "Cygwin is no longer supported." 1>&2
   exit 1
 fi
@@ -79,27 +107,27 @@ require gunzip
 # enable debug messages
 [ -n "$OCDEBUG" ] && set -x
 
-if [[ $SCRIPT != *wrapper/build.sh ]]; then
-  # how many concurrent jobs should be used for compiling?
-  if [ -z "$JOBS" ]; then
-    JOBS=$(tools/get_cpu_count.sh || echo 1)
+# how many concurrent jobs should be used for compiling?
+if [ -z "$JOBS" ]; then
+  JOBS=$(tools/get_cpu_count.sh || echo 1)
+fi
+
+# Don't run osxcross-conf for the top build.sh script
+if [ $SCRIPT != "build.sh" ]; then
+  res=$(tools/osxcross_conf.sh || echo "")
+
+  if [ -z "$res" ] &&
+      [[ $SCRIPT != gen_sdk_package*.sh ]] &&
+      [ $SCRIPT != "build_wrapper.sh" ] &&
+      [[ $SCRIPT != build*_clang.sh ]] &&
+      [ $SCRIPT != "mount_xcode_image.sh" ]; then
+    echo "you must run ./build.sh first before you can start building $DESC"
+    exit 1
   fi
 
-  if [ $SCRIPT != "build.sh" -a \
-       $SCRIPT != "build_clang.sh" -a \
-       $SCRIPT != "mount_xcode_image.sh" -a \
-       $SCRIPT != "gen_sdk_package_darling_dmg.sh" -a \
-       $SCRIPT != "gen_sdk_package_p7zip.sh" -a \
-       $SCRIPT != "gen_sdk_package_pbzx.sh"  ]; then
-    res=$(tools/osxcross_conf.sh)
-
-    if [ $? -ne 0 ]; then
-      echo -n "you must run ./build.sh first before you can start "
-      echo "building $DESC"
-      exit 1
-    fi
-
+  if [ -z "$TOP_BUILD_SCRIPT" ]; then
     eval "$res"
+    set_path_vars
   fi
 fi
 

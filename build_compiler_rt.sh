@@ -60,13 +60,13 @@ else
 fi
 
 if [ $(osxcross-cmp $MACOSX_DEPLOYMENT_TARGET ">" \
-                    $OSXCROSS_SDK_VERSION) -eq 1 ];
+                    $SDK_VERSION) -eq 1 ];
 then
   echo ">= $MACOSX_DEPLOYMENT_TARGET SDK required" 1>&2
   exit 1
 fi
 
-pushd $OSXCROSS_BUILD_DIR &>/dev/null
+pushd $BUILD_DIR &>/dev/null
 
 FULL_CLONE=1 \
   get_sources https://git.llvm.org/git/compiler-rt.git $BRANCH
@@ -74,9 +74,9 @@ FULL_CLONE=1 \
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
 
-  if [ $(osxcross-cmp $OSXCROSS_SDK_VERSION "<=" 10.11) -eq 1 ]; then
+  if [ $(osxcross-cmp $SDK_VERSION "<=" 10.11) -eq 1 ]; then
     # https://github.com/tpoechtrager/osxcross/issues/178
-    patch -p1 < $OSXCROSS_PATCH_DIR/compiler-rt_clock-gettime.patch
+    patch -p1 < $PATCH_DIR/compiler-rt_clock-gettime.patch
   fi
 
   EXTRA_MAKE_FLAGS=""

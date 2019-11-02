@@ -1,8 +1,19 @@
+/****************************** v1.1 *********************************/
+
+Added:
+ * ... back support for OpenBSD
+
+Changed:
+ * Updated cctools to 927.0.2 and ld64 to 450.3
+ * TARGET_DIR can now be configured via env
+   (TARGET_DIR=<path> ./build.sh)
+ * Various other improvements and fixes
+
 /****************************** v1.0 *********************************/
 
 Added:
  * Support for TAPIv3 stubs (including "zippering" target)
- * Support for Mac OS X SDKs up to 10.14
+ * Support for Mac OS X SDKs up to 10.15
  * SDK packaging script for ".xip" Xcode images
    -> tools/gen_sdk_package_pbzx.sh <xcode.xip> 
    --> tested up to Xcode 10.2.1
