@@ -177,6 +177,8 @@ if [ "$PLATFORM" != "Darwin" ]; then
     # LLVM dsymutil version. In this case don't wrap it.
     # Just create target symlinks.
 
+    verbose_cmd create_symlink $(which dsymutil) x86_64-apple-$TARGET-dsymutil
+
     if [ $I386_SUPPORTED -eq 1 ]; then
       verbose_cmd create_symlink $(which dsymutil) i386-apple-$TARGET-dsymutil
     fi

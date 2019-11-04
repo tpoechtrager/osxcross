@@ -11,10 +11,14 @@ ADDITIONAL_CXXFLAGS ?=
 
 override CXXFLAGS=-std=c++1y -Wall -Wextra -pedantic
 override CXXFLAGS+=-Wno-missing-field-initializers
-override CXXFLAGS+=-I. -O$(OPTIMIZE) -g
+override CXXFLAGS+=-I. -O$(OPTIMIZE)
 
 ifeq ($(LTO), 1)
   override CXXFLAGS+=-flto
+endif
+
+ifeq ($(OCDEBUG), 1)
+  override CXXFLAGS+=-g
 endif
 
 override CXXFLAGS+=-DOSXCROSS_VERSION="\"$(VERSION)\""
