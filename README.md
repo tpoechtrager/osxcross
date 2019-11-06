@@ -2,8 +2,8 @@
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to provide a well working OS X cross toolchain for
-Linux and FreeBSD.
+The goal of OSXCross is to provide a well working OS X cross toolchain for  
+Linux, FreeBSD, OpenBSD and Android (Termux).
 
 OSXCross works **on** x86, x86_64, ARM and AArch64.
 

@@ -171,6 +171,15 @@ else
   mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
 fi
 
+## Android/Termux is broken
+
+if [ $OPERATING_SYSTEM == "Android" ]; then
+  pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
+  mkdir -p data/data/com.termux/files/usr
+  create_symlink $PWD/usr/include data/data/com.termux/files/usr
+  popd &>/dev/null
+fi
+
 ## Fix broken SDKs ##
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null

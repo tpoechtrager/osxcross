@@ -41,6 +41,7 @@ set_path_vars
 
 PLATFORM=$(uname -s)
 ARCH=$(uname -m)
+OPERATING_SYSTEM=$(uname -o 2>/dev/null || echo "-")
 SCRIPT=$(basename $0)
 
 if [[ $PLATFORM == CYGWIN* ]]; then
