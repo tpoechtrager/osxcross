@@ -184,14 +184,12 @@ fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
-if [ $PLATFORM == "FreeBSD" ] || [ $PLATFORM == "OpenBSD" ]; then
-  files=$(echo $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h)
-  for file in $files; do
-    rm -f usr/include/$(basename $file)
-    cp $file usr/include
-  done
-  cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
-fi
+files=$(echo $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h)
+for file in $files; do
+  rm -f usr/include/$(basename $file)
+  cp $file usr/include
+done
+cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
 if [ ! -f "usr/include/float.h" ]; then
   cp -f $BASE_DIR/oclang/quirks/float.h usr/include
 fi
