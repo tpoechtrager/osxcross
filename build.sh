@@ -184,17 +184,14 @@ fi
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
 set +e
-if [ $PLATFORM == "FreeBSD" ] || [ $PLATFORM == "OpenBSD" ]; then
-  files=$(echo $SDK_DIR/MacOSX$SDK_VERSION.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/std*.h)
-  for file in $files; do
-    rm -f usr/include/$(basename $file)
+files=$(echo $BASE_DIR/oclang/quirks/*.h)
+for file in $files; do
+  filename=$(basename $file)
+  if [ ! -f "usr/include/$filename" ]; then
+    rm -f usr/include/$filename # Broken symlink
     cp $file usr/include
-  done
-  cp -f $BASE_DIR/oclang/quirks/tgmath.h usr/include
-fi
-if [ ! -f "usr/include/float.h" ]; then
-  cp -f $BASE_DIR/oclang/quirks/float.h usr/include
-fi
+  fi
+done
 set -e
 popd &>/dev/null
 
