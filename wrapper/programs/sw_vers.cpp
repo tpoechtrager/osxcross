@@ -31,11 +31,7 @@ int sw_vers(int argc, char **argv, Target &target) {
   auto genFakeBuildVer = [](std::string & build)->std::string & {
     std::stringstream tmp;
 
-#if __has_builtin(__builtin_readcyclecounter)
-    srand(static_cast<unsigned int>(__builtin_readcyclecounter()));
-#else
     srand(static_cast<unsigned int>(getNanoSeconds()));
-#endif
 
     for (int i = 0; i < 5; ++i)
       tmp << std::hex << (rand() % 16 + 1);
