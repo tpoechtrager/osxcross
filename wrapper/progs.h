@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross Compiler Wrapper                                          *
- *  Copyright (C) 2014-2016 by Thomas Poechtrager                      *
+ *  Copyright (C) 2014-2020 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -78,6 +78,7 @@ private:
 
 int sw_vers(int argc, char **argv, target::Target &target);
 int xcrun(int argc, char **argv, Target &target);
+int xcodebuild(int argc, char **argv, Target &target);
 int dsymutil(int argc, char **argv, target::Target &target);
 
 namespace osxcross {
@@ -94,6 +95,7 @@ static int dummy() { return 0; }
 constexpr prog programs[] = {
   { "sw_vers", sw_vers },
   { "xcrun", xcrun },
+  { "xcodebuild", xcodebuild },
   { "dsymutil", dsymutil },
   { "osxcross", osxcross::version },
   { "osxcross-env", osxcross::env },

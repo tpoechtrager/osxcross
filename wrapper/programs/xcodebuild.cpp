@@ -25,48 +25,57 @@ using namespace tools;
 using namespace target;
 
 namespace program {
+namespace {
 
-int sw_vers(int argc, char **argv, Target &target) {
+int version(Target*, char**) {
+  std::cout << "Xcode 10.2.1" << std::endl;
+  std::cout << "Build version 0CFFFF" << std::endl;
+  return 0;
+}
 
-  auto getProductVer = [&]()->OSVersion {
-    char *p = getenv("OSXCROSS_SW_VERS_OSX_VERSION");
-    OSVersion OSNum;
+int help(Target* = nullptr, char** = nullptr) {
+  std::cerr << "Only '-version' is supported by this stub tool" << std::endl;
+  return 0;
+}
 
-    if (!p)
-      p = getenv("MACOSX_DEPLOYMENT_TARGET");
+} // anonymous namespace
 
-    if (p)
-      OSNum = parseOSVersion(p);
-    else
-      OSNum = getDefaultMinTarget();
+int xcodebuild(int argc, char **argv, Target &target) {
+  auto dummy = [](Target*, char**) { return 0; };
 
-    if (!OSNum.Num())
-      OSNum = target.getSDKOSNum();
+  ArgParser<int (*)(Target*, char**), 3> argParser = {{
+    {"version", version},
+    {"sdk", dummy},
+    {"help", help}
+  }};
 
-    return OSNum;
-  };
+  if (argc == 1)
+    help();
 
-  if (argc == 2) {
-    std::stringstream str;
+  int retVal = 1;
 
-    if (!strcmp(argv[1], "-productName")) {
-      str << "Mac OS X";
-    } else if (!strcmp(argv[1], "-productVersion")) {
-      str << getProductVer().shortStr();
-    } else if (!strcmp(argv[1], "-buildVersion")) {
-      str << "0CFFFF";
-    } else {
-      return 1;
+  for (int i = 1; i < argc; ++i) {
+    auto b = argParser.parseArg(argc, argv, i);
+
+    if (!b) {
+      if (argv[i][0] == '-') {
+        err << "xcodebuild: unknown argument: '" << argv[i] << "'" << err.endl();
+        retVal = 2;
+        break;
+      }
+
+      continue;
     }
 
-    std::cout << str.str() << std::endl;
-  } else if (argc == 1) {
-    std::cout << "ProductName:    Mac OS X" << std::endl;
-    std::cout << "ProductVersion: " << getProductVer().shortStr() << std::endl;
-    std::cout << "BuildVersion:   0CFFFF" << std::endl;
+    retVal = b->fun(&target, &argv[i + 1]);
+
+    if (retVal != 0)
+      break;
+
+    i += b->numArgs;
   }
 
-  return 0;
+  return retVal;
 }
 
 } // namespace program

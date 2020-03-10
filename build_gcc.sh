@@ -19,7 +19,7 @@ source tools/tools.sh
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
   GCC_VERSION=9.2.0
-  #GCC_VERSION=5-20140928 # snapshot
+  #GCC_VERSION=5-20200228 # snapshot
 fi
 
 # GCC mirror

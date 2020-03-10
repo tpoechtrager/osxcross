@@ -789,6 +789,7 @@ bool Target::setup() {
     case Arch::i586:
     case Arch::i686:
       is32bit = true;
+      // falls through
     case Arch::x86_64:
     case Arch::x86_64h:
       if (isGCC()) {

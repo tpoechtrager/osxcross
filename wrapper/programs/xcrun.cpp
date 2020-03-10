@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross Compiler Wrapper                                          *
- *  Copyright (C) 2014-2016 by Thomas Poechtrager                      *
+ *  Copyright (C) 2014-2020 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
@@ -47,7 +47,7 @@ bool isXcodeTool(const char *tool) {
   return false;
 }
 
-bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
+bool getToolPath(Target *target, std::string &toolpath, const char *tool) {
   const char *filename = getFileName(tool);
   bool isxcodetool = isXcodeTool(filename);
 
@@ -61,9 +61,9 @@ bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
   }
 
   if (toolpath.empty()) {
-    toolpath = target.execpath;
+    toolpath = target->execpath;
     toolpath += PATHDIV;
-    toolpath += getArchName(target.arch);
+    toolpath += getArchName(target->arch);
     toolpath += "-";
     toolpath += getDefaultVendor();
     toolpath += "-";
@@ -84,18 +84,18 @@ bool getToolPath(Target &target, std::string &toolpath, const char *tool) {
   return true;
 }
 
-int help(Target&, char**) {
+int help(Target* = nullptr, char** = nullptr) {
   std::cerr << "https://developer.apple.com/library/mac/documentation/Darwin/"
                "Reference/ManPages/man1/xcrun.1.html" << std::endl;
   return 0;
 }
 
-int version(Target&, char**) {
+int version(Target*, char**) {
   std::cout << "xcrun version: 0." << std::endl;
   return 0;
 }
 
-int sdk(Target&, char **argv) {
+int sdk(Target*, char **argv) {
   const char *SDK = argv[0];
 
   if (!strcmp(SDK, "macosx") || !strcmp(SDK, "macosx.internal"))
@@ -133,12 +133,12 @@ int sdk(Target&, char **argv) {
   return 0;
 }
 
-int log(Target&, char**) {
+int log(Target*, char**) {
   showCommand = true;
   return 0;
 }
 
-int find(Target &target, char **argv) {
+int find(Target *target, char **argv) {
   if (argv[1])
     return 1;
   std::string toolpath;
@@ -148,7 +148,7 @@ int find(Target &target, char **argv) {
   return 0;
 }
 
-int run(Target &target, char **argv) {
+int run(Target *target, char **argv) {
   std::string toolpath;
   std::string command;
 
@@ -181,16 +181,21 @@ int run(Target &target, char **argv) {
   __builtin_unreachable();
 }
 
-int showSDKPath(Target &target, char**) {
+int showSDKPath(Target *target, char**) {
   std::string SDKPath;
-  if (!target.getSDKPath(SDKPath))
+  if (!target->getSDKPath(SDKPath))
     return 1;
   std::cout << SDKPath << std::endl;
   return 0;
 }
 
-int showSDKVersion(Target &target, char**) {
-  std::cout << target.getSDKOSNum().shortStr() << std::endl;
+int showSDKVersion(Target *target, char**) {
+  std::cout << target->getSDKOSNum().shortStr() << std::endl;
+  return 0;
+}
+
+int showPlatformPath(Target *target, char**) {
+  std::cout << target->execpath << "/.." << std::endl;
   return 0;
 }
 
@@ -216,12 +221,12 @@ int xcrun(int argc, char **argv, Target &target) {
   if (char *SDK = getenv("SDKROOT")) {
     unsetenv("OSXCROSS_SDKROOT");
     char *argv[1] = { SDK };
-    sdk(target, argv);
+    sdk(&target, argv);
   }
 
-  auto dummy = [](Target&, char**) { return 0; };
+  auto dummy = [](Target*, char**) { return 0; };
 
-  ArgParser<int (*)(Target&, char**), 19> argParser = {{
+  ArgParser<int (*)(Target*, char**), 20> argParser = {{
     {"h", help},
     {"help", help},
     {"version", version},
@@ -240,8 +245,12 @@ int xcrun(int argc, char **argv, Target &target) {
     {"r", run, 1},
     {"run", run, 1},
     {"show-sdk-path", showSDKPath},
-    {"show-sdk-version", showSDKVersion}
+    {"show-sdk-version", showSDKVersion},
+    {"show-sdk-platform-path", showPlatformPath}
   }};
+
+  if (argc == 1)
+    help();
 
   int retVal = 1;
 
@@ -255,10 +264,10 @@ int xcrun(int argc, char **argv, Target &target) {
         break;
       }
 
-      run(target, &argv[i]);
+      run(&target, &argv[i]);
     }
 
-    retVal = b->fun(target, &argv[i + 1]);
+    retVal = b->fun(&target, &argv[i + 1]);
 
     if (retVal != 0)
       break;

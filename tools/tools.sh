@@ -296,18 +296,20 @@ function git_clone_repository
   fi
 
   if [ ! -d $project_name ]; then
-    local args=""
-    if [ -z "$FULL_CLONE" ] && [ $branch == "master" ]; then
-      args="--depth 1"
-    fi 
-    git clone $url $args
+    git clone $url $args $project_name --depth 1
   fi
 
   pushd $project_name &>/dev/null
 
   git reset --hard &>/dev/null
   git clean -fdx &>/dev/null
-  git fetch origin
+
+  if git show-ref refs/heads/$branch &>/dev/null; then
+    git fetch origin $branch
+  else
+    git fetch origin $branch:$branch --depth 1
+  fi
+  
   git checkout $branch
   git pull origin $branch
 
@@ -366,8 +368,12 @@ function get_sources()
 {
   local url=$1
   local branch=$2
-  local project_name=$(get_project_name_from_url $url)
+  local project_name=$3
   local build_complete_file="$BUILD_DIR/.${project_name}_build_complete"
+
+  if [ -z "$project_name" ]; then
+    project_name=$(get_project_name_from_url $url)
+  fi
 
   CURRENT_BUILD_PROJECT_NAME=$project_name
 

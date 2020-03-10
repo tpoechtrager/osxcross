@@ -190,6 +190,7 @@ if [ "$PLATFORM" != "Darwin" ]; then
   fi
 
   create_wrapper_link xcrun 1
+  create_wrapper_link xcodebuild 1
 fi
 
 popd &>/dev/null

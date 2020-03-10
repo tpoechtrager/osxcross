@@ -35,22 +35,23 @@ CLANG_DARWIN_LIB_DIR="${CLANG_LIB_DIR}/lib/darwin"
 USE_CMAKE=0
 
 case $CLANG_VERSION in
-  3.2* ) BRANCH=release_32 ;;
-  3.3* ) BRANCH=release_33 ;;
-  3.4* ) BRANCH=release_34 ;;
-  3.5* ) BRANCH=release_35 ;;
-  3.6* ) BRANCH=release_36 ;;
-  3.7* ) BRANCH=release_37 ;;
-  3.8* ) BRANCH=release_38; USE_CMAKE=1; ;;
-  3.9* ) BRANCH=release_39; USE_CMAKE=1; ;;
-  4.0* ) BRANCH=release_40; USE_CMAKE=1; ;;
-  5.0* ) BRANCH=release_50; USE_CMAKE=1; ;;
-  6.0* ) BRANCH=release_60; USE_CMAKE=1; ;;
-  7.*  ) BRANCH=release_70; USE_CMAKE=1; ;;
-  8.*  ) BRANCH=release_80; USE_CMAKE=1; ;;
-  9.*  ) BRANCH=release_90; USE_CMAKE=1; ;;
-  10.* ) BRANCH=master;     USE_CMAKE=1; ;;
-     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 10.0" 1>&2; exit 1;
+  3.2* ) BRANCH=release/3.2.x ;;
+  3.3* ) BRANCH=release/3.3.x ;;
+  3.4* ) BRANCH=release/3.4.x ;;
+  3.5* ) BRANCH=release/3.5.x ;;
+  3.6* ) BRANCH=release/3.6.x ;;
+  3.7* ) BRANCH=release/3.7.x ;;
+  3.8* ) BRANCH=release/3.8.x;   USE_CMAKE=1; ;;
+  3.9* ) BRANCH=release/3.9.x;   USE_CMAKE=1; ;;
+  4.0* ) BRANCH=release/4.x;     USE_CMAKE=1; ;;
+  5.0* ) BRANCH=release/5.x;     USE_CMAKE=1; ;;
+  6.0* ) BRANCH=release/6.x;     USE_CMAKE=1; ;;
+  7.*  ) BRANCH=release/7.x;     USE_CMAKE=1; ;;
+  8.*  ) BRANCH=release/8.x;     USE_CMAKE=1; ;;
+  9.*  ) BRANCH=release/9.x;     USE_CMAKE=1; ;;
+  10.* ) BRANCH=release/10.x;    USE_CMAKE=1; ;;
+  11.* ) BRANCH=master;          USE_CMAKE=1; ;;
+     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 11.0" 1>&2; exit 1;
 esac
 
 if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
@@ -66,13 +67,19 @@ then
   exit 1
 fi
 
+HAVE_OS_LOCK=0
+
+if echo "#include <os/lock.h>" | xcrun clang -E - &>/dev/null; then
+  HAVE_OS_LOCK=1
+fi
+
 pushd $BUILD_DIR &>/dev/null
 
 FULL_CLONE=1 \
-  get_sources https://git.llvm.org/git/compiler-rt.git $BRANCH
+  get_sources https://github.com/llvm/llvm-project.git $BRANCH "compiler-rt"
 
 if [ $f_res -eq 1 ]; then
-  pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+  pushd "$CURRENT_BUILD_PROJECT_NAME/compiler-rt" &>/dev/null
 
   if [ $(osxcross-cmp $SDK_VERSION "<=" 10.11) -eq 1 ]; then
     # https://github.com/tpoechtrager/osxcross/issues/178
@@ -114,6 +121,11 @@ if [ $f_res -eq 1 ]; then
 
     $SED -i "s/COMMAND codesign /COMMAND true /g" \
       cmake/Modules/AddCompilerRT.cmake
+
+    if [ $HAVE_OS_LOCK -eq 0 ]; then
+      $SED -i "s/COMPILER_RT_HAS_TSAN TRUE/COMPILER_RT_HAS_TSAN FALSE/g" \
+        cmake/config-ix.cmake
+    fi
 
     mkdir build
     pushd build &>/dev/null
@@ -177,14 +189,14 @@ echo ""
 
 echo "mkdir -p ${CLANG_INCLUDE_DIR}"
 echo "mkdir -p ${CLANG_DARWIN_LIB_DIR}"
-echo "cp -rv $BUILD_DIR/compiler-rt/include/sanitizer ${CLANG_INCLUDE_DIR}"
+echo "cp -rv $BUILD_DIR/compiler-rt/compiler-rt/include/sanitizer ${CLANG_INCLUDE_DIR}"
 
 if [ $USE_CMAKE -eq 1 ]; then
 
   ### CMAKE ###
 
-  echo "cp -v $BUILD_DIR/compiler-rt/build/lib/darwin/*.a ${CLANG_DARWIN_LIB_DIR}"
-  echo "cp -v $BUILD_DIR/compiler-rt/build/lib/darwin/*.dylib ${CLANG_DARWIN_LIB_DIR}"
+  echo "cp -v $BUILD_DIR/compiler-rt/compiler-rt/build/lib/darwin/*.a ${CLANG_DARWIN_LIB_DIR}"
+  echo "cp -v $BUILD_DIR/compiler-rt/compiler-rt/build/lib/darwin/*.dylib ${CLANG_DARWIN_LIB_DIR}"
 
   ### CMAKE END ###
 
@@ -196,7 +208,7 @@ else
 
   function print_install_command() {
     if [ -f "$1" ]; then
-      echo "cp $PWD/$1 ${CLANG_DARWIN_LIB_DIR}/$2"
+      echo "cp $PWD/compiler-rt/$1 ${CLANG_DARWIN_LIB_DIR}/$2"
     fi
   }
 
