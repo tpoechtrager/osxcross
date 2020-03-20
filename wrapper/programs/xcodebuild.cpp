@@ -28,7 +28,7 @@ namespace program {
 namespace {
 
 int version(Target*, char**) {
-  std::cout << "Xcode 10.2.1" << std::endl;
+  std::cout << "Xcode 11.0" << std::endl;
   std::cout << "Build version 0CFFFF" << std::endl;
   return 0;
 }
