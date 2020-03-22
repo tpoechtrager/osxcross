@@ -6,6 +6,7 @@ function set_path_vars()
 {
   if [ -n "$OSXCROSS_VERSION" ]; then
     export VERSION=$OSXCROSS_VERSION
+    export OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
     export TARGET=$OSXCROSS_TARGET
     export BASE_DIR=$OSXCROSS_BASE_DIR
     export TARBALL_DIR=$OSXCROSS_TARBALL_DIR
@@ -195,12 +196,6 @@ function extract()
   test -n "$OCDEBUG" && tarflags+="v"
 
   case $1 in
-    *.pkg)
-      require cpio
-      which xar &>/dev/null || exit 1
-      xar -xf $1
-      cat Payload | gunzip -dc | cpio -i 2>/dev/null && rm Payload
-      ;;
     *.tar.xz)
       xz -dc $1 | tar $tarflags -
       ;;

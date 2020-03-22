@@ -22,6 +22,11 @@ if [ -z "$GCC_VERSION" ]; then
   #GCC_VERSION=5-20200228 # snapshot
 fi
 
+if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
+  echo "You must build OSXCross with OSX_VERSION_MIN >= 10.6" 2>&1
+  exit 1
+fi
+
 # GCC mirror
 GCC_MIRROR="https://mirror.koddos.net/gcc"
 

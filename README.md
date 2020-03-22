@@ -296,7 +296,7 @@ Usage Examples:
 
 The default deployment target is:  
 
-SDK <= 10.13: `Mac OS X 10.5`  
+SDK <= 10.13: `Mac OS X 10.6`  
 SDK >= 10.14: `Mac OS X 10.9`
 
 However, there are several ways to override the default value:

@@ -1,3 +1,15 @@
+/****************************** v1.2 *********************************/
+
+Added:
+ * Support for ld64 '-lto_library <path>'
+
+Changed:
+ * Updated cctools to 949.0.1 and ld64 to 512.4
+
+Removed:
+ * Support for <= 10.5 SDKs. Use 'osxcross-1.1' branch for these.
+
+
 /****************************** v1.1 *********************************/
 
 Added:

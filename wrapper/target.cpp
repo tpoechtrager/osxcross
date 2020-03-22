@@ -844,6 +844,35 @@ bool Target::setup() {
     }
   }
 
+  bool isgcclibstdcxx =
+      (isGCC() || (isClang() && usegcclibs && stdlib == StdLib::libstdcxx));
+
+  if (OSNum <= OSVersion(10, 5)) {
+    bool error = false;
+    bool nowarning = false;
+
+    if (isgcclibstdcxx) {
+      err << "building for OS X '<= 10.5' with GCC (or clang++-gstdc++) "
+             "is no longer supported" << err.endl();
+      error = true;
+    } else if (isClang()) {
+      nowarning = !!getenv("OSXCROSS_NO_10_5_DEPRECATION_WARNING");
+      if (!nowarning)
+        warn << "building for OS X '<= 10.5' "
+                "is no longer supported"  << warn.endl();
+    }
+
+    if (!nowarning)
+      info << "use 'osxcross-1.1' branch instead" << info.endl();
+
+    if (error)
+      return false;
+  }
+
+  // Silence 'operator new[]' warning in ld64
+  if (isgcclibstdcxx)
+    setenv("OSXCROSS_GCC_LIBSTDCXX", "1", 1);
+
   return true;
 }
 } // namespace target

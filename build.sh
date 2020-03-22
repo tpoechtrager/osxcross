@@ -5,7 +5,7 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
-VERSION=1.1
+VERSION=1.2
 
 pushd "${0%/*}" &>/dev/null
 
@@ -13,7 +13,6 @@ source tools/tools.sh
 
 if [ $SDK_VERSION ]; then
   echo 'SDK VERSION set in environment variable:' $SDK_VERSION
-  test $SDK_VERSION = 10.4 && SDK_VERSION=10.4u
 else
   guess_sdk_version
   SDK_VERSION=$guess_sdk_version_result
@@ -21,28 +20,33 @@ fi
 verify_sdk_version $SDK_VERSION
 
 case $SDK_VERSION in
-  10.4*)  TARGET=darwin8;  X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.4;  ;;
-  10.5*)  TARGET=darwin9;  X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.6*)  TARGET=darwin10; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.7*)  TARGET=darwin11; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.8*)  TARGET=darwin12; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.9*)  TARGET=darwin13; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.4*|10.5*)
+    echo ""
+    echo "SDK <= 10.5 no longer supported. Use 'osxcross-1.1' branch instead."
+    exit 1
+      ;;
+esac
+
+
+case $SDK_VERSION in
+  10.6*)  TARGET=darwin10; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.7*)  TARGET=darwin11; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.8*)  TARGET=darwin12; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.9*)  TARGET=darwin13; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
   10.14*) TARGET=darwin18; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
   10.15*) TARGET=darwin19; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
 *) echo "Unsupported SDK"; exit 1 ;;
 esac
-
 
 # Minimum targeted OS X version
 # Must be <= SDK_VERSION
 if [ -n "$OSX_VERSION_MIN_INT" -a -z "$OSX_VERSION_MIN" ]; then
   OSX_VERSION_MIN=$OSX_VERSION_MIN_INT
 fi
-
 
 export TARGET
 
@@ -122,8 +126,7 @@ if [ $f_res -eq 1 ]; then
   CONFFLAGS+="--with-libxar=$TARGET_DIR "
   [ -n "$DISABLE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
   [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
-  # https://github.com/tpoechtrager/osxcross/issues/156
-  CXX="$CXX -DNDEBUG" ./configure $CONFFLAGS
+  ./configure $CONFFLAGS
   $MAKE -j$JOBS
   $MAKE install -j$JOBS
   popd &>/dev/null
@@ -227,12 +230,12 @@ $BASE_DIR/wrapper/build_wrapper.sh
 
 echo ""
 
-if [ $(osxcross-cmp ${SDK_VERSION/u/} "<" $OSX_VERSION_MIN) -eq 1 ]; then
+if [ $(osxcross-cmp $SDK_VERSION "<" $OSX_VERSION_MIN) -eq 1 ]; then
   echo "OSX_VERSION_MIN must be <= SDK_VERSION"
   trap "" EXIT
   exit 1
-elif [ $(osxcross-cmp $OSX_VERSION_MIN "<" 10.4) -eq 1  ]; then
-  echo "OSX_VERSION_MIN must be >= 10.4"
+elif [ $(osxcross-cmp $OSX_VERSION_MIN "<" 10.6) -eq 1  ]; then
+  echo "OSX_VERSION_MIN must be >= 10.6"
   trap "" EXIT
   exit 1
 fi
@@ -249,7 +252,7 @@ create_symlink osxcross-cmake "$TARGET_DIR/bin/x86_64-apple-$TARGET-cmake"
 
 unset MACOSX_DEPLOYMENT_TARGET
 
-if [ $(osxcross-cmp ${SDK_VERSION/u/} ">=" 10.7) -eq 1 ]; then
+if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
   pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
   if [ ! -f "usr/include/c++/v1/vector" ]; then
     echo ""
@@ -319,7 +322,7 @@ if [ $I386_SUPPORTED -eq 0 ]; then
   echo ""
 fi
 
-if [ $(osxcross-cmp ${SDK_VERSION/u/} ">=" 10.14) -eq 1 ]; then
+if [ $(osxcross-cmp $SDK_VERSION ">=" 10.14) -eq 1 ]; then
   echo "Your SDK does not support libstdc++ anymore."
   echo "Use <= 10.13 SDK if you rely on libstdc++ support."
   echo ""
