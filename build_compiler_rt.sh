@@ -73,6 +73,8 @@ if echo "#include <os/lock.h>" | xcrun clang -E - &>/dev/null; then
   HAVE_OS_LOCK=1
 fi
 
+export OSXCROSS_NO_10_5_DEPRECATION_WARNING=1
+
 pushd $BUILD_DIR &>/dev/null
 
 FULL_CLONE=1 \
