@@ -21,11 +21,6 @@ PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 PLATFORM=$(uname -s)
 ARCH="x86_64"
 
-if [ $PLATFORM == "FreeBSD" ]; then
-  WGETOPTS="--ca-certificate="
-  WGETOPTS+="/usr/local/share/certs/ca-root-nss.crt"
-fi
-
 if [ -z "$BASHPID" ]; then
   BASHPID=$(sh -c 'echo $PPID')
 fi
@@ -72,7 +67,6 @@ unsupportedDepTarget()
   exit 1
 }
 
-require "wget"
 require "openssl"
 
 case $MACOSX_DEPLOYMENT_TARGET in
@@ -182,26 +176,63 @@ selectMirror()
   MIRROR=$(cat $SELECTEDMIRROR)
 }
 
+function download()
+{
+  local uri=$1
+  local filename
+
+  if [ $# -eq 2 ]; then
+    filename=$2
+  else
+    filename=$(basename $1)
+  fi
+
+  if which curl &>/dev/null; then
+    ## cURL ##
+    local curl_opts="-L -C - "
+    if [ -z "$VERBOSE" ]; then
+      curl_opts+="-s "
+    fi
+    if [ $filename != "-" ]; then
+      curl_opts+="-o $filename "
+    fi
+    curl $curl_opts $uri
+  elif which wget &>/dev/null; then
+    ## wget ##
+    local wget_opts="-c -O $filename "
+    local output=$(wget --no-config 2>&1)
+    if [[ $output != *--no-config* ]]; then
+      wget_opts+="--no-config "
+    fi
+    if [ $PLATFORM == "FreeBSD" ]; then
+      wget_opts="--ca-certificate="
+      wget_opts+="/usr/local/share/certs/ca-root-nss.crt "
+    fi
+    if [ -z "$VERBOSE" ]; then
+      wget_opts+="--quiet "
+    fi
+    wget $wget_opts $uri
+  else
+    echo "Required dependency 'curl or wget' not installed" 1>&2
+    exit 1
+  fi
+}
+
 getFileStdout()
 {
   verbosePlaceHolder
-  local xargs=""
-  [ -z "$VERBOSE" ] && xargs+="--quiet"
-  wget $WGETOPTS "$1" -O- $xargs
+  download $1 -
   #verbosePlaceHolder
 }
 
 getFile()
 {
   verbosePlaceHolder
-  local xargs=""
   if [ $# -ge 2 ]; then
-    xargs+="-O $2 "
+    download $1 $2
   else
-    xargs+="-P $CACHE "
+    download $1 "$CACHE/$(basename $1)"
   fi
-  [ -z "$VERBOSE" ] && xargs+="--quiet"
-  wget $WGETOPTS -c "$1" $xargs
   #verbosePlaceHolder
 }
 

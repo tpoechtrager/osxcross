@@ -28,8 +28,6 @@ fi
 # mirror
 MIRROR="https://ftp.gnu.org/gnu"
 
-require wget
-
 pushd $BUILD_DIR &>/dev/null
 
 function remove_locks()
@@ -41,7 +39,7 @@ function build_and_install()
 {
   if [ ! -f "have_$1_$2_${TARGET}" ]; then
     pushd $TARBALL_DIR &>/dev/null
-    wget -c "$MIRROR/$1/$1-$2.tar.gz"
+    download "$MIRROR/$1/$1-$2.tar.gz"
     popd &>/dev/null
 
     echo "cleaning up ..."

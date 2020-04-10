@@ -53,20 +53,10 @@ fi
 
 function require()
 {
-  set +e
-  which $1 &>/dev/null
-  while [ $? -ne 0 ]
-  do
-    if [ -z "$UNATTENDED" ]; then
-      echo ""
-      read -p "Please install '$1' then press enter"
-    else
-      echo "Required dependency '$1' is not installed" 1>&2
-      exit 1
-    fi
-    which $1 &>/dev/null
-  done
-  set -e
+  if ! which $1 &>/dev/null; then
+    echo "Required dependency '$1' is not installed" 1>&2
+    exit 1
+  fi
 }
 
 if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "DragonFly" ]; then
@@ -399,6 +389,28 @@ function get_sources()
   fi
 }
 
+function download()
+{
+  local uri=$1
+  local filename=$(basename $1)
+
+  if which curl &>/dev/null; then
+    ## cURL ##
+    local curl_opts="-L -C - "
+    curl $curl_opts -o $filename $uri
+  elif which wget &>/dev/null; then
+    ## wget ##
+    local wget_opts="-c "
+    local output=$(wget --no-config 2>&1)
+    if [[ $output != *--no-config* ]]; then
+      wget_opts+="--no-config "
+    fi
+    wget $wget_opts -O $filename $uri
+  else
+    echo "Required dependency 'curl or wget' not installed" 1>&2
+    exit 1
+  fi
+}
 
 function create_symlink()
 {

@@ -30,8 +30,6 @@ fi
 # GCC mirror
 GCC_MIRROR="https://mirror.koddos.net/gcc"
 
-require wget
-
 pushd $BUILD_DIR &>/dev/null
 
 function remove_locks()
@@ -45,9 +43,9 @@ if [ ! -f "have_gcc_${GCC_VERSION}_${TARGET}" ]; then
 
 pushd $TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
-  wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  download "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 else
-  wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  download "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 fi
 popd &>/dev/null
 

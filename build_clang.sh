@@ -28,7 +28,6 @@ if [ -z "$INSTALLPREFIX" ]; then
   INSTALLPREFIX="/usr/local"
 fi
 
-require wget
 require cmake
 
 function warn_if_installed()
@@ -71,8 +70,8 @@ LLVM_PKG+="llvm-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
 CLANG_PKG="$MIRROR/${CLANG_VERSION}/"
 CLANG_PKG+="cfe-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
 
-wget -c $LLVM_PKG
-wget -c $CLANG_PKG
+download $LLVM_PKG
+download $CLANG_PKG
 
 popd &>/dev/null
 
