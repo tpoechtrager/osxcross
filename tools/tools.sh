@@ -280,8 +280,14 @@ function git_clone_repository
     return
   fi
 
+  local git_extra_opts=""
+
+  if [ -z "$FULL_CLONE" ]; then
+    git_extra_opts="--depth 1 "
+  fi
+
   if [ ! -d $project_name ]; then
-    git clone $url $args $project_name --depth 1
+    git clone $url $project_name $git_extra_opts
   fi
 
   pushd $project_name &>/dev/null
@@ -292,7 +298,7 @@ function git_clone_repository
   if git show-ref refs/heads/$branch &>/dev/null; then
     git fetch origin $branch
   else
-    git fetch origin $branch:$branch --depth 1
+    git fetch origin $branch:$branch $git_extra_opts
   fi
   
   git checkout $branch

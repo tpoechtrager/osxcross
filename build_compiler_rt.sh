@@ -77,8 +77,7 @@ export OSXCROSS_NO_10_5_DEPRECATION_WARNING=1
 
 pushd $BUILD_DIR &>/dev/null
 
-FULL_CLONE=1 \
-  get_sources https://github.com/llvm/llvm-project.git $BRANCH "compiler-rt"
+get_sources https://github.com/llvm/llvm-project.git $BRANCH "compiler-rt"
 
 if [ $f_res -eq 1 ]; then
   pushd "$CURRENT_BUILD_PROJECT_NAME/compiler-rt" &>/dev/null
