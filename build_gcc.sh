@@ -28,7 +28,9 @@ if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
 fi
 
 # GCC mirror
-GCC_MIRROR="https://mirror.koddos.net/gcc"
+# Official GNU "ftp" doesn't have GCC snapshots
+GCC_MIRROR="https://ftp.gnu.org/pub/gnu/gcc"
+GCC_MIRROR_WITH_SNAPSHOTS="https://mirror.koddos.net/gcc"
 
 pushd $BUILD_DIR &>/dev/null
 
@@ -43,9 +45,9 @@ if [ ! -f "have_gcc_${GCC_VERSION}_${TARGET}" ]; then
 
 pushd $TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
-  download "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  download "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 else
-  download "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  download "$GCC_MIRROR_WITH_SNAPSHOTS/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 fi
 popd &>/dev/null
 
