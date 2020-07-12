@@ -9,7 +9,7 @@ LINKER_VERSION ?= 134.9
 LIBLTO_PATH ?=
 ADDITIONAL_CXXFLAGS ?=
 
-override CXXFLAGS=-std=c++1y -Wall -Wextra -pedantic
+override CXXFLAGS=-std=c++0x -Wall -Wextra
 override CXXFLAGS+=-Wno-missing-field-initializers
 override CXXFLAGS+=-I. -O$(OPTIMIZE)
 

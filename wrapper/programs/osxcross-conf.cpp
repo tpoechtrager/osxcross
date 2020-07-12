@@ -27,6 +27,12 @@ using namespace target;
 namespace program {
 namespace osxcross {
 
+template<typename A>
+
+void print(const char *var, const A &val) {
+  std::cout << "export OSXCROSS_" << var << "=" << val << std::endl;
+};
+
 int conf(Target &target) {
   std::string SDKPath;
   OSVersion OSXVersionMin = getDefaultMinTarget();
@@ -46,10 +52,6 @@ int conf(Target &target) {
 
   if (!ltopath)
     ltopath = "";
-
-  auto print = [](const char *var, const auto &val) {
-    std::cout << "export OSXCROSS_" << var << "=" << val << std::endl;
-  };
 
   print("VERSION", getOSXCrossVersion());
   print("OSX_VERSION_MIN", OSXVersionMin.shortStr());
