@@ -18,7 +18,7 @@ mkdir -p $BUILD_DIR
 
 source $BASE_DIR/tools/trap_exit.sh
 
-MIRROR="https://releases.llvm.org"
+MIRROR="https://github.com/llvm/llvm-project/releases/download"
 
 if [ -z "$CLANG_VERSION" ]; then
   CLANG_VERSION=9.0.0
@@ -64,11 +64,11 @@ if [ -z "$PKGCOMPRESSOR" ]; then
   [ $CLANG_VERSION == "3.4.2" ] && PKGCOMPRESSOR="tar.gz"
 fi
 
-LLVM_PKG="$MIRROR/${CLANG_VERSION}/"
+LLVM_PKG="$MIRROR/llvmorg-${CLANG_VERSION}/"
 LLVM_PKG+="llvm-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
- 
-CLANG_PKG="$MIRROR/${CLANG_VERSION}/"
-CLANG_PKG+="cfe-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
+
+CLANG_PKG="$MIRROR/llvmorg-${CLANG_VERSION}/"
+CLANG_PKG+="clang-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
 
 download $LLVM_PKG
 download $CLANG_PKG
