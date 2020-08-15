@@ -164,7 +164,7 @@ use these variants unless you know what you're doing.
    OSXCross.
 
 \*\*  
--- Xcode up to 12 Beta 4 is known to work.
+-- Xcode up to 12 Beta 4 is known to work.  
 -- Use Firefox if you have problems signing in.
 
 \*\*\*  

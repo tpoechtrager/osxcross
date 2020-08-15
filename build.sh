@@ -5,7 +5,7 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
-VERSION=1.2
+VERSION=1.3
 
 pushd "${0%/*}" &>/dev/null
 
@@ -29,18 +29,19 @@ esac
 
 
 case $SDK_VERSION in
-  10.6*)  TARGET=darwin10; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.7*)  TARGET=darwin11; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.8*)  TARGET=darwin12; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.9*)  TARGET=darwin13; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.14*) TARGET=darwin18; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  10.15*) TARGET=darwin19; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  10.16*) TARGET=darwin20; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
-*) echo "Unsupported SDK"; exit 1 ;;
+  10.6*)  TARGET=darwin10; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.7*)  TARGET=darwin11; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.8*)  TARGET=darwin12; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.9*)  TARGET=darwin13; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.14*) TARGET=darwin18; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  10.15*) TARGET=darwin19; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; ARM_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  10.16*) TARGET=darwin20; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; ARM_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  11.0*)  TARGET=darwin20; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; ARM_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
+ *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
 # Minimum targeted OS X version
@@ -147,6 +148,16 @@ if [ $f_res -eq 1 ]; then
       create_symlink $CCTOOL $CCTOOL_I386
     done
   fi
+  if [ $ARM_SUPPORTED -eq 1 ]; then
+    for CCTOOL in ${CCTOOLS[@]}; do
+      CCTOOL_ARM64=$(echo "$CCTOOL" | $SED 's/x86_64/arm64/g')
+      create_symlink $CCTOOL $CCTOOL_ARM64
+    done
+    for CCTOOL in ${CCTOOLS[@]}; do
+      CCTOOL_ARM64E=$(echo "$CCTOOL" | $SED 's/x86_64/arm64e/g')
+      create_symlink $CCTOOL $CCTOOL_ARM64E
+    done
+  fi
   # For unpatched dsymutil. There is currently no way around it.
   create_symlink x86_64-apple-$TARGET-lipo lipo
   popd &>/dev/null
@@ -225,6 +236,7 @@ export LIBLTO_PATH
 export LINKER_VERSION
 export X86_64H_SUPPORTED
 export I386_SUPPORTED
+export ARM_SUPPORTED
 export TOP_BUILD_SCRIPT=1
 
 $BASE_DIR/wrapper/build_wrapper.sh
@@ -284,20 +296,36 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
   popd &>/dev/null
   echo ""
   if [ $I386_SUPPORTED -eq 1 ]; then
-    test_compiler_cxx11 o32-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+    test_compiler_cxx11 i386-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx.cpp
   fi
-  test_compiler_cxx11 o64-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+  test_compiler_cxx11 x86_64-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx.cpp
   echo ""
 fi
 
 if [ $I386_SUPPORTED -eq 1 ]; then
-  test_compiler o32-clang $BASE_DIR/oclang/test.c
-  test_compiler o32-clang++ $BASE_DIR/oclang/test.cpp
+  test_compiler i386-apple-$TARGET-clang $BASE_DIR/oclang/test.c "required"
+  test_compiler i386-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp "required"
   echo ""
 fi
 
-test_compiler o64-clang $BASE_DIR/oclang/test.c
-test_compiler o64-clang++ $BASE_DIR/oclang/test.cpp
+if [ $X86_64H_SUPPORTED -eq 1 ]; then
+  test_compiler x86_64h-apple-$TARGET-clang $BASE_DIR/oclang/test.c
+  test_compiler x86_64h-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp
+  echo ""
+fi
+
+if [ $ARM_SUPPORTED -eq 1 ]; then
+  test_compiler arm64-apple-$TARGET-clang $BASE_DIR/oclang/test.c
+  test_compiler arm64-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp
+  echo ""
+
+  test_compiler arm64e-apple-$TARGET-clang $BASE_DIR/oclang/test.c
+  test_compiler arm64e-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp
+  echo ""
+fi
+
+test_compiler x86_64-apple-$TARGET-clang $BASE_DIR/oclang/test.c "required"
+test_compiler x86_64-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp "required"
 
 echo ""
 echo "Do not forget to add"

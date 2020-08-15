@@ -392,6 +392,7 @@ enum Arch {
   armv8,
   arm64,
   arm64v8,
+  arm64e,
   i386,
   i486,
   i586,
@@ -405,9 +406,9 @@ enum Arch {
 
 constexpr const char *ArchNames[] = {
   "armv4t", "armv5",  "armv6",   "armv7",  "armv7f",  "armv7k",  "armv7s",
-  "amrv6m", "armv7m", "armv7em", "armv8",  "arm64",   "arm64v8", "i386",
-  "i486",   "i586",   "i686",    "x86_64", "x86_64h", "ppc",     "ppc64",
-  "unknown"
+  "amrv6m", "armv7m", "armv7em", "armv8",  "arm64",   "arm64v8", "arm64e",
+  "i386",   "i486",   "i586",   "i686",    "x86_64",  "x86_64h", "ppc",
+  "ppc64",  "unknown"
 };
 
 constexpr const char *getArchName(Arch arch) { return ArchNames[arch]; }

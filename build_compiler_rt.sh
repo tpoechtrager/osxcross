@@ -92,8 +92,6 @@ if [ $f_res -eq 1 ]; then
     EXTRA_MAKE_FLAGS+="VERBOSE=1 "
   fi
 
-  export OSXCROSS_NO_X86_64H_DEPLOYMENT_TARGET_WARNING=1
-
   if [ $USE_CMAKE -eq 1 ]; then
 
     ### CMAKE ###

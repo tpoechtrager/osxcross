@@ -72,7 +72,11 @@ OSVersion Target::getSDKOSNum() const {
       return OSVersion();
 
     int n = atoi(target.c_str() + 6);
-    return OSVersion(10, 4 + (n - 8));
+
+    if (n >= 20)
+      return OSVersion(11, n - 20);
+    else
+      return OSVersion(10, 4 + (n - 8));
   }
 }
 
@@ -133,25 +137,30 @@ void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
   }
 }
 
-bool Target::getSDKPath(std::string &path) const {
+bool Target::getSDKPath(std::string &path, bool MacOSX10_16Fix) const {
+  OSVersion SDKVer = getSDKOSNum();
+
   if (SDK) {
     path = SDK;
   } else {
-    OSVersion SDKVer = getSDKOSNum();
-
+    if (MacOSX10_16Fix)
+      SDKVer = OSVersion(10, 16);
     path = execpath;
     path += "/../SDK/MacOSX";
     path += SDKVer.shortStr();
-
     if (SDKVer <= OSVersion(10, 4))
       path += "u";
-
     path += ".sdk";
   }
 
   if (!dirExists(path)) {
+    // Some early 11.0 SDKs are misnamed as 10.16
+    if (SDKVer == OSVersion(11, 0) && !MacOSX10_16Fix)
+      return getSDKPath(path, true);
+
     err << "cannot find Mac OS X SDK (expected in: " << path << ")"
         << err.endl();
+
     return false;
   }
 
@@ -505,35 +514,59 @@ bool Target::setup() {
 
   setCompilerPath();
 
-  if (!OSNum.Num()) {
-    if (haveArch(Arch::x86_64h)) {
-      // Default to >= 10.8 for x86_64h
-      OSVersion defaultMinTarget = getDefaultMinTarget();
-      OSNum = std::max(defaultMinTarget, OSVersion(10, 8));
-      if (SDKOSNum < OSNum) {
-        err << "'" << getArchName(arch) << "' requires Mac OS X SDK "
-            << OSNum.shortStr() << " (or later)" << err.endl();
-        return false;
+  constexpr struct {
+    Arch arch;
+    OSVersion SDKVer;
+    bool lower;
+  } RequiredSDKVersion[] = {
+    { Arch::i386,    {10, 13}, true },
+    { Arch::x86_64h, {10, 8} },
+    { Arch::arm64,   {11, 0} },
+    { Arch::arm64e,  {11, 0} },
+  };
+
+  for (auto &RequiredSDK : RequiredSDKVersion) {
+    if (haveArch(RequiredSDK.arch)) {
+
+      if (RequiredSDK.lower) {
+        if (SDKOSNum > RequiredSDK.SDKVer) {
+          err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
+              << "Mac OS X <= '" << RequiredSDK.SDKVer.shortStr() << "' SDK"
+              << err.endl();
+          return false;
+        }
+      } else {
+        if (SDKOSNum < RequiredSDK.SDKVer) {
+          err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
+              << "Mac OS X >= '" << RequiredSDK.SDKVer.shortStr() << "' SDK"
+              << err.endl();
+          return false;
+        }
       }
-    } else if (stdlib == StdLib::libcxx) {
-      // Default to >= 10.7 for libc++
-      OSVersion defaultMinTarget = getDefaultMinTarget();
-      OSNum = std::max(defaultMinTarget, OSVersion(10, 7));
-    } else {
-      OSNum = getDefaultMinTarget();
+
     }
   }
 
-  if (haveArch(Arch::x86_64h) && OSNum < OSVersion(10, 8)) {
-    // -mmacosx-version-min= < 10.8 in combination with '-arch x86_64h'
-    // may cause linker errors.
+  if (!OSNum.Num()) {
+    OSVersion defaultMinTarget = getDefaultMinTarget();
 
-    // Erroring here is really annoying, better risk linking errors instead
-    // of enforcing '-mmacosx-version-min= >= 10.8'.
+    if (haveArch(Arch::arm64) || haveArch(Arch::arm64e)) {
+      // Default to >= 11.0 for arm64
+      OSNum = std::max(defaultMinTarget, OSVersion(11, 0));
+    }
 
-    if (!getenv("OSXCROSS_NO_X86_64H_DEPLOYMENT_TARGET_WARNING"))
-      warn << "'-mmacosx-version-min=' should be '>= 10.8' for architecture "
-           << "'" << getArchName(Arch::x86_64h) << "'" << warn.endl();
+    if (haveArch(Arch::x86_64h)) {
+      // Default to >= 10.8 for x86_64h
+      OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 8)));
+    }
+
+    if (stdlib == StdLib::libcxx) {
+      // Default to >= 10.7 for libc++
+      OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 7)));
+    }
+
+    if (!OSNum.Num())
+      OSNum = defaultMinTarget;
   }
 
   if (stdlib == StdLib::unset) {
@@ -776,12 +809,18 @@ bool Target::setup() {
   if (OSNum.Num()) {
     std::string tmp;
     tmp = "-mmacosx-version-min=";
-    tmp += OSNum.Str();
+    if (OSNum >= OSVersion(11, 0)) {
+      // Fix this once clang is able to parse 11.x
+      tmp += "10.16";
+    } else {
+      tmp += OSNum.Str();
+    }
     fargs.push_back(tmp);
   }
 
   for (auto arch : targetarch) {
     bool is32bit = false;
+    bool isArm = false;
 
     switch (arch) {
     case Arch::i386:
@@ -790,10 +829,16 @@ bool Target::setup() {
     case Arch::i686:
       is32bit = true;
       // falls through
+    case Arch::arm64:
+      isArm = true;
+      // falls through
+    case Arch::arm64e:
+      isArm = true;
+      // falls through
     case Arch::x86_64:
     case Arch::x86_64h:
       if (isGCC()) {
-        if (arch == Arch::x86_64h) {
+        if (arch != Arch::x86_64 && arch != Arch::i386) {
           err << "gcc does not support architecture '" << getArchName(arch)
               << "'" << err.endl();
           return false;
@@ -802,7 +847,8 @@ bool Target::setup() {
         if (targetarch.size() > 1)
           break;
 
-        fargs.push_back(is32bit ? "-m32" : "-m64");
+        if (!isArm)
+          fargs.push_back(is32bit ? "-m32" : "-m64");
       } else if (isClang()) {
         if (usegcclibs && targetarch.size() > 1)
           break;

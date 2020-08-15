@@ -433,10 +433,23 @@ function verbose_cmd()
 
 function test_compiler()
 {
+  if [ "$3" != "required" ]; then
+    set +e
+  fi
+
   echo -ne "testing $1 ... "
   $1 $2 -O2 -Wall -o test
-  rm test
-  echo "works"
+
+  if [ $? -eq 0 ]; then
+    rm test
+    echo "works"
+  else
+    echo "failed (ignored)"
+  fi
+
+  if [ "$3" != "required" ]; then
+    set -e
+  fi
 }
 
 function test_compiler_cxx11()
