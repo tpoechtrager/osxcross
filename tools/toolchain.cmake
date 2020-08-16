@@ -21,15 +21,8 @@ set(CMAKE_SYSTEM_NAME "Darwin")
 string(REGEX REPLACE "-.*" "" CMAKE_SYSTEM_PROCESSOR "${OSXCROSS_HOST}")
 
 # specify the cross compiler
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^i.86$")
-  set(CMAKE_C_COMPILER "${OSXCROSS_TARGET_DIR}/bin/o32-clang")
-  set(CMAKE_CXX_COMPILER "${OSXCROSS_TARGET_DIR}/bin/o32-clang++")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  set(CMAKE_C_COMPILER "${OSXCROSS_TARGET_DIR}/bin/o64-clang")
-  set(CMAKE_CXX_COMPILER "${OSXCROSS_TARGET_DIR}/bin/o64-clang++")
-else()
-  message(FATAL_ERROR "Unrecognized target architecture")
-endif()
+set(CMAKE_C_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang")
+set(CMAKE_CXX_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang++")
 
 # where is the target environment
 set(CMAKE_FIND_ROOT_PATH

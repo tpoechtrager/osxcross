@@ -257,9 +257,24 @@ fi
 
 cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
 cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
+
 chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
-create_symlink osxcross-cmake "$TARGET_DIR/bin/i386-apple-$TARGET-cmake"
+
+if [ $I386_SUPPORTED -eq 1 ]; then
+  create_symlink osxcross-cmake "$TARGET_DIR/bin/i386-apple-$TARGET-cmake"
+fi
+
 create_symlink osxcross-cmake "$TARGET_DIR/bin/x86_64-apple-$TARGET-cmake"
+
+if [ $X86_64H_SUPPORTED -eq 1 ]; then
+  create_symlink osxcross-cmake "$TARGET_DIR/bin/x86_64h-apple-$TARGET-cmake"
+fi
+
+if [ $ARM_SUPPORTED -eq 1 ]; then
+  create_symlink osxcross-cmake "$TARGET_DIR/bin/arm64-apple-$TARGET-cmake"
+  create_symlink osxcross-cmake "$TARGET_DIR/bin/arm64e-apple-$TARGET-cmake"
+fi
+
 
 ## Compiler test ##
 
