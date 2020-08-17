@@ -158,7 +158,7 @@ bool Target::getSDKPath(std::string &path, bool MacOSX10_16Fix) const {
     if (SDKVer == OSVersion(11, 0) && !MacOSX10_16Fix)
       return getSDKPath(path, true);
 
-    err << "cannot find Mac OS X SDK (expected in: " << path << ")"
+    err << "cannot find macOS SDK (expected in: " << path << ")"
         << err.endl();
 
     return false;
@@ -531,14 +531,14 @@ bool Target::setup() {
       if (RequiredSDK.lower) {
         if (SDKOSNum > RequiredSDK.SDKVer) {
           err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
-              << "Mac OS X <= '" << RequiredSDK.SDKVer.shortStr() << "' SDK"
+              << "macOS " << RequiredSDK.SDKVer.shortStr() << " SDK (or earlier)"
               << err.endl();
           return false;
         }
       } else {
         if (SDKOSNum < RequiredSDK.SDKVer) {
           err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
-              << "Mac OS X >= '" << RequiredSDK.SDKVer.shortStr() << "' SDK"
+              << "macOS " << RequiredSDK.SDKVer.shortStr() << " SDK (or later)"
               << err.endl();
           return false;
         }
@@ -577,7 +577,7 @@ bool Target::setup() {
     }
   } else if (stdlib == StdLib::libcxx) {
     if (!hasLibCXX()) {
-      err << "libc++ requires Mac OS X SDK 10.7 (or later)" << err.endl();
+      err << "libc++ requires macOS SDK 10.7 (or later)" << err.endl();
       return false;
     }
 
@@ -590,24 +590,24 @@ bool Target::setup() {
 
   if (SDKOSNum >= OSVersion(10, 14)) {
     if (!isGCC() && !usegcclibs && stdlib == StdLib::libstdcxx) {
-        err << "Mac OS X SDK '>= 10.14' does not support libstdc++ anymore"
+        err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
             << err.endl();
         return false;
     }
 
     if (haveArch(Arch::i386)) {
-        err << "Mac OS X SDK '>= 10.14' does not support i386 anymore"
+        err << "macOS SDK '>= 10.14' does not support i386 anymore"
             << err.endl();
         return false;
     }
   }
 
   if (OSNum > SDKOSNum) {
-    err << "targeted OS X version must be <= " << SDKOSNum.Str() << " (SDK)"
+    err << "targeted macOS version must be <= " << SDKOSNum.Str() << " (SDK)"
         << err.endl();
     return false;
   } else if (OSNum < OSVersion(10, 4)) {
-    err << "targeted OS X version must be >= 10.4" << err.endl();
+    err << "targeted macOS version must be >= 10.4" << err.endl();
     return false;
   }
 
@@ -899,13 +899,13 @@ bool Target::setup() {
     bool nowarning = false;
 
     if (isgcclibstdcxx) {
-      err << "building for OS X '<= 10.5' with GCC (or clang++-gstdc++) "
+      err << "building for macOS '<= 10.5' with GCC (or clang++-gstdc++) "
              "is no longer supported" << err.endl();
       error = true;
     } else if (isClang()) {
       nowarning = !!getenv("OSXCROSS_NO_10_5_DEPRECATION_WARNING");
       if (!nowarning)
-        warn << "building for OS X '<= 10.5' "
+        warn << "building for macOS '<= 10.5' "
                 "is no longer supported"  << warn.endl();
     }
 

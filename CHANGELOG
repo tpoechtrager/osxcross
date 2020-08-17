@@ -1,3 +1,11 @@
+/****************************** v1.3 *********************************/
+
+Added:
+ * Support for arm64 and arm64e targets
+
+Changed:
+ * Updated TAPI library to 1100.0.11
+
 /****************************** v1.2 *********************************/
 
 Added:
@@ -25,7 +33,7 @@ Changed:
 
 Added:
  * Support for TAPIv3 stubs (including "zippering" target)
- * Support for Mac OS X SDKs up to 10.15
+ * Support for macOS SDKs up to 10.15
  * SDK packaging script for ".xip" Xcode images
    -> tools/gen_sdk_package_pbzx.sh <xcode.xip> 
    --> tested up to Xcode 10.2.1
@@ -156,7 +164,7 @@ Added:
  * '-stdlib=' support for GCC (as an extension through the wrapper)
  * 'OSXCROSS_C_STANDARD' env var (set C standard globally)
  * 'OSXCROSS_CXX_STANDARD' env var (set C++ standard globally)
- * OS X support (as host)
+ * macOS support (as host)
 
 Changed:
  * 'osxcross-conf', 'osxcross-env' and the (fake) 'dsymutil' are now
@@ -216,7 +224,7 @@ Changed:
  * Updated cctools to 839 with ld64-134.9
 
 Fixed:
- * Check if MacOSX package is present in tarballs
+ * Check if macOS package is present in tarballs
 
 /******************************* v0.1 *******************************/
 

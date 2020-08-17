@@ -1,7 +1,7 @@
 ### Requirements: ###
 
 * llvm-dsymutil (>= 3.8)
-* A Mac OS X system with lldb / gdb installed
+* A macOS system with lldb / gdb installed
 
 ### Setting up llvm-dsymutil: ###
 
@@ -18,5 +18,5 @@ Run `./build_llvm_dsymutil.sh` to build and install llvm-dsymutil to target/bin.
 * [LTO only] Add `-Wl,-object_path_lto,lto.o` to the linker flags
 * After linking run: `dsymutil binary`
 * [Optional] Strip the binary: `x86_64-apple-darwinXX-strip binary`
-* Copy the binary **and** the created `<binary>.dSYM` "folder" onto the target Mac OS X system
+* Copy the binary **and** the created `<binary>.dSYM` "folder" onto the target macOS system
 * Debug the binary as usual

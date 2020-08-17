@@ -13,7 +13,7 @@ pushd "${0%/*}/.." &>/dev/null
 source tools/tools.sh
 
 if [ $PLATFORM == "Darwin" ]; then
-  echo "Use gen_sdk_package.sh on Mac OS X" 1>&2
+  echo "Use gen_sdk_package.sh on macOS" 1>&2
   exit 1
 fi
 

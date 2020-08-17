@@ -1,37 +1,42 @@
-## OS X Cross toolchain for Linux and FreeBSD ##
+
+## macOS Cross toolchain for Linux and FreeBSD ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to provide a well working OS X cross toolchain for  
+The goal of OSXCross is to provide a well working macOS cross toolchain for  
 Linux, FreeBSD, OpenBSD and Android (Termux).
 
-OSXCross works **on** x86, x86_64, ARM and AArch64.
+OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`  
+and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h`, and `i386`.
+
+`arm64` requires macOS 12 SDK (or later).  
+`arm64e` [requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
 
 ### HOW DOES IT WORK? ###
 
-For cross-compiling for OS X you need
+For cross-compiling for macOS you need
 * the Clang/LLVM compiler
 * the cctools (lipo, otool, nm, ar, ...) and ld64
-* the OSX SDK.
+* the macOS SDK.
 
 [Clang/LLVM is a cross compiler by default](http://clang.llvm.org/docs/CrossCompilation.html)
 and is now available on nearly every Linux distribution, so we just
 need a proper [port](https://github.com/tpoechtrager/cctools-port) of
-the cctools/ld64 and the OS X SDK.
+the cctools/ld64 and the macOS SDK.
 
 OSXCross includes a collection of scripts for preparing the SDK and
 building the cctools/ld64.
 
 It also includes scripts for optionally building
 * Clang using gcc (for the case your distribution does not include it),
-* an up-to-date vanilla GCC as a cross-compiler for target OS X,
+* an up-to-date vanilla GCC as a cross-compiler for target macOS,
 * the "compiler-rt" runtime library, and
 * the `llvm-dsymutil` tool required for debugging.
 
 
-### WHAT CAN I BUILD WITH IT? ###
+### WHAT CAN BE BUILT WITH IT? ###
 
-Basically everything you can build on OS X with clang/gcc should build with
+Basically everything you can build on macOS with clang/gcc should build with
 this cross toolchain as well.
 
 ### PACKET MANAGERS ###
@@ -69,7 +74,7 @@ On Ubuntu trusty you must upgrade CMake to >= 3.2.3 first. Or do this:
 ##### Building Clang #####
 
 OSXCross uses `clang` as the default compiler for building its tools, and also
-as a cross-compiler to create OSX binaries.
+as a cross-compiler to create macOS binaries.
 
 In `clang` there is no difference between cross-compilation and native
 compilation, so OSXCross can use a normal `clang` install for both.  You can
@@ -154,7 +159,7 @@ use these variants unless you know what you're doing.
 **[Please ensure you have read and understood the Xcode license
    terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf)**
 
-##### Packaging the SDK on Mac OS X: #####
+##### Packaging the SDK on macOS: #####
 
 1. [Download Xcode: https://developer.apple.com/download/more] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
@@ -178,21 +183,21 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 This method may require up to 25 GB of free disk space.  
 An SSD is recommended for this method.
 
-1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+1. Download Xcode like described in 'Packaging the SDK on macOS'
 2. Install `clang`, `make`, `libssl-devel`, `lzma-devel` and `libxml2-devel`
 3. Run `./tools/gen_sdk_package_pbzx.sh <xcode>.xip`
 4. Copy or move the SDK into the tarballs/ directory
 
 ##### Packing the SDK on Linux - Method 2 (works up to Xcode 7.3): #####
 
-1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+1. Download Xcode like described in 'Packaging the SDK on macOS'
 2. Install `cmake`, `libxml2-dev` and `fuse`
 3. Run `./tools/gen_sdk_package_darling_dmg.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
 
 ##### Packing the SDK on Linux (and others) - Method 3 (works up to Xcode 7.2): #####
 
-1. Download Xcode like described in 'Packaging the SDK on Mac OS X'
+1. Download Xcode like described in 'Packaging the SDK on macOS'
 2. Ensure you have `clang` and `make` installed
 3. Run `./tools/gen_sdk_package_p7zip.sh <xcode>.dmg`
 4. Copy or move the SDK into the tarballs/ directory
@@ -211,6 +216,8 @@ An SSD is recommended for this method.
 
 ##### Example.  To compile a file called test.cpp, you can run: #####
 
+## x86 ##
+
 * Clang:
 
   * 32 bit: `o32-clang++ test.cpp -O3 -o test` OR
@@ -224,6 +231,16 @@ An SSD is recommended for this method.
     `i386-apple-darwinXX-g++ test.cpp -O3 -o test`
   * 64 bit:  `o64-g++ test.cpp -O3 -o test` OR
     `x86_64-apple-darwinXX-g++ test.cpp -O3 -o test`
+
+## ARM ##
+
+* Clang:
+
+  * arm64: `oa64-clang++ test.cpp -O3 -o test` OR
+    `arm64-apple-darwinXX-clang++ test.cpp -O3 -o test`
+  * arm64e: `oa64e-clang++ test.cpp -O3 -o test` OR
+    `arm64e-apple-darwinXX-clang++ test.cpp -O3 -o test`
+
 
 XX= the target version, you can find it out by running  `osxcross-conf` and
 then see `TARGET`.
@@ -244,8 +261,8 @@ which you prefer.
 
 ##### Building test.cpp with libc++: #####
 
-Note: libc++ requires Mac OS X 10.7 or newer! If you really need C++11 for
-an older OS X version, then you can do the following:
+Note: libc++ requires macOS 10.7 or later! If you really need C++11 for
+an older macOS version, then you can do the following:
 
 1. Build GCC so you have an up-to-date libstdc++
 2. Build your source code with GCC or
@@ -259,22 +276,22 @@ Usage Examples:
   * C++11: `o32-clang++ -stdlib=libc++ -std=c++11 test1.cpp -o test`
   * C++14: `o32-clang++ -stdlib=libc++ -std=c++14 test1.cpp -o test`
   * C++17: `o32-clang++ -stdlib=libc++ -std=c++17 test1.cpp -o test`
-  * C++2a: `o32-clang++ -stdlib=libc++ -std=c++2a test1.cpp -o test`
+  * C++2a: `o32-clang++ -stdlib=libc++ -std=c++20 test1.cpp -o test`
 
 * Clang (shortcut):
 
   * C++98: `o32-clang++-libc++ -std=c++98 test.cpp -o test`
   * C++11: `o32-clang++-libc++ -std=c++11 test.cpp -o test`
-  * C++14: `o32-clang++-libc++ -std=c++14 test.cpp  -o test`
-  * C++17: `o32-clang++-libc++ -std=c++17 test.cpp  -o test`
-  * C++2a: `o32-clang++-libc++ -std=c++2a test.cpp  -o test`
+  * C++14: `o32-clang++-libc++ -std=c++14 test.cpp -o test`
+  * C++17: `o32-clang++-libc++ -std=c++17 test.cpp -o test`
+  * C++2a: `o32-clang++-libc++ -std=c++20 test.cpp -o test`
 
 * GCC
 
   * C++11: `o32-g++-libc++ -std=c++11 test.cpp`
   * C++14: `o32-g++-libc++ -std=c++14 test.cpp -o test`
   * C++17: `o32-g++-libc++ -std=c++17 test.cpp -o test`
-  * C++2a: `o32-g++-libc++ -std=c++2a test.cpp -o test`
+  * C++2a: `o32-g++-libc++ -std=c++20 test.cpp -o test`
 
 ##### Building test1.cpp and test2.cpp with LTO (Link Time Optimization): #####
 
@@ -296,8 +313,8 @@ Usage Examples:
 
 The default deployment target is:  
 
-SDK <= 10.13: `Mac OS X 10.6`  
-SDK >= 10.14: `Mac OS X 10.9`
+SDK <= 10.13: `macOS 10.6`  
+SDK >= 10.14: `macOS 10.9`
 
 However, there are several ways to override the default value:
 
@@ -308,13 +325,13 @@ However, there are several ways to override the default value:
 \>= 10.9 also defaults to `libc++` instead of `libstdc++`, this behavior
 can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
-x86\_64h defaults to `Mac OS X 10.8` and requires clang 3.5+.
+x86\_64h defaults to `macOS 10.8` and requires clang 3.5+.
 x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
 
 ### PROJECTS USING OSXCROSS: ###
 
 * [multiarch/crossbuild](https://github.com/multiarch/crossbuild): various
-  cross-compilers (**Systems**: Linux, OS X, Windows, **Archs**: x86\_64,
+  cross-compilers (**Systems**: Linux, macOS, Windows, **Archs**: x86\_64,
   i386, arm, ppc, mips) in Docker. OSXCross powers the Darwin builds.
 * [Smartmontools](https://www.smartmontools.org)
 

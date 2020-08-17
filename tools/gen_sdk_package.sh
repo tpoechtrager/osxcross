@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Package the OS X SDKs into a tar file to be used by `build.sh`.
+# Package the macOS SDKs into a tar file to be used by `build.sh`.
 #
 
 export LC_ALL=C
@@ -84,7 +84,7 @@ function set_xcode_dir()
 
 if [ $(uname -s) != "Darwin" ]; then
   if [ -z "$XCODEDIR" ]; then
-    echo "This script must be run on OS X" 1>&2
+    echo "This script must be run on macOS" 1>&2
     echo "... Or with XCODEDIR=... on Linux" 1>&2
     exit 1
   else

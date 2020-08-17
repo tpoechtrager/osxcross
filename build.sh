@@ -44,7 +44,7 @@ case $SDK_VERSION in
  *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
-# Minimum targeted OS X version
+# Minimum targeted macOS version
 # Must be <= SDK_VERSION
 if [ -n "$OSX_VERSION_MIN_INT" -a -z "$OSX_VERSION_MIN" ]; then
   OSX_VERSION_MIN=$OSX_VERSION_MIN_INT
@@ -55,8 +55,8 @@ export TARGET
 echo ""
 echo "Building OSXCross toolchain, Version: $VERSION"
 echo ""
-echo "OS X SDK Version: $SDK_VERSION, Target: $TARGET"
-echo "Minimum targeted OS X Version: $OSX_VERSION_MIN"
+echo "macOS SDK Version: $SDK_VERSION, Target: $TARGET"
+echo "Minimum targeted macOS Version: $OSX_VERSION_MIN"
 echo "Tarball Directory: $TARBALL_DIR"
 echo "Build Directory: $BUILD_DIR"
 echo "Install Directory: $TARGET_DIR"
@@ -287,7 +287,7 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
     echo -n "Given SDK does not contain libc++ headers "
     echo "(-stdlib=libc++ test may fail)"
     echo -n "You may want to re-package your SDK using "
-    echo "'tools/gen_sdk_package.sh' on OS X"
+    echo "'tools/gen_sdk_package.sh' on macOS"
   fi
   if [ -f "usr/include/c++/v1/__hash_table" ]; then
     if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then

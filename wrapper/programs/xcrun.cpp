@@ -127,7 +127,7 @@ int sdk(Target*, char **argv) {
 
   // Ignore empty argument.
   if (SDK[0]) {
-    err << "xcrun: '-sdk': expected Mac OS X SDK" << err.endl();
+    err << "xcrun: '-sdk': expected macOS SDK" << err.endl();
     return 1;
   }
 
