@@ -6,8 +6,8 @@
 The goal of OSXCross is to provide a well working macOS cross toolchain for  
 `Linux`, `FreeBSD`, `OpenBSD`, and `Android (Termux)`.
 
-OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`  
-and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h`, and `i386`.
+OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`,  
+and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h` and `i386`.
 
 `arm64` requires macOS 12 SDK (or later).  
 `arm64e` [requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
@@ -216,7 +216,7 @@ An SSD is recommended for this method.
 
 ##### Example.  To compile a file called test.cpp, you can run: #####
 
-## x86 ##
+##### x86 #####
 
 * Clang:
 
@@ -232,7 +232,7 @@ An SSD is recommended for this method.
   * 64 bit:  `o64-g++ test.cpp -O3 -o test` OR
     `x86_64-apple-darwinXX-g++ test.cpp -O3 -o test`
 
-## ARM ##
+##### ARM #####
 
 * Clang:
 
@@ -322,17 +322,18 @@ However, there are several ways to override the default value:
 2. by passing `-mmacosx-version-min=10.x` to the compiler
 3. by setting the `MACOSX_DEPLOYMENT_TARGET` environment variable
 
-\>= 10.9 also defaults to `libc++` instead of `libstdc++`, this behavior
-can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
+\>= 10.9 also defaults to `libc++` instead of `libstdc++`,  
+this behavior can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
-x86\_64h defaults to `macOS 10.8` and requires clang 3.5+.
+x86\_64h defaults to `macOS 10.8` and requires clang 3.5+.  
 x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
 
 ### PROJECTS USING OSXCROSS: ###
 
-* [multiarch/crossbuild](https://github.com/multiarch/crossbuild): various
-  cross-compilers (**Systems**: Linux, macOS, Windows, **Archs**: x86\_64,
-  i386, arm, ppc, mips) in Docker. OSXCross powers the Darwin builds.
+* [multiarch/crossbuild](https://github.com/multiarch/crossbuild):  
+  various cross-compilers  
+  (**Systems**: Linux, macOS, Windows, **Archs**: x86\_64,i386, arm, ppc, mips)  
+  in Docker. OSXCross powers the Darwin builds.
 * [Smartmontools](https://www.smartmontools.org)
 
 ### LICENSE: ####
