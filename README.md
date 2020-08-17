@@ -1,10 +1,10 @@
 
-## macOS Cross toolchain for Linux and FreeBSD ##
+## macOS Cross toolchain for Linux and *BSD ##
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
 The goal of OSXCross is to provide a well working macOS cross toolchain for  
-Linux, FreeBSD, OpenBSD and Android (Termux).
+`Linux`, `FreeBSD`, `OpenBSD`, and `Android (Termux)`.
 
 OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`  
 and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h`, and `i386`.
