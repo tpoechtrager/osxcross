@@ -9,7 +9,7 @@ The goal of OSXCross is to provide a well working macOS cross toolchain for
 OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`,  
 and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h` and `i386`.
 
-`arm64` requires macOS 12 SDK (or later).  
+`arm64` requires macOS 11.0 SDK (or later).  
 `arm64e` [requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
 
 ### HOW DOES IT WORK? ###
