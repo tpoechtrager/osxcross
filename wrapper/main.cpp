@@ -373,8 +373,8 @@ void detectCXXLib(Target &target) {
 bool detectTarget(int argc, char **argv, Target &target) {
   const char *cmd = argv[0];
   const char *p = strrchr(cmd, '/');
+  char archName[16];
   size_t len;
-  size_t i = 0;
 
   if (p)
     cmd = &p[1];
@@ -386,51 +386,54 @@ bool detectTarget(int argc, char **argv, Target &target) {
   p = strchr(cmd, '-');
   len = (p ? p : cmd) - cmd;
 
-  for (auto arch : ArchNames) {
-    ++i;
+  if (len >= sizeof(archName))
+    return false;
 
-    if (!strncmp(cmd, arch, len)) {
-      target.arch = static_cast<Arch>(i - 1);
-      cmd += len;
+  memcpy(archName, cmd, len);
+  archName[len] = '\0';
 
-      if (*cmd++ != '-')
-        return false;
+  target.arch = parseArch(archName);
 
-      if (strncmp(cmd, "apple-", 6))
-        return false;
+  if (target.arch != Arch::unknown) {
+    cmd += len;
 
-      cmd += 6;
+    if (*cmd++ != '-')
+      return false;
 
-      if (strncmp(cmd, "darwin", 6))
-        return false;
+    if (strncmp(cmd, "apple-", 6))
+      return false;
 
-      if (!(p = strchr(cmd, '-')))
-        return false;
+    cmd += 6;
 
-      target.target = std::string(cmd, p - cmd);
-      target.compiler = getCompilerIdentifier(&p[1]);
-      target.compilername = &p[1];
+    if (strncmp(cmd, "darwin", 6))
+      return false;
 
-      if (target.compilername == "cc") {
-        target.compiler = getDefaultCompilerIdentifier();
-        target.compilername = getDefaultCompilerName();
-      } else if (target.compilername == "c++") {
-        target.compiler = getDefaultCXXCompilerIdentifier();
-        target.compilername = getDefaultCXXCompilerName();
-      } else if (auto *prog = program::getprog(target.compilername)) {
-        (*prog)(argc, argv, target);
-      }
+    if (!(p = strchr(cmd, '-')))
+      return false;
 
-      if (target.target != getDefaultTarget())
-        warn << "this wrapper was built for target "
-             << "'" << getDefaultTarget() << "'" << warn.endl();
+    target.target = std::string(cmd, p - cmd);
+    target.compiler = getCompilerIdentifier(&p[1]);
+    target.compilername = &p[1];
 
-      if (!commandopts::parse(argc, argv, target))
-        return false;
-
-      detectCXXLib(target);
-      return target.setup();
+    if (target.compilername == "cc") {
+      target.compiler = getDefaultCompilerIdentifier();
+      target.compilername = getDefaultCompilerName();
+    } else if (target.compilername == "c++") {
+      target.compiler = getDefaultCXXCompilerIdentifier();
+      target.compilername = getDefaultCXXCompilerName();
+    } else if (auto *prog = program::getprog(target.compilername)) {
+      (*prog)(argc, argv, target);
     }
+
+    if (target.target != getDefaultTarget())
+      warn << "this wrapper was built for target "
+            << "'" << getDefaultTarget() << "'" << warn.endl();
+
+    if (!commandopts::parse(argc, argv, target))
+      return false;
+
+    detectCXXLib(target);
+    return target.setup();
   }
 
   if (!strncmp(cmd, "o32", 3))

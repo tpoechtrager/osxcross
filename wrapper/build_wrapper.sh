@@ -83,6 +83,8 @@ function create_wrapper_link
 
     if [ $ARM_SUPPORTED -eq 1 ]; then
       verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
+        "aarch64-apple-${TARGET}-${1}"
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
         "arm64-apple-${TARGET}-${1}"
       verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
         "arm64e-apple-${TARGET}-${1}"

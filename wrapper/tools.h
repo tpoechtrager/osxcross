@@ -379,19 +379,7 @@ inline Compiler getCompilerIdentifier(const char *compilername) {
 //
 
 enum Arch {
-  armv4t,
-  armv5,
-  armv6,
-  armv7,
-  armv7f,
-  armv7k,
-  armv7s,
-  armv6m,
-  armv7m,
-  armv7em,
-  armv8,
   arm64,
-  arm64v8,
   arm64e,
   i386,
   i486,
@@ -399,21 +387,29 @@ enum Arch {
   i686,
   x86_64,
   x86_64h, // Haswell
-  ppc,
-  ppc64,
   unknown
 };
 
 constexpr const char *ArchNames[] = {
-  "armv4t", "armv5",  "armv6",   "armv7",  "armv7f",  "armv7k",  "armv7s",
-  "amrv6m", "armv7m", "armv7em", "armv8",  "arm64",   "arm64v8", "arm64e",
-  "i386",   "i486",   "i586",   "i686",    "x86_64",  "x86_64h", "ppc",
-  "ppc64",  "unknown"
+  "arm64",
+  "arm64e",
+  "i386",
+  "i486",
+  "i586",
+  "i686",
+  "x86_64",
+  "x86_64h",
+  "unknown"
 };
 
-constexpr const char *getArchName(Arch arch) { return ArchNames[arch]; }
+constexpr const char *getArchName(Arch arch) {
+  return ArchNames[arch];
+}
 
 inline Arch parseArch(const char *arch) {
+  if (!strcmp(arch, "aarch64")) // treat aarch64 as arm64
+    return Arch::arm64;
+
   size_t i = 0;
   for (auto archname : ArchNames) {
     if (!strcmp(arch, archname)) {
@@ -421,6 +417,7 @@ inline Arch parseArch(const char *arch) {
     }
     ++i;
   }
+
   return Arch::unknown;
 }
 
@@ -434,7 +431,11 @@ enum StdLib {
   libstdcxx
 };
 
-constexpr const char *StdLibNames[] = { "default", "libc++", "libstdc++" };
+constexpr const char *StdLibNames[] = {
+  "default",
+  "libc++",
+  "libstdc++"
+};
 
 constexpr const char *getStdLibString(StdLib stdlib) {
   return StdLibNames[stdlib];

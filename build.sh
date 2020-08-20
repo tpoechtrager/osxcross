@@ -132,36 +132,34 @@ if [ $f_res -eq 1 ]; then
   $MAKE -j$JOBS
   $MAKE install -j$JOBS
   popd &>/dev/null
-
-  pushd $TARGET_DIR/bin &>/dev/null
-  CCTOOLS=$(find . -name "x86_64-apple-darwin*")
-  CCTOOLS=($CCTOOLS)
-  if [ $X86_64H_SUPPORTED -eq 1 ]; then
-    for CCTOOL in ${CCTOOLS[@]}; do
-      CCTOOL_X86_64H=$(echo "$CCTOOL" | $SED 's/x86_64/x86_64h/g')
-      create_symlink $CCTOOL $CCTOOL_X86_64H
-    done
-  fi
-  if [ $I386_SUPPORTED -eq 1 ]; then
-    for CCTOOL in ${CCTOOLS[@]}; do
-      CCTOOL_I386=$(echo "$CCTOOL" | $SED 's/x86_64/i386/g')
-      create_symlink $CCTOOL $CCTOOL_I386
-    done
-  fi
-  if [ $ARM_SUPPORTED -eq 1 ]; then
-    for CCTOOL in ${CCTOOLS[@]}; do
-      CCTOOL_ARM64=$(echo "$CCTOOL" | $SED 's/x86_64/arm64/g')
-      create_symlink $CCTOOL $CCTOOL_ARM64
-    done
-    for CCTOOL in ${CCTOOLS[@]}; do
-      CCTOOL_ARM64E=$(echo "$CCTOOL" | $SED 's/x86_64/arm64e/g')
-      create_symlink $CCTOOL $CCTOOL_ARM64E
-    done
-  fi
-  # For unpatched dsymutil. There is currently no way around it.
-  create_symlink x86_64-apple-$TARGET-lipo lipo
-  popd &>/dev/null
 fi
+
+## Create Arch Symlinks ##
+
+pushd $TARGET_DIR/bin &>/dev/null
+CCTOOLS=($(find . -name "x86_64-apple-${TARGET}*"))
+function create_arch_symlinks()
+{
+  local arch=$1
+  for CCTOOL in ${CCTOOLS[@]}; do
+    verbose_cmd create_symlink $CCTOOL $(echo "$CCTOOL" | $SED "s/x86_64/$arch/g")
+  done
+}
+if [ $X86_64H_SUPPORTED -eq 1 ]; then
+  create_arch_symlinks "x86_64h"
+fi
+if [ $I386_SUPPORTED -eq 1 ]; then
+  create_arch_symlinks "i386"
+fi
+
+if [ $ARM_SUPPORTED -eq 1 ]; then
+  create_arch_symlinks "aarch64"
+  create_arch_symlinks "arm64"
+  create_arch_symlinks "arm64e"
+fi
+# For unpatched dsymutil. There is currently no way around it.
+create_symlink x86_64-apple-$TARGET-lipo lipo
+popd &>/dev/null
 
 
 ## MacPorts ##
@@ -271,6 +269,7 @@ if [ $X86_64H_SUPPORTED -eq 1 ]; then
 fi
 
 if [ $ARM_SUPPORTED -eq 1 ]; then
+  create_symlink osxcross-cmake "$TARGET_DIR/bin/aarch64-apple-$TARGET-cmake"
   create_symlink osxcross-cmake "$TARGET_DIR/bin/arm64-apple-$TARGET-cmake"
   create_symlink osxcross-cmake "$TARGET_DIR/bin/arm64e-apple-$TARGET-cmake"
 fi
@@ -359,6 +358,14 @@ echo "Example 2: CC=i386-apple-$TARGET-clang ./configure --host=i386-apple-$TARG
 echo "Example 3: o64-clang -Wall test.c -o test"
 echo "Example 4: x86_64-apple-$TARGET-strip -x test"
 echo ""
+
+if [ $ARM_SUPPORTED -eq 1 ]; then
+  echo "!!! Use aarch64-apple-$TARGET-* instead of arm64-* when dealing with Automake !!!"
+  echo "!!! CC=aarch64-apple-$TARGET-clang ./configure --host=aarch64-apple-$TARGET !!!"
+  echo "!!! CC=\"aarch64-apple-$TARGET-clang -arch arm64e\" ./configure --host=aarch64-apple-$TARGET !!!"
+  echo ""
+fi
+
 
 if [ $I386_SUPPORTED -eq 0 ]; then
   echo "Your SDK does not support i386 anymore."
