@@ -130,12 +130,21 @@ else
   fi
 fi
 
-echo ""
-echo "Done!"
-echo ""
-echo -n "cd into '$PWD/$stage' and type 'make install' to install "
-echo "clang/llvm to '$INSTALLPREFIX'"
-echo ""
+if [ -z "$ENABLE_CLANG_INSTALL" ]; then
+  echo ""
+  echo "Done!"
+  echo ""
+  echo -n "cd into '$PWD/$stage' and type 'make install' to install "
+  echo "clang/llvm to '$INSTALLPREFIX'"
+  echo ""
+else
+  pushd $stage &>/dev/null
+  $MAKE install -j $JOBS VERBOSE=1
+  popd &>/dev/null
+  echo ""
+  echo "Done!"
+  echo ""
+fi
 
 popd &>/dev/null # llvm
 popd &>/dev/null
