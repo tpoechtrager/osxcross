@@ -19,7 +19,7 @@ mkdir -p $BUILD_DIR
 source $BASE_DIR/tools/trap_exit.sh
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=9.0.0
+  CLANG_VERSION=10.0.1
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
