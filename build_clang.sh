@@ -18,8 +18,6 @@ mkdir -p $BUILD_DIR
 
 source $BASE_DIR/tools/trap_exit.sh
 
-MIRROR="https://releases.llvm.org"
-
 if [ -z "$CLANG_VERSION" ]; then
   CLANG_VERSION=9.0.0
 fi
@@ -29,6 +27,37 @@ if [ -z "$INSTALLPREFIX" ]; then
 fi
 
 require cmake
+
+LLVM_PKG=""
+CLANG_PKG=""
+
+function set_package_link()
+{
+  pushd $BUILD_DIR &>/dev/null
+  download https://releases.llvm.org/download.html &>/dev/null
+  if [[ $(file download.html) == *gzip* ]]; then
+    mv download.html download.html.gz
+    require gzip
+    gzip -d download.html.gz
+  fi
+  links=$(cat download.html | grep -Po '(?<=href=")[^"]*' | grep -v "\.sig")
+  rm -f download.html
+  LLVM_PKG=$(echo "$links" | grep "llvm-$CLANG_VERSION.src" | head -n 1 || true)
+  CLANG_PKG=$(echo "$links" | grep -E "(clang|cfe)-$CLANG_VERSION.src" | head -n 1 || true)
+  if [ -n "$LLVM_PKG" ] && [[ $LLVM_PKG != https* ]]; then
+    LLVM_PKG="https://releases.llvm.org/$LLVM_PKG"
+    CLANG_PKG="https://releases.llvm.org/$CLANG_PKG"
+  fi
+  popd &>/dev/null
+}
+
+set_package_link
+
+if [ -z "$LLVM_PKG" ] || [ -z "$CLANG_PKG" ]; then
+  echo "Release $CLANG_VERSION not found!" 1>&2
+  exit 1
+fi
+
 
 function warn_if_installed()
 {
@@ -48,6 +77,7 @@ if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
   warn_if_installed llvm-config llvm
 fi
 
+
 echo "Building Clang/LLVM $CLANG_VERSION may take a long time."
 echo "Installation Prefix: $INSTALLPREFIX"
 
@@ -59,21 +89,11 @@ fi
 
 pushd $TARBALL_DIR &>/dev/null
 
-if [ -z "$PKGCOMPRESSOR" ]; then
-  PKGCOMPRESSOR="tar.xz"
-  [ $CLANG_VERSION == "3.4.2" ] && PKGCOMPRESSOR="tar.gz"
-fi
-
-LLVM_PKG="$MIRROR/${CLANG_VERSION}/"
-LLVM_PKG+="llvm-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
- 
-CLANG_PKG="$MIRROR/${CLANG_VERSION}/"
-CLANG_PKG+="cfe-${CLANG_VERSION}.src.${PKGCOMPRESSOR}"
-
 download $LLVM_PKG
 download $CLANG_PKG
 
 popd &>/dev/null
+
 
 pushd $BUILD_DIR &>/dev/null
 
@@ -93,6 +113,7 @@ echo ""
 [ -e cfe* ] && mv cfe* clang
 
 popd &>/dev/null
+
 
 function build()
 {
