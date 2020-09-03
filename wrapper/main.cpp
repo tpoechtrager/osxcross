@@ -442,10 +442,10 @@ bool detectTarget(int argc, char **argv, Target &target) {
     target.arch = Arch::x86_64h;
   else if (!strncmp(cmd, "o64", 3))
     target.arch = Arch::x86_64;
+  else if (!strncmp(cmd, "oa64e", 5))
+    target.arch = Arch::arm64e;
   else if (!strncmp(cmd, "oa64", 4))
     target.arch = Arch::arm64;
-  else if (!strncmp(cmd, "oa64e", 4))
-    target.arch = Arch::arm64e;
   else
     return false;
 
