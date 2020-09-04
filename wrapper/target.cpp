@@ -809,7 +809,7 @@ bool Target::setup() {
   if (OSNum.Num()) {
     std::string tmp;
     tmp = "-mmacosx-version-min=";
-    if (clangversion <= ClangVersion(10, 0) &&
+    if (clangversion < ClangVersion(11, 0) &&
         OSNum >= OSVersion(11, 0)) {
       // Clang <= 10 can't parse -mmacosx-version-min=11.x
       tmp += "10.16";
