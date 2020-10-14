@@ -62,11 +62,11 @@ fi
 function warn_if_installed()
 {
   set +e
-  which $1 &>/dev/null && \
+  command -v $1 &>/dev/null && \
   {
     echo ""
     echo "It is highly recommended to uninstall previous $2 versions first:"
-    echo "-> $(which $1 2>/dev/null)"
+    echo "-> $(command -v $1 2>/dev/null)"
     echo ""
   }
   set -e

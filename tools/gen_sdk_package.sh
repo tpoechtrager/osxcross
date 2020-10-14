@@ -6,7 +6,7 @@
 export LC_ALL=C
 
 
-which gnutar &>/dev/null
+command -v gnutar &>/dev/null
 
 if [ $? -eq 0 ]; then
   TAR=gnutar
@@ -16,7 +16,7 @@ fi
 
 
 if [ -z "$SDK_COMPRESSOR" ]; then
-  which xz &>/dev/null
+  command -v xz &>/dev/null
 
   if [ $? -eq 0 ]; then
     SDK_COMPRESSOR=xz

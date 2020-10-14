@@ -864,6 +864,13 @@ bool Target::setup() {
     }
   }
 
+#ifdef __ANDROID__
+  // Workaround for Termux
+  std::string LDSysRoot = "-Wl,-syslibroot,";
+  LDSysRoot += SDKPath;
+  fargs.push_back(LDSysRoot);
+#endif
+
   if (isClang()) {
     if (clangversion >= ClangVersion(3, 8)) {
       //

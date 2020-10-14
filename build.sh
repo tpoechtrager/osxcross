@@ -101,11 +101,14 @@ if [ $ARM_SUPPORTED -eq 1 ]; then
   get_sources \
     https://github.com/tpoechtrager/ldid.git master
 
-  pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
-  echo ""
-  make -j $JOBS
-  $MAKE install -j$JOBS INSTALLPREFIX=$TARGET_DIR
-  popd &>/dev/null
+  if [ $f_res -eq 1 ]; then
+    pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+    echo ""
+    make -j $JOBS
+    $MAKE install -j$JOBS INSTALLPREFIX=$TARGET_DIR
+    popd &>/dev/null
+    build_success
+  fi
 fi
 
 ## Apple TAPI Library ##
@@ -196,15 +199,6 @@ if [ "$(ls -l SDKs/*$SDK_VERSION* 2>/dev/null | wc -l | tr -d ' ')" != "0" ]; th
   mv -f SDKs/*$SDK_VERSION* $SDK_DIR
 else
   mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
-fi
-
-## Android/Termux is broken
-
-if [ $OPERATING_SYSTEM == "Android" ]; then
-  pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
-  mkdir -p data/data/com.termux/files/usr
-  create_symlink $PWD/usr/include data/data/com.termux/files/usr
-  popd &>/dev/null
 fi
 
 ## Fix broken SDKs ##

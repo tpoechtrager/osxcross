@@ -53,7 +53,7 @@ fi
 
 function require()
 {
-  if ! which $1 &>/dev/null; then
+  if ! command -v $1 &>/dev/null; then
     echo "Required dependency '$1' is not installed" 1>&2
     exit 1
   fi
@@ -400,11 +400,11 @@ function download()
   local uri=$1
   local filename=$(basename $1)
 
-  if which curl &>/dev/null; then
+  if command -v curl &>/dev/null; then
     ## cURL ##
     local curl_opts="-L -C - "
     curl $curl_opts -o $filename $uri
-  elif which wget &>/dev/null; then
+  elif command -v wget &>/dev/null; then
     ## wget ##
     local wget_opts="-c "
     local output=$(wget --no-config 2>&1)
