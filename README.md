@@ -159,7 +159,10 @@ use these variants unless you know what you're doing.
 **[Please ensure you have read and understood the Xcode license
    terms before continuing.](https://www.apple.com/legal/sla/docs/xcode.pdf)**
 
-##### Packaging the SDK on macOS: #####
+The SDKs can be extracted either from full Xcode or from Command Line
+Tools for Xcode.
+
+##### Packaging the SDK on macOS (Xcode): #####
 
 1. [Download Xcode: https://developer.apple.com/download/more] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
@@ -210,6 +213,34 @@ An SSD is recommended for this method.
 4. Run (as root): `./tools/mount_xcode_image.sh /path/to/xcode.dmg`
 5. Follow the instructions printed by `./tools/mount_xcode_image.sh`
 6. Copy or move the SDK into the tarballs/ directory
+
+
+##### Packaging the SDK from Xcode Command Line Tools on macOS: #####
+
+1. [Download Xcode Command Line Tools: https://developer.apple.com/download/more] \*\*\*\*
+2. [Mount Command_Line_Tools_for_Xcode.dmg (Open With -> DiskImageMounter)]
+3. [Install "Command Line Tools.pkg" (Open With -> Installer)]
+3. Run: `./tools/gen_sdk_package_tools.sh` (from the OSXCross package)
+4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
+5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of
+   OSXCross.
+
+\*\*\*\*
+-- Xcode command line tools 12.x are known to work.
+
+Steps 1. to 3. can be skipped if you have Xcode Command line tools
+already installed (e.g., auto-installed by running `git` or `gcc`
+command from command-line).
+
+##### Packing the SDK from from Xcode Command Line Tools on Linux: #####
+
+This method may require up to 25 GB of free disk space.
+An SSD is recommended for this method.
+
+1. Download Xcode Command Line Tools like described in 'Packaging the SDK from Xcode Command Line Tools on macOS'
+2. Install `clang`, `make`, `libssl-devel`, `lzma-devel` and `libxml2-devel`
+3. Run `./tools/gen_sdk_package_tools_dmg.sh <command_line_tools_for_xcode>.dmg`
+4. Copy or move the SDK into the tarballs/ directory
 
 
 ### USAGE EXAMPLES: ###
