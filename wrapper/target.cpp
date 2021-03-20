@@ -886,6 +886,8 @@ bool Target::setup() {
       if (wliblto == -1)
         fargs.push_back("-Wno-liblto");
     }
+    if (getenv("OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION"))
+      fargs.push_back("-Werror=implicit-function-declaration");
   } else if (isGCC()) {
     if (args.empty() || (args.size() == 1 && args[0] == "-v")) {
       //
