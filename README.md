@@ -146,6 +146,10 @@ On debian like systems you can install these using:
 
 ATTENTION:
 
+OSXCross does not enable `-Werror=implicit-function-declaration` by default.  
+You can emulate Xcode 12's behavior by setting the environmental variable  
+`OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION` to 1.
+
 OSXCross links libgcc and libstdc++ statically by default (this affects
 `-foc-use-gcc-libstdc++` too).  You can turn this behavior off with
 `OSXCROSS_GCC_NO_STATIC_RUNTIME=1` (env).
@@ -172,7 +176,7 @@ Tools for Xcode.
    OSXCross.
 
 \*\*  
--- Xcode up to 12 Beta 4 is known to work.  
+-- Xcode up to 12.5 Beta 3 is known to work.  
 -- Use Firefox if you have problems signing in.
 
 \*\*\*  
