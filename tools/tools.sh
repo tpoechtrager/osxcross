@@ -357,39 +357,40 @@ function build_msg()
 
 function get_sources()
 {
-  local url=$1
-  local branch=$2
-  local project_name=$3
-  local build_complete_file="$BUILD_DIR/.${project_name}_build_complete"
+  local url="$1"
+  local branch="$2"
+  local project_name="$3"
+  local build_complete_file
 
-  if [ -z "$project_name" ]; then
-    project_name=$(get_project_name_from_url $url)
+  if [[ -z "${project_name}" ]]; then
+    project_name=$(get_project_name_from_url "${url}")
   fi
+  build_complete_file="${BUILD_DIR}/.${project_name}_build_complete"
 
-  CURRENT_BUILD_PROJECT_NAME=$project_name
+  CURRENT_BUILD_PROJECT_NAME="${project_name}"
 
-  build_msg $project_name $branch
+  build_msg "${project_name}" "${branch}"
 
-  if [[ "$SKIP_BUILD" == *$project_name* ]]; then
+  if [[ "${SKIP_BUILD}" == *${project_name}* ]]; then
     f_res=0
     return
   fi
 
-  git_clone_repository $url $branch $project_name
+  git_clone_repository "${url}" "${branch}" "${project_name}"
 
-  if [ $f_res -eq 1 ]; then
-    rm -f $build_complete_file
+  if [[ $f_res -eq 1 ]]; then
+    rm -f "${build_complete_file}"
     f_res=1
   else
     # nothing has changed upstream
 
-    if [ -f $build_complete_file ]; then
+    if [[ -f "${build_complete_file}" ]]; then
       echo ""
       echo "## Nothing to do ##"
       echo ""
       f_res=0
     else
-      rm -f $build_complete_file
+      rm -f "${build_complete_file}"
       f_res=1
     fi
   fi
