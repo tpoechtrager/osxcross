@@ -80,6 +80,8 @@ case $MACOSX_DEPLOYMENT_TARGET in
   10.13* ) OSXVERSION="darwin_17" ;;
   10.14* ) OSXVERSION="darwin_18" ;;
   10.15* ) OSXVERSION="darwin_19" ;;
+  10.16* ) OSXVERSION="darwin_20" ;;
+  11.* )   OSXVERSION="darwin_20" ;;
        * ) unsupportedDepTarget ;;
 esac
 
@@ -142,10 +144,10 @@ selectMirror()
 {
   echo "available mirrors:"
   echo ""
-  echo "1: packages.macports.org (United States)"
-  echo "2: mirrorservice.org (United Kingdom)"
-  echo "3: nue.de.packages.macports.org (Germany)"
-  echo "4: lil.fr.packages.macports.org (France)"
+  echo "1: (https) packages.macports.org (United States)"
+  echo "2: (http)  mirrorservice.org (United Kingdom)"
+  echo "3: (https) nue.de.packages.macports.org (Germany)"
+  echo "4: (https) lil.fr.packages.macports.org (France)"
   echo ""
 
   local OK=0
@@ -162,13 +164,13 @@ selectMirror()
     fi
 
     case $mirrorNumber in
-      1) echo -n "http://packages.macports.org" > \
+      1) echo -n "https://packages.macports.org" > \
           $SELECTEDMIRROR && OK=1 ;;
       2) echo -n "http://www.mirrorservice.org/sites/packages.macports.org" > \
           $SELECTEDMIRROR && OK=1 ;;
-      3) echo -n "http://nue.de.packages.macports.org/macports/packages" > \
+      3) echo -n "https://nue.de.packages.macports.org/macports/packages" > \
           $SELECTEDMIRROR && OK=1 ;;
-      4) echo -n "http://lil.fr.packages.macports.org" > \
+      4) echo -n "https://lil.fr.packages.macports.org" > \
           $SELECTEDMIRROR && OK=1 ;;
       *) echo "please enter a number between 1 and 4..." 1>&2 ;;
     esac
