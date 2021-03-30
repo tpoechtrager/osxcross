@@ -50,6 +50,14 @@ if [[ $PLATFORM == CYGWIN* ]]; then
   exit 1
 fi
 
+if [[ $PLATFORM == Darwin ]]; then
+  echo $PATH
+  CFLAGS_OPENSSL="$(pkg-config --cflags openssl)"
+  LDFLAGS_OPENSSL="$(pkg-config --libs-only-L openssl)"
+  export C_INCLUDE_PATH=${CFLAGS_OPENSSL:2}
+  export CPLUS_INCLUDE_PATH=${CFLAGS_OPENSSL:2}
+  export LIBRARY_PATH=${LDFLAGS_OPENSSL:2}
+fi
 
 function require()
 {
