@@ -96,24 +96,6 @@ build_xar
 
 # XAR END
 
-
-## ldid ##
-
-if [ $ARM_SUPPORTED -eq 1 ]; then
-
-  get_sources \
-    https://github.com/tpoechtrager/ldid.git master
-
-  if [ $f_res -eq 1 ]; then
-    pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
-    echo ""
-    make -j $JOBS
-    $MAKE install -j$JOBS INSTALLPREFIX=$TARGET_DIR
-    popd &>/dev/null
-    build_success
-  fi
-fi
-
 ## Apple TAPI Library ##
 
 if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
