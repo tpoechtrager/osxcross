@@ -179,7 +179,7 @@ function verify_sdk_version()
   done
   if [ ! $sdk ] ; then
     echo cant find SDK for OSX $sdkv in tarballs. exiting
-    exit
+    exit 1
   fi
 }
 
