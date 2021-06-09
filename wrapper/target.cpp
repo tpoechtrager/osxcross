@@ -74,8 +74,9 @@ OSVersion Target::getSDKOSNum() const {
     double n = atof(target.c_str() + 6);
 
     if (n >= 20.0f) {
-      n = (((n - 20.0) * 10.0) - 1.0) + 0.1;
-      return OSVersion(11, (int)n);
+      int major = 11 + ((int)n % 20);
+      int minor = (((n - (int)n) * 10.0) - 1.0) + 0.1;
+      return OSVersion(major, minor);
     } else {
       return OSVersion(10, (int)n - 4);
     }
