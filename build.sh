@@ -154,6 +154,8 @@ if [ $APPLY_LD64_ADD_PPC_SUPPORT_PATCH -eq 1 ]; then
   popd &>/dev/null
 fi
 patch -p0 < $PATCH_DIR/ld64-antique-ubuntu.patch
+patch -p0 < $PATCH_DIR/cctools-port-buildfix.patch
+patch -p0 < $PATCH_DIR/cctools-port-buildfix-configure.patch  --forward || true
 echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "
