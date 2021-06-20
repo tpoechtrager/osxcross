@@ -187,7 +187,7 @@ Step 1. and 2. can be skipped if you have Xcode installed.
 
 ##### Packing the SDK on Linux - Method 1 (Xcode > 8.0): #####
 
-This method may require up to 25 GB of free disk space.  
+This method may require up to 45 GB of free disk space.  
 An SSD is recommended for this method.
 
 1. Download Xcode like described in 'Packaging the SDK on macOS'
@@ -238,7 +238,7 @@ command from command-line).
 
 ##### Packing the SDK from from Xcode Command Line Tools on Linux: #####
 
-This method may require up to 25 GB of free disk space.
+This method may require up to 45 GB of free disk space.
 An SSD is recommended for this method.
 
 1. Download Xcode Command Line Tools like described in 'Packaging the SDK from Xcode Command Line Tools on macOS'
