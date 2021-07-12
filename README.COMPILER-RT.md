@@ -10,6 +10,10 @@ Ensure you have finished `build.sh`,
 
 then run: `./build_compiler_rt.sh`.
 
+By default, installation steps for compiler-rt will be printed to the terminal
+to run manually, but you can automate the installation process by defining
+`ENABLE_COMPILER_RT_INSTALL`.
+
 You can verify compiler-rt is working by invoking the following command:
 
     echo "int main(void){return 0;}" | xcrun clang -xc -o/dev/null -v - 2>&1 | \
