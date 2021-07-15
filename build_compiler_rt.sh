@@ -182,22 +182,39 @@ fi
 rm -f $BUILD_DIR/.compiler-rt_build_complete
 
 
+# Installation. Can be either automated (ENABLE_COMPILER_RT_INSTALL) or will
+# print the commands that the user should run manually.
+
+function print_or_run() {
+  if [ -z "$ENABLE_COMPILER_RT_INSTALL" ]; then
+    echo "$@"
+  else
+    $@
+  fi
+}
+
 echo ""
 echo ""
 echo ""
-echo "Please run the following commands by hand to install compiler-rt:"
+if [ -z "$ENABLE_COMPILER_RT_INSTALL" ]; then
+  echo "Please run the following commands by hand to install compiler-rt:"
+else
+  echo "Installing compiler-rt headers and libraries to the following paths:"
+  echo "  ${CLANG_INCLUDE_DIR}"
+  echo "  ${CLANG_DARWIN_LIB_DIR}"
+fi
 echo ""
 
-echo "mkdir -p ${CLANG_INCLUDE_DIR}"
-echo "mkdir -p ${CLANG_DARWIN_LIB_DIR}"
-echo "cp -rv $BUILD_DIR/compiler-rt/compiler-rt/include/sanitizer ${CLANG_INCLUDE_DIR}"
+print_or_run mkdir -p ${CLANG_INCLUDE_DIR}
+print_or_run mkdir -p ${CLANG_DARWIN_LIB_DIR}
+print_or_run cp -rv $BUILD_DIR/compiler-rt/compiler-rt/include/sanitizer ${CLANG_INCLUDE_DIR}
 
 if [ $USE_CMAKE -eq 1 ]; then
 
   ### CMAKE ###
 
-  echo "cp -v $BUILD_DIR/compiler-rt/compiler-rt/build/lib/darwin/*.a ${CLANG_DARWIN_LIB_DIR}"
-  echo "cp -v $BUILD_DIR/compiler-rt/compiler-rt/build/lib/darwin/*.dylib ${CLANG_DARWIN_LIB_DIR}"
+  print_or_run cp -v $BUILD_DIR/compiler-rt/compiler-rt/build/lib/darwin/*.a ${CLANG_DARWIN_LIB_DIR}
+  print_or_run cp -v $BUILD_DIR/compiler-rt/compiler-rt/build/lib/darwin/*.dylib ${CLANG_DARWIN_LIB_DIR}
 
   ### CMAKE END ###
 
@@ -209,7 +226,7 @@ else
 
   function print_install_command() {
     if [ -f "$1" ]; then
-      echo "cp $PWD/compiler-rt/$1 ${CLANG_DARWIN_LIB_DIR}/$2"
+      print_or_run cp $PWD/compiler-rt/$1 ${CLANG_DARWIN_LIB_DIR}/$2
     fi
   }
 
@@ -219,13 +236,11 @@ else
   print_install_command "cc_kext/libcompiler_rt.a"     "libclang_rt.cc_kext.a"
   print_install_command "profile_osx/libcompiler_rt.a" "libclang_rt.profile_osx.a"
 
-
   print_install_command "ubsan_osx_dynamic/libcompiler_rt.dylib" \
     "libclang_rt.ubsan_osx_dynamic.dylib"
 
   print_install_command "asan_osx_dynamic/libcompiler_rt.dylib" \
     "libclang_rt.asan_osx_dynamic.dylib"
-
 
   popd &>/dev/null
 

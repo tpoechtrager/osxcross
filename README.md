@@ -33,6 +33,9 @@ It also includes scripts for optionally building
 * the "compiler-rt" runtime library, and
 * the `llvm-dsymutil` tool required for debugging.
 
+Note: The "compiler-rt" library can be needed to link code that uses the
+`__builtin_available()` runtime version check.
+
 
 ### WHAT CAN BE BUILT WITH IT? ###
 
