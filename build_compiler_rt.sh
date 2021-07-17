@@ -193,6 +193,9 @@ function print_or_run() {
   fi
 }
 
+mkdir -p ${CLANG_INCLUDE_DIR} && \
+  touch ${CLANG_INCLUDE_DIR} 2>/dev/null && ENABLE_COMPILER_RT_INSTALL=1
+
 echo ""
 echo ""
 echo ""
