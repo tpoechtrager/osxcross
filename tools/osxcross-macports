@@ -586,6 +586,8 @@ main()
         ARCH="i386"
       elif [ $opt == "-universal" -o $opt == "--universal" ]; then
         ARCH="i386-x86_64"
+      elif [ $opt == "-arm64" -o $opt == "--arm64" ]; then
+        ARCH="arm64"
       elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
         selectMirror
         exit
