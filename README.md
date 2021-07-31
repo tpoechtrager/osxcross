@@ -171,7 +171,7 @@ Tools for Xcode.
 
 ##### Packaging the SDK on macOS (Xcode): #####
 
-1. [Download Xcode: https://developer.apple.com/download/more] \*\*
+1. [Download Xcode: https://developer.apple.com/download/all/?q=xcode] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
 3. Run: `./tools/gen_sdk_package.sh` (from the OSXCross package)
 4. Copy the packaged SDK (\*.tar.\* or \*.pkg) on a USB Stick
