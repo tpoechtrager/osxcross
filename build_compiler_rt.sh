@@ -52,7 +52,8 @@ case $CLANG_VERSION in
   10.* ) BRANCH=release/10.x;    USE_CMAKE=1; ;;
   11.* ) BRANCH=release/11.x;    USE_CMAKE=1; ;;
   12.* ) BRANCH=release/12.x;    USE_CMAKE=1; ;;
-  13.* ) BRANCH=main;            USE_CMAKE=1; ;;
+  13.* ) BRANCH=release/13.x;    USE_CMAKE=1; ;;
+  14.* ) BRANCH=main;            USE_CMAKE=1; ;;
      * ) echo "Unsupported Clang version, must be >= 3.2 and <= 13.0" 1>&2; exit 1;
 esac
 
@@ -89,6 +90,7 @@ if [ $f_res -eq 1 ]; then
     patch -p1 < $PATCH_DIR/compiler-rt_clock-gettime.patch
   fi
 
+  EXTRA_CMAKE_FLAGS=""
   EXTRA_MAKE_FLAGS=""
   if [ -n "$OCDEBUG" ]; then
     EXTRA_MAKE_FLAGS+="VERBOSE=1 "
@@ -128,19 +130,108 @@ if [ $f_res -eq 1 ]; then
         cmake/config-ix.cmake
     fi
 
-    mkdir build
-    pushd build &>/dev/null
+    function build
+    {
+      local arch=$1
+      local build_dir="build"
 
-    CC=$(xcrun -f clang) CXX=$(xcrun -f clang++) $CMAKE .. \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_SYSTEM_NAME=Darwin \
-      -DCMAKE_LIPO=$(xcrun -f lipo) \
-      -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
-      -DCMAKE_AR=$(xcrun -f ar)
+      if [ -n "$arch" ]; then
+        build_dir+="_$arch"
 
-    $MAKE -j $JOBS $EXTRA_MAKE_FLAGS
+        EXTRA_CMAKE_FLAGS+="-DDARWIN_osx_ARCHS=$arch "
+        EXTRA_CMAKE_FLAGS+="-DDARWIN_osx_BUILTIN_ARCHS=$arch "
 
-    popd &>/dev/null
+        if [[ $arch == arm64* ]]; then
+        if [ $(osxcross-cmp $CLANG_VERSION "<" 11) -eq 1 ]; then
+          # https://github.com/tpoechtrager/osxcross/issues/259
+          EXTRA_CMAKE_FLAGS+="-DCOMPILER_RT_BUILD_SANITIZERS=OFF "
+          EXTRA_CMAKE_FLAGS+="-DCOMPILER_RT_BUILD_XRAY=OFF "
+        fi
+        fi
+
+        echo ""
+        echo "Building for arch $arch ..."
+        echo ""
+      fi
+
+      mkdir $build_dir
+      pushd $build_dir &>/dev/null
+
+      CC=$(xcrun -f clang) CXX=$(xcrun -f clang++) $CMAKE .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_SYSTEM_NAME=Darwin \
+        -DCMAKE_LIPO=$(xcrun -f lipo) \
+        -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
+        -DCMAKE_AR=$(xcrun -f ar) \
+        $EXTRA_CMAKE_FLAGS
+
+      $MAKE -j $JOBS $EXTRA_MAKE_FLAGS
+
+      popd &>/dev/null
+    }
+
+    if [ $(osxcross-cmp $SDK_VERSION ">=" 11.0) -eq 1 ]; then
+    if [ $(osxcross-cmp $CLANG_VERSION ">=" 4.0) -eq 1 ]; then
+      # https://github.com/tpoechtrager/osxcross/issues/258
+      # https://github.com/tpoechtrager/osxcross/issues/286
+
+      function check_archs
+      {
+        tmp=$(mktemp -d)
+        [ -z "$tmp" ] && exit 1
+        pushd $tmp &>/dev/null
+
+        for arch in $*; do
+          if echo "int main(){}" | xcrun clang -arch $arch -xc -o test - &>/dev/null; then
+            rm test
+            [ -n "$ARCHS" ] && ARCHS+=" "
+            ARCHS+="$arch"
+          fi
+        done
+
+        popd &>/dev/null
+        rmdir $tmp
+      }
+
+      ARCHS=""
+      check_archs i386 x86_64 x86_64h arm64 arm64e
+
+      if [ -z "$ARCHS" ]; then
+        echo "Compiler does not seem to work"
+        exit 1
+      fi
+
+      echo ""
+      echo "Building for archs $ARCHS ..."
+      echo ""
+
+      for arch in $ARCHS; do
+        build $arch
+      done
+
+      arch1=$(echo $ARCHS | awk '{print $1}')
+
+      for file in $(ls build_$arch1/lib/darwin/); do
+        libs=""
+
+        for arch in $ARCHS; do
+          lib="build_$arch/lib/darwin/$file"
+          [ -n "$libs" ] && libs+=" "
+          if [ -f "$lib" ]; then
+            libs+="$lib"
+          fi
+        done
+
+        xcrun lipo -create $libs -output build_$arch1/lib/darwin/$file.lipo
+        rm build_$arch1/lib/darwin/$file
+        mv build_$arch1/lib/darwin/$file.lipo build_$arch1/lib/darwin/$file
+      done
+
+      create_symlink build_$arch1 build
+    else
+      build
+    fi
+    fi
 
     ### CMAKE END ###
 
