@@ -54,7 +54,7 @@ case $CLANG_VERSION in
   12.* ) BRANCH=release/12.x;    USE_CMAKE=1; ;;
   13.* ) BRANCH=release/13.x;    USE_CMAKE=1; ;;
   14.* ) BRANCH=main;            USE_CMAKE=1; ;;
-     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 13.0" 1>&2; exit 1;
+     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 14.0" 1>&2; exit 1;
 esac
 
 if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
@@ -90,7 +90,6 @@ if [ $f_res -eq 1 ]; then
     patch -p1 < $PATCH_DIR/compiler-rt_clock-gettime.patch
   fi
 
-  EXTRA_CMAKE_FLAGS=""
   EXTRA_MAKE_FLAGS=""
   if [ -n "$OCDEBUG" ]; then
     EXTRA_MAKE_FLAGS+="VERBOSE=1 "
@@ -134,19 +133,18 @@ if [ $f_res -eq 1 ]; then
     {
       local arch=$1
       local build_dir="build"
+      local extra_cmake_flags=""
 
       if [ -n "$arch" ]; then
         build_dir+="_$arch"
 
-        EXTRA_CMAKE_FLAGS+="-DDARWIN_osx_ARCHS=$arch "
-        EXTRA_CMAKE_FLAGS+="-DDARWIN_osx_BUILTIN_ARCHS=$arch "
+        extra_cmake_flags+="-DDARWIN_osx_ARCHS=$arch "
+        extra_cmake_flags+="-DDARWIN_osx_BUILTIN_ARCHS=$arch "
 
-        if [[ $arch == arm64* ]]; then
-        if [ $(osxcross-cmp $CLANG_VERSION "<" 11) -eq 1 ]; then
+        if [ $arch == "arm64" ] || [ $arch == "arm64e" ]; then
           # https://github.com/tpoechtrager/osxcross/issues/259
-          EXTRA_CMAKE_FLAGS+="-DCOMPILER_RT_BUILD_SANITIZERS=OFF "
-          EXTRA_CMAKE_FLAGS+="-DCOMPILER_RT_BUILD_XRAY=OFF "
-        fi
+          extra_cmake_flags+="-DCOMPILER_RT_BUILD_SANITIZERS=OFF "
+          extra_cmake_flags+="-DCOMPILER_RT_BUILD_XRAY=OFF "
         fi
 
         echo ""
@@ -163,15 +161,15 @@ if [ $f_res -eq 1 ]; then
         -DCMAKE_LIPO=$(xcrun -f lipo) \
         -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
         -DCMAKE_AR=$(xcrun -f ar) \
-        $EXTRA_CMAKE_FLAGS
+        $extra_cmake_flags
 
       $MAKE -j $JOBS $EXTRA_MAKE_FLAGS
 
       popd &>/dev/null
     }
 
-    if [ $(osxcross-cmp $SDK_VERSION ">=" 11.0) -eq 1 ]; then
-    if [ $(osxcross-cmp $CLANG_VERSION ">=" 4.0) -eq 1 ]; then
+    if [ $(osxcross-cmp $SDK_VERSION ">=" 11.0) -eq 1 ] &&
+       [ $(osxcross-cmp $CLANG_VERSION ">=" 4.0) -eq 1 ]; then
       # https://github.com/tpoechtrager/osxcross/issues/258
       # https://github.com/tpoechtrager/osxcross/issues/286
 
@@ -230,7 +228,6 @@ if [ $f_res -eq 1 ]; then
       create_symlink build_$arch1 build
     else
       build
-    fi
     fi
 
     ### CMAKE END ###
