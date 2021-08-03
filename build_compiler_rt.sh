@@ -124,6 +124,9 @@ if [ $f_res -eq 1 ]; then
     $SED -i "s/COMMAND codesign /COMMAND true /g" \
       cmake/Modules/AddCompilerRT.cmake
 
+    $SED -i 's/${CMAKE_COMMAND} -E ${COMPILER_RT_LINK_OR_COPY}/ln -sf/g' \
+      lib/builtins/CMakeLists.txt
+
     if [ $HAVE_OS_LOCK -eq 0 ]; then
       $SED -i "s/COMPILER_RT_HAS_TSAN TRUE/COMPILER_RT_HAS_TSAN FALSE/g" \
         cmake/config-ix.cmake
@@ -203,9 +206,30 @@ if [ $f_res -eq 1 ]; then
       echo "Building for archs $ARCHS ..."
       echo ""
 
-      for arch in $ARCHS; do
-        build $arch
-      done
+      if [ -z "$DISABLE_PARALLEL_ARCH_BUILD" ] && [ $JOBS -gt 2 ]; then
+        build_pids="";
+        jobs_per_build_job=$(awk "BEGIN{print int($JOBS/$(echo $ARCHS | wc -w)+0.5)}")
+        ((jobs_per_build_job=jobs_per_build_job+1))
+
+        for arch in $ARCHS; do
+          JOBS=$jobs_per_build_job build $arch &
+          build_pids+=" $!"
+        done
+
+        for pid in $build_pids; do
+          wait $pid || {
+            echo ""
+            echo "Build failed!"
+            echo "Use DISABLE_PARALLEL_ARCH_BUILD=1 to disable parallel building of architectures"
+            echo ""
+            exit 1
+          }
+        done
+      else
+        for arch in $ARCHS; do
+          build $arch
+        done
+      fi
 
       arch1=$(echo $ARCHS | awk '{print $1}')
 
