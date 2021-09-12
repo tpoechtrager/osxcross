@@ -106,7 +106,14 @@ To build the cross toolchain (using `clang`), run:
     ./build.sh
 ```
 
-Or, set variable `UNATTENDED` to `1` to skip the prompt and proceed straight to
+This installs the osxcross toolchain into `<path>/target`. If you want to install somewhere
+else, set the `TARGET_DIR` variable.  For example:
+
+```shell
+    TARGET_DIR=/usr/local/osxcross ./build.sh
+```
+
+And/Or, set variable `UNATTENDED` to `1` to skip the prompt and proceed straight to
 the build:
 
 ```shell
