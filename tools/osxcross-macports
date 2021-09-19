@@ -274,10 +274,17 @@ verifyFileIntegrity()
 getPkgUrl()
 {
   local pkgname="$1"
+  local pkgversion
   local pkgs
   local pkg
 
   set +e
+
+  local pkg_info_url="https://ports.macports.org"
+  pkg_info_url+="/api/v1/ports/$pkgname/?format=json"
+  pkgversion=$(getFileStdout "$pkg_info_url" | \
+               grep -o -E '"version":"[^"]+"' | \
+               cut -d'"' -f4)
 
   pkgs=$(getFileStdout "$MIRROR/$pkgname/?C=M;O=A" | \
          grep -o -E 'href="([^"#]+)"' | \
@@ -298,7 +305,17 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  local pkg=$(echo "$pkgs" | \
+              grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep $ARCH | \
+              uniq | tail -n1)
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | \
+          grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep "noarch" | \
+          uniq | tail -n1)
+  fi
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
+  fi
   if [ -z "$pkg" ]; then
     pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
   fi
