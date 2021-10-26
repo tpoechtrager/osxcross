@@ -127,8 +127,10 @@ if [ $f_res -eq 1 ]; then
     $SED -i 's/${CMAKE_COMMAND} -E ${COMPILER_RT_LINK_OR_COPY}/ln -sf/g' \
       lib/builtins/CMakeLists.txt
 
-    $SED -i 's/list(APPEND ORC_CFLAGS -I${DIR})//g' \
-      lib/orc/CMakeLists.txt
+    if [ -f "lib/orc/CMakeLists.txt" ]; then
+      $SED -i 's/list(APPEND ORC_CFLAGS -I${DIR})//g' \
+        lib/orc/CMakeLists.txt
+    fi
 
     if [ $HAVE_OS_LOCK -eq 0 ]; then
       $SED -i "s/COMPILER_RT_HAS_TSAN TRUE/COMPILER_RT_HAS_TSAN FALSE/g" \
