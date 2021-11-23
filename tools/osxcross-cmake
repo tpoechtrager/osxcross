@@ -12,5 +12,6 @@ fi
 
 eval "`$dir/$host-osxcross-conf`"
 export OSXCROSS_HOST="$host"
+export CMAKE_TOOLCHAIN_FILE="$OSXCROSS_TARGET_DIR"/toolchain.cmake
 
-exec cmake -DCMAKE_TOOLCHAIN_FILE="$OSXCROSS_TARGET_DIR"/toolchain.cmake "$@"
+exec cmake "$@"
