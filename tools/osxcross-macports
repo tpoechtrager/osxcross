@@ -81,7 +81,8 @@ case $MACOSX_DEPLOYMENT_TARGET in
   10.14* ) OSXVERSION="darwin_18" ;;
   10.15* ) OSXVERSION="darwin_19" ;;
   10.16* ) OSXVERSION="darwin_20" ;;
-  11.* )   OSXVERSION="darwin_20" ;;
+  11.*   ) OSXVERSION="darwin_21" ;;
+  12.*   ) OSXVERSION="darwin_21" ;;
        * ) unsupportedDepTarget ;;
 esac
 
