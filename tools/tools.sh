@@ -36,6 +36,7 @@ function set_path_vars()
     export PATCH_DIR=$PWD/patches
     export SDK_DIR=$TARGET_DIR/SDK
   fi
+  export HOST_ARCH="${HOST_ARCH:-$(uname -m)}"
 }
 
 set_path_vars

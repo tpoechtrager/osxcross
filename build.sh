@@ -124,7 +124,7 @@ if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME/cctools &>/dev/null
   echo ""
 
-  CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
+  CONFFLAGS="--prefix=$TARGET_DIR --target=${HOST_ARCH}-apple-$TARGET "
   if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     CONFFLAGS+="--with-libtapi=$TARGET_DIR "
   fi
@@ -140,14 +140,19 @@ fi
 ## Create Arch Symlinks ##
 
 pushd $TARGET_DIR/bin &>/dev/null
-CCTOOLS=($(find . -name "x86_64-apple-${TARGET}*"))
+CCTOOLS=($(find . -name "${HOST_ARCH}-apple-${TARGET}*"))
 function create_arch_symlinks()
 {
   local arch=$1
-  for CCTOOL in ${CCTOOLS[@]}; do
-    verbose_cmd create_symlink $CCTOOL $(echo "$CCTOOL" | $SED "s/x86_64/$arch/g")
-  done
+  if [[ "$arch" != "${HOST_ARCH}" ]]; then
+    for CCTOOL in ${CCTOOLS[@]}; do
+        verbose_cmd create_symlink $CCTOOL $(echo "$CCTOOL" | $SED "s/${HOST_ARCH}/$arch/g")
+    done
+  fi
 }
+if [ "${HOST_ARCH}" != "x86_64" ]; then
+  create_arch_symlinks "x86_64"
+fi
 if [ $X86_64H_SUPPORTED -eq 1 ]; then
   create_arch_symlinks "x86_64h"
 fi
@@ -156,12 +161,14 @@ if [ $I386_SUPPORTED -eq 1 ]; then
 fi
 
 if [ $ARM_SUPPORTED -eq 1 ]; then
-  create_arch_symlinks "aarch64"
+  if [ "${HOST_ARCH}" != "aarch64" ]; then
+    create_arch_symlinks "aarch64"
+  fi
   create_arch_symlinks "arm64"
   create_arch_symlinks "arm64e"
 fi
 # For unpatched dsymutil. There is currently no way around it.
-create_symlink x86_64-apple-$TARGET-lipo lipo
+create_symlink "${HOST_ARCH}-apple-$TARGET-lipo" lipo
 popd &>/dev/null
 
 
@@ -306,7 +313,7 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
   if [ $I386_SUPPORTED -eq 1 ]; then
     test_compiler_cxx11 i386-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx.cpp
   fi
-  test_compiler_cxx11 x86_64-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx.cpp
+  test_compiler_cxx11 "${HOST_ARCH}-apple-$TARGET-clang++" $BASE_DIR/oclang/test_libcxx.cpp
   echo ""
 fi
 
@@ -330,10 +337,16 @@ if [ $ARM_SUPPORTED -eq 1 ]; then
   test_compiler arm64e-apple-$TARGET-clang $BASE_DIR/oclang/test.c
   test_compiler arm64e-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp
   echo ""
+
+  test_compiler aarch64-apple-$TARGET-clang $BASE_DIR/oclang/test.c "required"
+  test_compiler aarch64-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp "required"
+  echo ""
 fi
 
 test_compiler x86_64-apple-$TARGET-clang $BASE_DIR/oclang/test.c "required"
 test_compiler x86_64-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp "required"
+
+
 
 echo ""
 echo "Do not forget to add"

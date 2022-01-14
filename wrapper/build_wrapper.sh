@@ -117,7 +117,7 @@ function create_wrapper_link
 
 [ -z "$TARGETCOMPILER" ] && TARGETCOMPILER=clang
 
-TARGETTRIPLE=x86_64-apple-${TARGET}
+TARGETTRIPLE="${HOST_ARCH}-apple-${TARGET}"
 
 FLAGS=""
 
@@ -201,6 +201,7 @@ if [ "$PLATFORM" != "Darwin" ]; then
     # Just create target symlinks.
 
     verbose_cmd create_symlink $(which dsymutil) x86_64-apple-$TARGET-dsymutil
+    verbose_cmd create_symlink $(which dsymutil) aarch64-apple-$TARGET-dsymutil
 
     if [ $I386_SUPPORTED -eq 1 ]; then
       verbose_cmd create_symlink $(which dsymutil) i386-apple-$TARGET-dsymutil
