@@ -118,8 +118,8 @@ fi
 EXTRACONFFLAGS=""
 
 if [ "$PLATFORM" != "Darwin" ]; then
-  EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/x86_64-apple-$TARGET-ld "
-  EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/x86_64-apple-$TARGET-as "
+  EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/${HOST_ARCH}-apple-$TARGET-ld "
+  EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/${HOST_ARCH}-apple-$TARGET-as "
 fi
 
 LANGS="c,c++,objc,obj-c++"
@@ -135,7 +135,7 @@ else
 fi
 
 ../configure \
-  --target=x86_64-apple-$TARGET \
+  --target=${HOST_ARCH}-apple-$TARGET \
   --with-sysroot=$SDK \
   --disable-nls \
   --enable-languages=$LANGS \
@@ -152,7 +152,7 @@ $MAKE install
 
 GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
 
-pushd $TARGET_DIR/x86_64-apple-$TARGET/include &>/dev/null
+pushd $TARGET_DIR/${HOST_ARCH}-apple-$TARGET/include &>/dev/null
 pushd c++/${GCC_VERSION}* &>/dev/null
 
 cat $PATCH_DIR/libstdcxx.patch | \
@@ -177,17 +177,17 @@ source tools/tools.sh
 pushd $TARGET_DIR/bin &>/dev/null
 
 if [ ! -f i386-apple-$TARGET-base-gcc ]; then
-  mv x86_64-apple-$TARGET-gcc \
-    x86_64-apple-$TARGET-base-gcc
+  mv ${HOST_ARCH}-apple-$TARGET-gcc \
+    ${HOST_ARCH}-apple-$TARGET-base-gcc
 
-  mv x86_64-apple-$TARGET-g++ \
-    x86_64-apple-$TARGET-base-g++
+  mv ${HOST_ARCH}-apple-$TARGET-g++ \
+    ${HOST_ARCH}-apple-$TARGET-base-g++
 
   if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
-    create_symlink x86_64-apple-$TARGET-base-gcc \
+    create_symlink ${HOST_ARCH}-apple-$TARGET-base-gcc \
                    i386-apple-$TARGET-base-gcc
 
-    create_symlink x86_64-apple-$TARGET-base-g++ \
+    create_symlink ${HOST_ARCH}-apple-$TARGET-base-g++ \
                    i386-apple-$TARGET-base-g++
   fi
 fi
@@ -218,5 +218,5 @@ echo ""
 echo "Example 1: CC=o32-gcc ./configure --host=i386-apple-$TARGET"
 echo "Example 2: CC=i386-apple-$TARGET-gcc ./configure --host=i386-apple-$TARGET"
 echo "Example 3: o64-gcc -Wall test.c -o test"
-echo "Example 4: x86_64-apple-$TARGET-strip -x test"
+echo "Example 4: ${HOST_ARCH}-apple-$TARGET-strip -x test"
 echo ""

@@ -52,8 +52,8 @@ function build_and_install()
     pushd build &>/dev/null
 
     ../configure \
-      --target=x86_64-apple-$TARGET \
-      --program-prefix=x86_64-apple-$TARGET- \
+      --target=${HOST_ARCH}-apple-$TARGET \
+      --program-prefix=${HOST_ARCH}-apple-$TARGET- \
       --prefix=$TARGET_DIR/binutils \
       --disable-nls \
       --disable-werror
