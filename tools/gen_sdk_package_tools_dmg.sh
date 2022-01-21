@@ -76,15 +76,16 @@ pushd $TMP_DIR &>/dev/null
 
 echo ""
 echo "Unpacking $XCODE_TOOLS_DMG ..."
-XCODE_TOOLS_PKG="Command Line Developer Tools/Command Line Tools.pkg"
+XCODE_TOOLS_PKG="Command Line Developer Tools/Command Line Tools*.pkg"
+XCODE_TOOLS_PKG_TMP="Command Line Tools.pkg"
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
-  verbose_cmd "$TARGET_DIR_SDK_TOOLS/bin/7z x \"$XCODE_TOOLS_DMG\"  \"$XCODE_TOOLS_PKG\""
+  verbose_cmd "$TARGET_DIR_SDK_TOOLS/bin/7z e -so \"$XCODE_TOOLS_DMG\"  \"$XCODE_TOOLS_PKG\" > \"$XCODE_TOOLS_PKG_TMP\""
 
 echo ""
-echo "Unpacking $XCODE_TOOLS_PKG ..."
+echo "Unpacking $XCODE_TOOLS_PKG_TMP ..."
 mkdir "$TMP_DIR/pkg_data"
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
-  verbose_cmd "$TARGET_DIR/bin/xar -xf \"$XCODE_TOOLS_PKG\" -C $TMP_DIR/pkg_data"
+  verbose_cmd "$TARGET_DIR/bin/xar -xf \"$XCODE_TOOLS_PKG_TMP\" -C $TMP_DIR/pkg_data"
 
 echo ""
 echo "Processing packages ..."
