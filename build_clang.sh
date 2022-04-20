@@ -168,35 +168,6 @@ echo "extracting ..."
 
 bsdtar --strip-components=1 -xf $TARBALL_DIR/$(basename $CLANG_LLVM_PKG) 1>/dev/null
 
-function build()
-{
-  stage=$1
-  mkdir -p $stage
-  pushd $stage &>/dev/null
-  cmake ../$2 \
-    -DCMAKE_INSTALL_PREFIX=$INSTALLPREFIX \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_ENABLE_ASSERTIONS=OFF \
-    -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=1
-  $MAKE -j $JOBS VERBOSE=1
-  
-  # install, but only if it is globally enabled
-  if [ -z "$ENABLE_CLANG_INSTALL" ]; then
-    echo ""
-    echo "Done!"
-    echo ""
-    echo -n "cd into '$BUILD_DIR/$stage' and type 'make install' to install "
-    echo "clang/llvm to '$INSTALLPREFIX'"
-    echo ""
-  else
-    $MAKE install -j $JOBS VERBOSE=1
-    echo ""
-    echo "Done!"
-    echo ""
-  fi
-  popd &>/dev/null #$stage
-}
-
 # DISABLE_BOOTSTRAP no longer available
 # ENABLE_FULL_BOOTSTRAP no longer available
 
@@ -205,18 +176,33 @@ if [ -z "$PORTABLE" ]; then
   export CXXFLAGS="-march=native"
 fi
 
-build build_stage1 llvm
+# build clang, llvm, libc++ and libc++abi in one go
+mkdir build_stage
+pushd build_stage &>/dev/null
+cmake ../llvm \
+  -G "Unix Makefiles" \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLLVM_ENABLE_ASSERTIONS=OFF \
+  -DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi" \
+  -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=1
+$MAKE -j $JOBS VERBOSE=1
 
-# clang needs to be able to find llvm otherwise it won't compile
-export PATH=$PWD/build_stage1/bin:$PATH
-export LD_LIBRARY_PATH=$PWD/build_stage1/lib:$LD_LIBRARY_PATH
-
-# clang needs to be able to find llvm headers and tablegen files
-# tablegen doesn't seem to respect CPATH or CFLAGS so this is the simplest way
-mkdir -p $PWD/build_stage2/include/
-cp -r $PWD/llvm/include/* $PWD/build_stage2/include/
-
-build build_stage2 clang
+# install, but only if it is globally enabled
+if [ -z "$ENABLE_CLANG_INSTALL" ]; then
+  echo ""
+  echo "Done!"
+  echo ""
+  echo -n "cd into '$BUILD_DIR/$stage' and type 'make install' to install "
+  echo "clang/llvm to '$INSTALLPREFIX'"
+  echo ""
+else
+  $MAKE install -j $JOBS VERBOSE=1
+  echo ""
+  echo "Done!"
+  echo ""
+fi
+popd &>/dev/null #build_stage
 
 popd &>/dev/null #$BUILD_DIR
 
