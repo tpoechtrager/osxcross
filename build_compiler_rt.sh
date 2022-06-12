@@ -167,6 +167,7 @@ if [ $f_res -eq 1 ]; then
       CC=$(xcrun -f clang) CXX=$(xcrun -f clang++) $CMAKE .. \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_SYSTEM_NAME=Darwin \
+        -DCOMPILER_RT_ENABLE_IOS=OFF \
         -DCMAKE_LIPO=$(xcrun -f lipo) \
         -DCMAKE_OSX_SYSROOT=$(xcrun --show-sdk-path) \
         -DCMAKE_AR=$(xcrun -f ar) \
