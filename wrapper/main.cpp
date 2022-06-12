@@ -252,6 +252,7 @@ constexpr struct Opt {
          valseparator(valseparator),
          valseparatorlen(valseparator ? constexprStrLen(valseparator) : 0) {}
 } opts[] = {
+  {"-mmacos-version-min", versionmin, true, false, "="},
   {"-mmacosx-version-min", versionmin, true, false, "="},
   {"-stdlib", stdlib, true, false, "="},
   {"-arch", arch, true},
