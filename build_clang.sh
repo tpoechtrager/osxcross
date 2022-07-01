@@ -193,7 +193,7 @@ if [ -z "$ENABLE_CLANG_INSTALL" ]; then
   echo ""
   echo "Done!"
   echo ""
-  echo -n "cd into '$BUILD_DIR/$stage' and type 'make install' to install "
+  echo -n "cd into '$BUILD_DIR/build_stage' and type 'make install' to install "
   echo "clang/llvm to '$INSTALLPREFIX'"
   echo ""
 else
