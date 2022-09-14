@@ -25,6 +25,11 @@ if [ -z "$GDB_VERSION" ]; then
   GDB_VERSION=8.3
 fi
 
+# architecture to target
+if [ -z "$TARGET_ARCH" ]; then
+  TARGET_ARCH=x86_64
+fi
+
 # mirror
 MIRROR="https://ftp.gnu.org/gnu"
 
@@ -37,7 +42,7 @@ function remove_locks()
 
 function build_and_install()
 {
-  if [ ! -f "have_$1_$2_${TARGET}" ]; then
+  if [ ! -f "have_$1_$2_${TARGET}_${TARGET_ARCH}" ]; then
     pushd $TARBALL_DIR &>/dev/null
     download "$MIRROR/$1/$1-$2.tar.gz"
     popd &>/dev/null
@@ -52,8 +57,8 @@ function build_and_install()
     pushd build &>/dev/null
 
     ../configure \
-      --target=x86_64-apple-$TARGET \
-      --program-prefix=x86_64-apple-$TARGET- \
+      --target=$TARGET_ARCH-apple-$TARGET \
+      --program-prefix=$TARGET_ARCH-apple-$TARGET- \
       --prefix=$TARGET_DIR/binutils \
       --disable-nls \
       --disable-werror
@@ -63,7 +68,7 @@ function build_and_install()
 
     popd &>/dev/null
     popd &>/dev/null
-    touch "have_$1_$2_${TARGET}"
+    touch "have_$1_$2_${TARGET}_${TARGET_ARCH}"
   fi
 }
 
