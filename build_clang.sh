@@ -48,8 +48,8 @@ function set_package_link()
   LLVM_PKG=$(echo "$links" | grep "llvm-$CLANG_VERSION.src" | head -n 1 || true)
   CLANG_PKG=$(echo "$links" | grep -E "(clang|cfe)-$CLANG_VERSION.src" | head -n 1 || true)
   if [ -n "$LLVM_PKG" ] && [[ $LLVM_PKG != https* ]]; then
-    LLVM_PKG=$(echo $LLVM_PKG | cut -d\: -f 2-)
-    CLANG_PKG=$(echo $CLANG_PKG | cut -d\: -f 2-)
+      LLVM_PKG=$(echo $LLVM_PKG | cut -d\: -f 2- | tr -d \")
+      CLANG_PKG=$(echo $CLANG_PKG | cut -d\: -f 2- | tr -d \")
   fi
   popd &>/dev/null
 }
