@@ -51,7 +51,8 @@ if [ $f_res -eq 1 ]; then
 fi
 
 # build 7z
-get_sources https://github.com/tpoechtrager/p7zip.git master
+P7ZIP_REVISION="${P7ZIP_REVISION:-"master"}"
+get_sources https://github.com/tpoechtrager/p7zip.git "$P7ZIP_REVISION"
 
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
