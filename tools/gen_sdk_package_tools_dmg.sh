@@ -37,7 +37,8 @@ require cpio
 build_xar
 
 # build pbzx
-get_sources https://github.com/tpoechtrager/pbzx.git master
+PBZX_REVISION="${PBZX_REVISION:-"master"}"
+get_sources https://github.com/tpoechtrager/pbzx.git "$PBZX_REVISION"
 
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
