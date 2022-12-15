@@ -49,8 +49,9 @@ set -e
 
 pushd $BUILD_DIR &>/dev/null
 
+DARLING_DMG_REVISION="${DARLING_REVISION:-"master"}"
 FULL_CLONE=1 \
-  get_sources https://github.com/LubosD/darling-dmg.git master
+  get_sources https://github.com/LubosD/darling-dmg.git "$DARLING_DMG_REVISION"
 
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
