@@ -3,13 +3,13 @@
 
 ### WHAT IS THE GOAL OF OSXCROSS? ###
 
-The goal of OSXCross is to provide a well working macOS cross toolchain for  
+The goal of OSXCross is to provide a well working macOS cross toolchain for
 `Linux`, `FreeBSD`, `OpenBSD`, and `Android (Termux)`.
 
-OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`,  
+OSXCross works **on** `x86`, `x86_64`, `arm` and `AArch64`/`arm64`,
 and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h` and `i386`.
 
-`arm64` requires macOS 11.0 SDK (or later).  
+`arm64` requires macOS 11.0 SDK (or later).
 `arm64e` [requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
 
 ### HOW DOES IT WORK? ###
@@ -55,7 +55,7 @@ to the tarballs/ directory.
 
 Then ensure you have the following installed on your system:
 
-`Clang 3.9+`, `cmake`, `git`, `patch`, `Python`, `libssl-devel` (openssl)  
+`Clang 3.9+`, `cmake`, `git`, `patch`, `Python`, `libssl-devel` (openssl)
 `lzma-devel`, `libxml2-devel` and the `bash shell`.
 
 You can run 'sudo tools/get\_dependencies.sh' to get these (and the
@@ -145,19 +145,25 @@ Fortran compiler as well:
 
 \[A gfortran usage example can be found [here](https://github.com/tpoechtrager/osxcross/issues/28#issuecomment-67047134)]
 
+You can build GCC targeting arm64 using this command:
+
+```shell
+    GCC_VERSION=13.0.1 TARGET_ARCHITECTURE=aarch64  ./build_gcc.sh
+```
+
 Before you do this, make sure you have the GCC build depedencies installed on
 your system.
 
 On debian like systems you can install these using:
 
 ```shell
-    sudo apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev
+    sudo apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev flex
 ```
 
 ATTENTION:
 
-OSXCross does not enable `-Werror=implicit-function-declaration` by default.  
-You can emulate Xcode 12's behavior by setting the environmental variable  
+OSXCross does not enable `-Werror=implicit-function-declaration` by default.
+You can emulate Xcode 12's behavior by setting the environmental variable
 `OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION` to 1.
 
 OSXCross links libgcc and libstdc++ statically by default (this affects
@@ -185,19 +191,19 @@ Tools for Xcode.
 5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of
    OSXCross.
 
-\*\*  
--- Xcode up to 12.5 Beta 3 is known to work.  
+\*\*
+-- Xcode up to 12.5 Beta 3 is known to work.
 -- Use Firefox if you have problems signing in.
 
-\*\*\*  
--- If you get a dialog with a crossed circle, ignore it.  
+\*\*\*
+-- If you get a dialog with a crossed circle, ignore it.
 -- You don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
 
 ##### Packing the SDK on Linux - Method 1 (Xcode > 8.0): #####
 
-This method may require up to 45 GB of free disk space.  
+This method may require up to 45 GB of free disk space.
 An SSD is recommended for this method.
 
 1. Download Xcode like described in 'Packaging the SDK on macOS'
@@ -356,9 +362,9 @@ Usage Examples:
 
 ### DEPLOYMENT TARGET: ###
 
-The default deployment target is:  
+The default deployment target is:
 
-SDK <= 10.13: `macOS 10.6`  
+SDK <= 10.13: `macOS 10.6`
 SDK >= 10.14: `macOS 10.9`
 
 However, there are several ways to override the default value:
@@ -367,17 +373,17 @@ However, there are several ways to override the default value:
 2. by passing `-mmacosx-version-min=10.x` to the compiler
 3. by setting the `MACOSX_DEPLOYMENT_TARGET` environment variable
 
-\>= 10.9 also defaults to `libc++` instead of `libstdc++`,  
+\>= 10.9 also defaults to `libc++` instead of `libstdc++`,
 this behavior can be overriden by explicitly passing `-stdlib=libstdc++` to clang.
 
-x86\_64h defaults to `macOS 10.8` and requires clang 3.5+.  
+x86\_64h defaults to `macOS 10.8` and requires clang 3.5+.
 x86\_64h = x86\_64 with optimizations for the Intel Haswell Architecture.
 
 ### PROJECTS USING OSXCROSS: ###
 
-* [multiarch/crossbuild](https://github.com/multiarch/crossbuild):  
-  various cross-compilers  
-  (**Systems**: Linux, macOS, Windows, **Archs**: x86\_64,i386, arm, ppc, mips)  
+* [multiarch/crossbuild](https://github.com/multiarch/crossbuild):
+  various cross-compilers
+  (**Systems**: Linux, macOS, Windows, **Archs**: x86\_64,i386, arm, ppc, mips)
   in Docker. OSXCross powers the Darwin builds.
 * [Smartmontools](https://www.smartmontools.org)
 

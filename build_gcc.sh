@@ -22,6 +22,18 @@ if [ -z "$GCC_VERSION" ]; then
   #GCC_VERSION=5-20200228 # snapshot
 fi
 
+if [ -z "$TARGET_ARCHITECTURE" ]; then
+  TARGET_ARCHITECTURE=x86_64
+fi
+
+# the experimental version of GCC with aarch64 support has version 13.0.1
+if [ "$TARGET_ARCHITECTURE" = "aarch64" ] && [ "$GCC_VERSION" != "13.0.1" ]; then
+  echo "GCC_VERSION must be 13.0.1 to build for aarch64. You set $GCC_VERSION."
+  exit 1
+else
+  BUILD_AARCH64_EXPERIMENTAL_GCC=true
+fi
+
 if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
   echo "You must build OSXCross with OSX_VERSION_MIN >= 10.6" 2>&1
   exit 1
@@ -43,24 +55,28 @@ source $BASE_DIR/tools/trap_exit.sh
 
 if [ ! -f "have_gcc_${GCC_VERSION}_${TARGET}" ]; then
 
-pushd $TARBALL_DIR &>/dev/null
-if [[ $GCC_VERSION != *-* ]]; then
-  download "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
-else
-  download "$GCC_MIRROR_WITH_SNAPSHOTS/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
-fi
-popd &>/dev/null
-
 echo "cleaning up ..."
-rm -rf gcc* 2>/dev/null
+rm -rf build-gcc* 2>/dev/null
 
-extract "$TARBALL_DIR/gcc-$GCC_VERSION.tar.xz"
-echo ""
+if [ "$BUILD_AARCH64_EXPERIMENTAL_GCC" != "true" ]; then
+  pushd $TARBALL_DIR &>/dev/null
+  if [[ $GCC_VERSION != *-* ]]; then
+    download "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  else
+    download "$GCC_MIRROR_WITH_SNAPSHOTS/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  fi
+
+  popd &>/dev/null
+
+  extract "$TARBALL_DIR/gcc-$GCC_VERSION.tar.xz"
+  echo ""
+else
+  get_sources https://github.com/iains/gcc-darwin-arm64 "master-wip-apple-si" gcc-$GCC_VERSION
+fi
 
 pushd gcc*$GCC_VERSION* &>/dev/null
 
 rm -f $TARGET_DIR/bin/*-gcc*
-rm -f $TARGET_DIR/bin/*-g++*
 
 if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) -eq 1 ] &&
    [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) -eq 1 ]; then
@@ -101,9 +117,11 @@ if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
   echo ""
 fi
 
-
-mkdir -p build
-pushd build &>/dev/null
+# GCC should _not_ be built in a child dir of its source code
+# https://gcc.gnu.org/install/configure.html
+rm -rf ../build-gcc-$GCC_VERSION
+mkdir -p ../build-gcc-$GCC_VERSION
+pushd ../build-gcc-$GCC_VERSION &>/dev/null
 
 if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
@@ -118,8 +136,8 @@ fi
 EXTRACONFFLAGS=""
 
 if [ "$PLATFORM" != "Darwin" ]; then
-  EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/x86_64-apple-$TARGET-ld "
-  EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/x86_64-apple-$TARGET-as "
+  EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/$TARGET_ARCHITECTURE-apple-$TARGET-ld "
+  EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/$TARGET_ARCHITECTURE-apple-$TARGET-as "
 fi
 
 LANGS="c,c++,objc,obj-c++"
@@ -134,8 +152,13 @@ else
   EXTRACONFFLAGS+="--disable-multilib "
 fi
 
-../configure \
-  --target=x86_64-apple-$TARGET \
+export PATH=$PATH:$TARGET_DIR/bin
+
+# gcc aarch64 compiler will error and produce binaries targeting iPhone if this is not set
+export MACOSX_DEPLOYMENT_TARGET=$SDK_VERSION
+export OSX_VERSION_MIN=$SDK_VERSION
+../gcc-$GCC_VERSION/configure \
+  --target=$TARGET_ARCHITECTURE-apple-$TARGET \
   --with-sysroot=$SDK \
   --disable-nls \
   --enable-languages=$LANGS \
@@ -152,7 +175,7 @@ $MAKE install
 
 GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
 
-pushd $TARGET_DIR/x86_64-apple-$TARGET/include &>/dev/null
+pushd $TARGET_DIR/$TARGET_ARCHITECTURE-apple-$TARGET/include &>/dev/null
 pushd c++/${GCC_VERSION}* &>/dev/null
 
 cat $PATCH_DIR/libstdcxx.patch | \
@@ -162,6 +185,7 @@ cat $PATCH_DIR/libstdcxx.patch | \
 popd &>/dev/null
 popd &>/dev/null
 
+popd &>/dev/null # build-gcc
 popd &>/dev/null # build
 popd &>/dev/null # gcc
 
@@ -177,11 +201,11 @@ source tools/tools.sh
 pushd $TARGET_DIR/bin &>/dev/null
 
 if [ ! -f i386-apple-$TARGET-base-gcc ]; then
-  mv x86_64-apple-$TARGET-gcc \
-    x86_64-apple-$TARGET-base-gcc
+  mv $TARGET_ARCHITECTURE-apple-$TARGET-gcc \
+     $TARGET_ARCHITECTURE-apple-$TARGET-base-gcc
 
-  mv x86_64-apple-$TARGET-g++ \
-    x86_64-apple-$TARGET-base-g++
+  mv $TARGET_ARCHITECTURE-apple-$TARGET-g++ \
+    $TARGET_ARCHITECTURE-apple-$TARGET-base-g++
 
   if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
     create_symlink x86_64-apple-$TARGET-base-gcc \
@@ -206,17 +230,29 @@ if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
   test_compiler o32-g++ $BASE_DIR/oclang/test.cpp
 fi
 
-test_compiler o64-gcc $BASE_DIR/oclang/test.c
-test_compiler o64-g++ $BASE_DIR/oclang/test.cpp
+if [ "$TARGET_ARCHITECTURE" = "x86_64" ]; then
+  SHORT_PREFIX=o64
+elif [ "$TARGET_ARCHITECTURE" = "aarch64" ]; then
+  SHORT_PREFIX=oa64
+fi
+
+test_compiler $SHORT_PREFIX-gcc $BASE_DIR/oclang/test.c
+test_compiler $SHORT_PREFIX-g++ $BASE_DIR/oclang/test.cpp
 
 echo ""
 
-echo "Done! Now you can use o32-gcc/o32-g++ and o64-gcc/o64-g++ as compiler"
+if [ "$TARGET_ARCHITECTURE" = "x86_64" ]; then
+  echo "Done! Now you can use o32-gcc/o32-g++ and $SHORT_PREFIX-gcc/$SHORT_PREFIX-g++ as compiler"
+elif [ "$TARGET_ARCHITECTURE" = "aarch64" ]; then
+  echo "Done! Now you can use $SHORT_PREFIX-gcc/$SHORT_PREFIX-g++ as compiler"
+else
 echo ""
 echo "Example usage:"
 echo ""
-echo "Example 1: CC=o32-gcc ./configure --host=i386-apple-$TARGET"
-echo "Example 2: CC=i386-apple-$TARGET-gcc ./configure --host=i386-apple-$TARGET"
-echo "Example 3: o64-gcc -Wall test.c -o test"
-echo "Example 4: x86_64-apple-$TARGET-strip -x test"
+if [ "$TARGET_ARCHITECTURE" = "x86_64" ]; then
+  echo "Example: CC=o32-gcc ./configure --host=i386-apple-$TARGET"
+  echo "Example: CC=i386-apple-$TARGET-gcc ./configure --host=i386-apple-$TARGET"
+fi
+echo "Example: $SHORT_PREFIX-gcc -Wall test.c -o test"
+echo "Example: $TARGET_ARCHITECTURE-apple-$TARGET-strip -x test"
 echo ""
