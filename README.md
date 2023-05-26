@@ -176,7 +176,7 @@ use these variants unless you know what you're doing.
 The SDKs can be extracted either from full Xcode or from Command Line
 Tools for Xcode.
 
-##### Packaging the SDK on macOS (Xcode): #####
+##### Packaging the SDK on recent macOS (Xcode): #####
 
 1. [Download Xcode: https://developer.apple.com/download/all/?q=xcode] \*\*
 2. [Mount Xcode.dmg (Open With -> DiskImageMounter) \*\*\*]
@@ -194,6 +194,15 @@ Tools for Xcode.
 -- You don't need to install Xcode.
 
 Step 1. and 2. can be skipped if you have Xcode installed.
+
+##### Packaging the Xcode 4.2 SDK on Snow Leopard: #####
+1. Install a recent version of Bash from MacPorts or Tigerbrew
+2. Download Xcode 4.2 for Snow Leopard
+3. Mount the disk image with DiskImageMounter or by running
+  `hdiutil attach <xcode>.dmg`
+4. Run: `XCODEDIR=/Volumes/Xcode ./tools/gen_sdk_package.sh`
+5. (On Linux/BSD) Copy or move the SDK into the tarballs/ directory of
+   OSXCross.
 
 ##### Packing the SDK on Linux - Method 1 (Xcode > 8.0): #####
 
