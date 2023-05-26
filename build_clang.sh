@@ -19,44 +19,106 @@ mkdir -p $BUILD_DIR
 source $BASE_DIR/tools/trap_exit.sh
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=10.0.1
+  CLANG_VERSION=12.0.0
 fi
 
 if [ -z "$INSTALLPREFIX" ]; then
   INSTALLPREFIX="/usr/local"
 fi
 
-require cmake
+# acceptable values are llvm or apple
+if [ -z "$GITPROJECT" ]; then
+  GITPROJECT="apple"
+fi
 
-LLVM_PKG=""
-CLANG_PKG=""
+require cmake
+require bsdtar
+
+CLANG_LLVM_PKG=""
 
 function set_package_link()
 {
-  pushd $BUILD_DIR &>/dev/null
+  pushd $TARBALL_DIR &>/dev/null
+  
+  # Official LLVM project download URLs look like:
+  # https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-10.0.1.zip
+  
+  # Apple LLVM project download URLs look like:
+  # https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200108.zip
+  # where the branch-to-major-version lookup is the below:
+  # apple/stable/20210107 = 12
+  # apple/stable/20200714 = 11
+  # apple/stable/20200108 = 10
+  # apple/stable/20190619 = 9
+  # apple/stable/20190104 = 8
+  # apple/stable/20180801 = 7
+  # apple/stable/20180103 = 6
+  # apple/stable/20170719 = 5
+  # apple/stable/20170116 = 4
+  
+  if [ $GITPROJECT == "llvm" ]; then
+    # with official LLVM we just pass the version straight into the URL
+    CLANG_LLVM_PKG="https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-$CLANG_VERSION.zip"
+  elif [ $GITPROJECT == "apple" ]; then
+    # with Apple LLVM we only get each major version as a stable branch so we just compare the input major version
+    CLANG_VERSION_PARTS=(${CLANG_VERSION//./ })
+    case ${CLANG_VERSION_PARTS[0]} in
 
-  DOWNLOAD_PAGE=llvmorg-$CLANG_VERSION
-  download https://github.com/llvm/llvm-project/releases/tag/$DOWNLOAD_PAGE &>/dev/null
+      12)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20210107.zip"
+        ;;
 
-  if [[ $(file $DOWNLOAD_PAGE) == *gzip* ]]; then
-    mv $DOWNLOAD_PAGE $DOWNLOAD_PAGE.gz
-    require gzip
-    gzip -d $DOWNLOAD_PAGE.gz
+      11)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200714.zip"
+        ;;
+
+      10)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200108.zip"
+        ;;
+
+      9)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20190619.zip"
+        ;;
+
+      8)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20190104.zip"
+        ;;
+
+      7)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20180801.zip"
+        ;;
+
+      6)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20180103.zip"
+        ;;
+
+      5)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20170719.zip"
+        ;;
+
+      4)
+        CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20170116.zip"
+        ;;
+
+      *)
+        echo "Unknown Apple Clang version $CLANG_VERSION!" 1>&2
+        exit 1
+        ;;
+    esac
   fi
-  links=$(cat $DOWNLOAD_PAGE | grep -Po '(?<=href=")[^"]*' | grep -v "\.sig")
-  rm -f $DOWNLOAD_PAGE
-  LLVM_PKG=$(echo "$links" | grep "llvm-$CLANG_VERSION.src" | head -n 1 || true)
-  CLANG_PKG=$(echo "$links" | grep -E "(clang|cfe)-$CLANG_VERSION.src" | head -n 1 || true)
-  if [ -n "$LLVM_PKG" ] && [[ $LLVM_PKG != https* ]]; then
-    LLVM_PKG="https://github.com/$LLVM_PKG"
-    CLANG_PKG="https://github.com/$CLANG_PKG"
+  
+  # after we generate the URL string above we need to actually check it works
+  if [ ! -f $(basename $CLANG_LLVM_PKG) ] && [ $(curl --head -L $CLANG_LLVM_PKG -o /dev/stderr -w "%{http_code}" 2> /dev/null) -ne 200 ]; then
+    echo "Release $CLANG_VERSION not found in $GITPROJECT repo!" 1>&2
+    exit 1
   fi
-  popd &>/dev/null
+
+  popd &>/dev/null #$TARBALL_DIR
 }
 
 set_package_link
 
-if [ -z "$LLVM_PKG" ] || [ -z "$CLANG_PKG" ]; then
+if [ -z "CLANG_LLVM_PKG" ]; then
   echo "Release $CLANG_VERSION not found!" 1>&2
   exit 1
 fi
@@ -81,7 +143,7 @@ if [ $PLATFORM != "Darwin" -a $PLATFORM != "FreeBSD" ]; then
 fi
 
 
-echo "Building Clang/LLVM $CLANG_VERSION may take a long time."
+echo "Building Clang/LLVM $GITPROJECT-$CLANG_VERSION may take a long time."
 echo "Installation Prefix: $INSTALLPREFIX"
 
 if [ -z "$UNATTENDED" ]; then
@@ -90,85 +152,58 @@ if [ -z "$UNATTENDED" ]; then
   echo ""
 fi
 
+# download the GitHub repo as a ZIP file - but only if it doesn't exist already
 pushd $TARBALL_DIR &>/dev/null
 
-download $LLVM_PKG
-download $CLANG_PKG
-
-popd &>/dev/null
-
-
-pushd $BUILD_DIR &>/dev/null
-
-echo "cleaning up ..."
-
-rm -rf llvm* 2>/dev/null
-
-extract "$TARBALL_DIR/$(basename $LLVM_PKG)"
-
-pushd llvm* &>/dev/null
-pushd tools &>/dev/null
-
-extract "$TARBALL_DIR/$(basename $CLANG_PKG)"
-echo ""
-
-[ -e clang* ] && mv clang* clang
-[ -e cfe* ] && mv cfe* clang
-
-popd &>/dev/null
-
-
-function build()
-{
-  stage=$1
-  mkdir -p $stage
-  pushd $stage &>/dev/null
-  cmake .. \
-    -DCMAKE_INSTALL_PREFIX=$INSTALLPREFIX \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_ENABLE_ASSERTIONS=OFF \
-    -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=1
-  $MAKE $2 -j $JOBS VERBOSE=1
-  popd &>/dev/null
-}
-
-if [ -n "$DISABLE_BOOTSTRAP" ]; then
-  build build
-else
-  build build_stage1 clang
-
-  export CC=$PWD/build_stage1/bin/clang
-  export CXX=$PWD/build_stage1/bin/clang++
-
-  if [ -z "$PORTABLE" ]; then
-    export CFLAGS="-march=native"
-    export CXXFLAGS="-march=native"
-  fi
-
-  build build_stage2
-
-  if [ -n "$ENABLE_FULL_BOOTSTRAP" ]; then
-    CC=$PWD/build_stage2/bin/clang \
-    CXX=$PWD/build_stage2/bin/clang++ \
-    build build_stage3
-  fi
+if [ ! -f $(basename $CLANG_LLVM_PKG) ]; then
+  download $CLANG_LLVM_PKG
 fi
 
+popd &>/dev/null #$TARBALL_DIR
+
+# extract ZIP using bsdtar so we can remove the parent directory
+pushd $BUILD_DIR &>/dev/null
+
+echo "extracting ..."
+
+bsdtar --strip-components=1 -xf $TARBALL_DIR/$(basename $CLANG_LLVM_PKG) 1>/dev/null
+
+# DISABLE_BOOTSTRAP no longer available
+# ENABLE_FULL_BOOTSTRAP no longer available
+
+if [ -z "$PORTABLE" ]; then
+  export CFLAGS="-march=native"
+  export CXXFLAGS="-march=native"
+fi
+
+# build clang, llvm, libc++ and libc++abi in one go
+mkdir build_stage
+pushd build_stage &>/dev/null
+cmake ../llvm \
+  -G "Unix Makefiles" \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DLLVM_ENABLE_ASSERTIONS=OFF \
+  -DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi" \
+  -DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=1
+$MAKE -j $JOBS VERBOSE=1
+
+# install, but only if it is globally enabled
 if [ -z "$ENABLE_CLANG_INSTALL" ]; then
   echo ""
   echo "Done!"
   echo ""
-  echo -n "cd into '$PWD/$stage' and type 'make install' to install "
+  echo -n "cd into '$BUILD_DIR/build_stage' and type 'make install' to install "
   echo "clang/llvm to '$INSTALLPREFIX'"
   echo ""
 else
-  pushd $stage &>/dev/null
   $MAKE install -j $JOBS VERBOSE=1
-  popd &>/dev/null
   echo ""
   echo "Done!"
   echo ""
 fi
+popd &>/dev/null #build_stage
 
-popd &>/dev/null # llvm
-popd &>/dev/null
+popd &>/dev/null #$BUILD_DIR
+
+popd &>/dev/null #"${0%/*}"
