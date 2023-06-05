@@ -21,7 +21,7 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
-XCODE_TOOLS_DMG=$(make_absolute_path "$1" $(get_exec_dir))
+XCODE_TOOLS_DMG=$1
 
 mkdir -p $BUILD_DIR
 pushd $BUILD_DIR &>/dev/null
@@ -50,7 +50,7 @@ if [ $f_res -eq 1 ]; then
 fi
 
 # build 7z
-get_sources https://github.com/tpoechtrager/p7zip.git master
+get_sources https://github.com/p7zip-project/p7zip.git p7zip17
 
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
