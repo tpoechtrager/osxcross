@@ -181,7 +181,7 @@ mkdir build_stage
 pushd build_stage &>/dev/null
 cmake ../llvm \
   -G "Unix Makefiles" \
-  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DCMAKE_INSTALL_PREFIX="$INSTALLPREFIX" \
   -DCMAKE_BUILD_TYPE=Release \
   -DLLVM_ENABLE_ASSERTIONS=OFF \
   -DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi" \
