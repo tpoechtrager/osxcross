@@ -81,6 +81,12 @@ export OSXCROSS_NO_10_5_DEPRECATION_WARNING=1
 
 pushd $BUILD_DIR &>/dev/null
 
+# Check if a build project for compiler-rt already exists.
+# Delete any directory that is called compiler-rt, but is not a build project.
+if [ -d "$BUILD_DIR/compiler-rt" ] && [ ! -d "$BUILD_DIR/compiler_rt/compiler-rt" ]; then
+    rm -rf "$BUILD_DIR/compiler-rt"
+fi
+
 get_sources https://github.com/llvm/llvm-project.git $BRANCH "compiler-rt"
 
 if [ $f_res -eq 1 ]; then
