@@ -273,7 +273,7 @@ The following programs are built:
    - CCPROG01: C89 Helloworld Program:
    - CCPROG02: C11 Program Using PThreads:
    - CXPROG01: C++03 Helloworld Program:
-   - CXPROG02: C++11 Program Using ::std ::thread:
+   - CXPROG02: C++11 Program Using `::std::thread`:
    - CXPROG03: C++11 Program Using Lamdas:
    - CXPROG04: C++14 Program Using Auto Lamda Parameter:
    - CXPROG05: C++14 Program Using ::std::shared_timed_mutex:
