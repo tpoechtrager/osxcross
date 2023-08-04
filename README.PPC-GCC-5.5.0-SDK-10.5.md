@@ -43,7 +43,7 @@ The GNU STDC++ is statically linked so that we do not have to hastle with it.
 I am able to build and run C99, C11, C++03, C++11, and C++14 code.
 
 
-#### PowerPC364 ####
+#### PowerPC64 ####
 
 C, C++, and Fortran compilers are able to build code. I do not have a PowerPC64
 Mac to test on at the moment.
@@ -143,7 +143,7 @@ git clone \
 cd osxcross-ppc-202308
 
 # Add target/bin to the beginning of PATH:
-export export PATH="$(pwd)/target/bin:${PATH}"
+export PATH="$(pwd)/target/bin:${PATH}"
 ```
 
 
@@ -172,7 +172,7 @@ tar czf ./tarballs/MacOSX10.5.sdk.tar.gz MacOSX10.5.sdk
 
 #### Build OS X Cross: ####
 
-Build OS X Cross. They will be staged in `$(pwd)/target/bin` thich needs to be
+Build OS X Cross. They will be staged in `$(pwd)/target/bin` wich needs to be
 at the beginning of PATH:
 
 ```
@@ -207,11 +207,11 @@ powerpc64-apple-darwin9-sw_vers
 
 This builds the mainline GCC-5.5.0 to target MacOS-10.5 PowerPC and PowerPC64.
 
-**NOTE:** The SDK C++ headers break the GCC build and the resulting C++ compiler
+**NOTE:** The SDK C++ headers break the GCC build and the resulting C++ compiler.
 To work around this issue, we move them to hide them from GCC. Since we will only
 be using GCC with this toolchain from now on and not Clang, this seems fine. We
 had to wait to move them, until after the OS X Cross tools are built with Clang.
-Because Cland does needs these headers. After the OS X Cross tools are built and
+Because Clang does need these headers. After the OS X Cross tools are built and
 are usable, we no longer need Clang or these headers to build anything else.
 
 ```
@@ -246,7 +246,7 @@ Some scripts to test the toolchain:
 single source files.
 
 `test_autotools.sh`: Builds a number of non-trivial Autotools Configured projects
-from recent versions of theie mainline source. This includes OpenSSL, WGet
+from recent versions of their mainline source. This includes OpenSSL, WGet
 and CURL.
 
 
@@ -273,13 +273,13 @@ The following programs are built:
    - CCPROG01: C89 Helloworld Program:
    - CCPROG02: C11 Program Using PThreads:
    - CXPROG01: C++03 Helloworld Program:
-   - CXPROG02: C++11 Program Using ::std::thread:
+   - CXPROG02: C++11 Program Using ::std ::thread:
    - CXPROG03: C++11 Program Using Lamdas:
    - CXPROG04: C++14 Program Using Auto Lamda Parameter:
    - CXPROG05: C++14 Program Using ::std::shared_timed_mutex:
 
 **NOTE:**: `::std::shared_timed_mutex:` was introduced in MacOS-10.12. Since we
-are using the GNU STDC++ library, we can now use these C++14 features in
+are using the GNU STDC++ library, we can now use these advanced C++14 features in
 programs running on MacOS-10.5 and PowerPC targets.
 
 Run the test:
@@ -335,7 +335,8 @@ OSXCROSS_TEST_ARCH=powerpc64 ./test_autotools.sh
 
 ### TODO: ###
 
-1. Test the PowerPC64 builds. I do not have access to one at this time.
+1. Test the PowerPC64 builds. I do not have access to a PowerPC64 Mac at this
+time.
 
 2. Automatically statically link the libgcc_s and libatomic. That way noone has
 to hastle with them. Maybe the wrapper can do it in a similar fashion as the
