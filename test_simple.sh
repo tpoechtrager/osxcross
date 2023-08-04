@@ -61,7 +61,7 @@ OSXCROSS_TEST_TOOLCHAIN_AR="${OSXCROSS_TEST_HOST_PREFIX}-ar"
 OSXCROSS_TEST_TOOLCHAIN_RANLIB="${OSXCROSS_TEST_HOST_PREFIX}-ranlib"
 echo
 echo "======================================================================"
-echo " OS X Cross Autotool Configure Projects Test:"
+echo " OS X Cross Test:"
 echo "======================================================================"
 echo " OSXCROSS_TEST_ARCH=${OSXCROSS_TEST_ARCH}"
 echo " OSXCROSS_TEST_HOST_PREFIX=${OSXCROSS_TEST_HOST_PREFIX}"
@@ -305,7 +305,7 @@ echo "======================================================================"
 echo " CXPROG01: C++03 Helloworld Program:"
 echo "======================================================================"
 
-CXPROG01_PREFIX="CXPROG01_c++04_hello_world"
+CXPROG01_PREFIX="CXPROG01_c++03_hello_world"
 CXPROG01_SOURCE="${CXPROG01_PREFIX}.c"
 CXPROG01_BINARY="${CXPROG01_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG01_SOURCE}"
@@ -320,7 +320,7 @@ int main()
 
    ::std::cout << hwString << ::std::endl;
 
-   return 0;
+   return EXIT_SUCCESS;
 }
 EOF
 
@@ -329,7 +329,7 @@ EOF
    && "${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
       -O6 -Wall -g \
       -static-libgcc \
-      -std=c++98 \
+      -std=c++03 \
       ./"${CXPROG01_SOURCE}" \
       -o ./"${CXPROG01_BINARY}" \
    && file ./"${CXPROG01_BINARY}" \
@@ -411,14 +411,14 @@ EOF
 
 echo
 echo "======================================================================"
-echo " CXPROG03: C++11 Program Using ::std::thread:"
+echo " CXPROG03: C++11 Program Using Lamdas:"
 echo "======================================================================"
 
 CXPROG03_PREFIX="CXPROG03_c++11_lamdas"
 CXPROG03_SOURCE="${CXPROG03_PREFIX}.c"
 CXPROG03_BINARY="${CXPROG03_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG03_SOURCE}"
-// CXPROG03: C++11 Program Using ::std::thread:
+// CXPROG03: C++11 Program Using Lamdas:
 #include <cstdlib>
 #include <iostream>
 

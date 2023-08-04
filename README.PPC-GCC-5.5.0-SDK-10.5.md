@@ -275,7 +275,7 @@ The following programs are built:
    - CXPROG01: C++03 Helloworld Program:
    - CXPROG02: C++11 Program Using `::std::thread`:
    - CXPROG03: C++11 Program Using Lamdas:
-   - CXPROG04: C++14 Program Using Auto Lamda Parameter:
+   - CXPROG04: C++14 Program Using Generic Lamdas:
    - CXPROG05: C++14 Program Using ::std::shared_timed_mutex:
 
 **NOTE:**: `::std::shared_timed_mutex:` was introduced in MacOS-10.12. Since we
