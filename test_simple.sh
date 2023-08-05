@@ -116,9 +116,9 @@ c FFPROG01: Fortran77 Helloworld Program:
 c
       call hello
       call hello
-
+c
       end
-
+c
       subroutine hello
       implicit none
       character*32 text
@@ -614,4 +614,122 @@ EOF
       -o ./"${CXPROG05_BINARY}" \
    && file ./"${CXPROG05_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG05_BINARY}" \
+)
+
+################################################################################
+# CXPROG06: C++17 Program Using ::std::string_view:
+################################################################################
+
+echo
+echo "======================================================================"
+echo " CXPROG06: C++17 Program Using ::std::string_view:"
+echo "======================================================================"
+
+CXPROG06_PREFIX="CXPROG06_c++17_std_string_view"
+CXPROG06_SOURCE="${CXPROG06_PREFIX}.cpp"
+CXPROG06_BINARY="${CXPROG06_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
+cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG06_SOURCE}"
+// CXPROG06: C++17 Program Using ::std::string_view:
+#include <cstdlib>
+#include <iostream>
+#include <string_view>
+
+int main()
+{
+   const ::std::string_view str_1{ "Hello World!" };
+   const ::std::string_view str_2{ str_1 };
+   const ::std::string_view str_3{ str_2 };
+   std::cout << str_1 << '\n' << str_2 << '\n' << str_3 << '\n';
+   return EXIT_SUCCESS;
+}
+EOF
+
+(
+   cd "${OSXCROSS_TEST_DIR}/" \
+   && "${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+      -O6 -Wall -g \
+      -static-libgcc \
+      -std=c++17 \
+      ./"${CXPROG06_SOURCE}" \
+      -o ./"${CXPROG06_BINARY}" \
+   && file ./"${CXPROG06_BINARY}" \
+   && xcrun otool -arch all -hvL ./"${CXPROG06_BINARY}" \
+)
+
+################################################################################
+# CXPROG07: C++17 Program Using ::std::shared_mutex:
+################################################################################
+
+echo
+echo "======================================================================"
+echo " CXPROG07: C++17 Program Using ::std::shared_mutex:"
+echo "======================================================================"
+
+CXPROG07_PREFIX="CXPROG07_c++17_std_string_view"
+CXPROG07_SOURCE="${CXPROG07_PREFIX}.cpp"
+CXPROG07_BINARY="${CXPROG07_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
+cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG07_SOURCE}"
+// CXPROG07: C++17 Program Using ::std::shared_mutex:
+#include <cstdlib>
+#include <iostream>
+#include <thread>
+#include <shared_mutex>
+
+static int value = 0;
+static std::shared_mutex mutex;
+
+// Reads the value and sets v to that value
+void readValue(int& v)
+{
+   mutex.lock_shared();
+   // Simulate some latency
+   std::this_thread::sleep_for(std::chrono::seconds(1));
+   v = value;
+   mutex.unlock_shared();
+}
+
+// Sets value to v
+void setValue(int v)
+{
+   mutex.lock();
+   // Simulate some latency
+   std::this_thread::sleep_for(std::chrono::seconds(1));
+   value = v;
+   mutex.unlock();
+}
+
+int main()
+{
+   int read1;
+   int read2;
+   int read3;
+   std::thread t1(readValue, std::ref(read1));
+   std::thread t2(readValue, std::ref(read2));
+   std::thread t3(readValue, std::ref(read3));
+   std::thread t4(setValue, 1);
+
+   t1.join();
+   t2.join();
+   t3.join();
+   t4.join();
+
+   std::cout << read1 << "\n";
+   std::cout << read2 << "\n";
+   std::cout << read3 << "\n";
+   std::cout << value << "\n";
+
+   return EXIT_SUCCESS;
+}
+EOF
+
+(
+   cd "${OSXCROSS_TEST_DIR}/" \
+   && "${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+      -O6 -Wall -g \
+      -static-libgcc \
+      -std=c++17 \
+      ./"${CXPROG07_SOURCE}" \
+      -o ./"${CXPROG07_BINARY}" \
+   && file ./"${CXPROG07_BINARY}" \
+   && xcrun otool -arch all -hvL ./"${CXPROG07_BINARY}" \
 )

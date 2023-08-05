@@ -234,8 +234,8 @@ case "${OSXCROSS_TEST_ARCH}" in
       OSXCROSS_TEST_OPENSSL_TARGET="darwin64-x86_64-cc"
       ;;
    i[3456]86)
-      # Perhaps 'darwin-i386-cc i386 no-asm' instead?
-      OSXCROSS_TEST_OPENSSL_TARGET="darwin-i386-cc i386"
+      #OSXCROSS_TEST_OPENSSL_TARGET="BSD-generic32 no-asm"
+      OSXCROSS_TEST_OPENSSL_TARGET="darwin-i386-cc 386 no-asm"
       ;;
    powerpc64)
       OSXCROSS_TEST_OPENSSL_TARGET="darwin64-ppc-cc"

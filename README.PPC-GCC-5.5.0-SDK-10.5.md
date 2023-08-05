@@ -174,6 +174,7 @@ Build OS X Cross. They will be staged in `$(pwd)/target/bin` which needs to be
 at the beginning of `PATH`:
 
 ```
+# Build OS X Cross:
 CDEBUG=1 UNATTENDED=1 SDK_VERSION=10.5 ./build.sh
 ```
 
@@ -198,7 +199,8 @@ which powerpc64-apple-darwin9-sw_vers
 powerpc64-apple-darwin9-sw_vers
 ```
 
-**NOTE:** dsymutil does not seem to support PowerPC targets. So not building it.
+**NOTE:** `dsymutil` does not seem to support PowerPC targets. So not building
+it.
 
 
 #### Build GCC-5.5.0: ####
@@ -276,6 +278,8 @@ The following programs are built:
    - CXPROG03: C++11 Program Using Lamdas:
    - CXPROG04: C++14 Program Using Generic Lamdas:
    - CXPROG05: C++14 Program Using `::std::shared_timed_mutex`:
+   - CXPROG06: C++17 Program Using `::std::string_view`:
+   - CXPROG07: C++17 Program Using `::std::shared_mutex`:
 
 **NOTE:**: `::std::shared_timed_mutex:` was introduced in MacOS-10.12. Since we
 are using the GNU STDC++ library, we can now use these advanced C++14 features in
