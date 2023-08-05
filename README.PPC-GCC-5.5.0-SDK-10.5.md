@@ -87,7 +87,6 @@ lsb_release -a
    Description:    Ubuntu 16.04.7 LTS
    Release:        16.04
    Codename:       xenial
-
 ```
 
 The following packages are installed:
@@ -117,7 +116,6 @@ Python: v2.7.12
 WGet: v1.17.1
 libxml2-dev: v2.9.3
 uuid-dev: v2.27.1
-
 ```
 
 ---
@@ -128,9 +126,9 @@ uuid-dev: v2.27.1
 
 #### Clone my OS X Cross Branch: ####
 
-I have had to make a few minor changes to the `build_gcc.sh`, some scripts that
-can be used to test the Toolchain, and detailed instructions on how I built this
-toolchain. This is currently in an unmerged branch.
+I have had to make a few minor changes to the `build_gcc.sh`, added some scripts
+that can be used to test the Toolchain, and added detailed instructions on how I
+built this toolchain. This is currently in an unmerged branch.
 
 ```
 # Clone the unmerged branch:
@@ -172,7 +170,7 @@ tar czf ./tarballs/MacOSX10.5.sdk.tar.gz MacOSX10.5.sdk
 
 #### Build OS X Cross: ####
 
-Build OS X Cross. They will be staged in `$(pwd)/target/bin` wich needs to be
+Build OS X Cross. They will be staged in `$(pwd)/target/bin` which needs to be
 at the beginning of `PATH`:
 
 ```
@@ -221,6 +219,7 @@ are usable, we no longer need Clang or these headers to build anything else.
 mv ./target/SDK/MacOSX10.5.sdk/usr/include/c++/4.0.0 \
    ./target/SDK/MacOSX10.5.sdk/usr/include/c++/4.0.0.dontuse
 ```
+
 Build mainline GCC-5.5.0 to target MacOS-10.5 PowerPC:
 
 ```
