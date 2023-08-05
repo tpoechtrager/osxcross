@@ -306,7 +306,7 @@ echo " CXPROG01: C++03 Helloworld Program:"
 echo "======================================================================"
 
 CXPROG01_PREFIX="CXPROG01_c++03_hello_world"
-CXPROG01_SOURCE="${CXPROG01_PREFIX}.c"
+CXPROG01_SOURCE="${CXPROG01_PREFIX}.cpp"
 CXPROG01_BINARY="${CXPROG01_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG01_SOURCE}"
 // CXPROG01: C++03 Helloworld Program:
@@ -346,7 +346,7 @@ echo " CXPROG02: C++11 Program Using ::std::thread:"
 echo "======================================================================"
 
 CXPROG02_PREFIX="CXPROG02_c++11_std_thread"
-CXPROG02_SOURCE="${CXPROG02_PREFIX}.c"
+CXPROG02_SOURCE="${CXPROG02_PREFIX}.cpp"
 CXPROG02_BINARY="${CXPROG02_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG02_SOURCE}"
 // CXPROG02: C++11 Program Using ::std::thread:
@@ -415,7 +415,7 @@ echo " CXPROG03: C++11 Program Using Lamdas:"
 echo "======================================================================"
 
 CXPROG03_PREFIX="CXPROG03_c++11_lamdas"
-CXPROG03_SOURCE="${CXPROG03_PREFIX}.c"
+CXPROG03_SOURCE="${CXPROG03_PREFIX}.cpp"
 CXPROG03_BINARY="${CXPROG03_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG03_SOURCE}"
 // CXPROG03: C++11 Program Using Lamdas:
@@ -452,7 +452,7 @@ echo " CXPROG04: C++14 Program Using Generic Lamdas:"
 echo "======================================================================"
 
 CXPROG04_PREFIX="CXPROG04_c++14_generic_lamdas"
-CXPROG04_SOURCE="${CXPROG04_PREFIX}.c"
+CXPROG04_SOURCE="${CXPROG04_PREFIX}.cpp"
 CXPROG04_BINARY="${CXPROG04_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG04_SOURCE}"
 // CXPROG04: C++14 Program Using Generic Lamdas:
@@ -508,7 +508,7 @@ echo " CXPROG05: C++14 Program Using ::std::shared_timed_mutex:"
 echo "======================================================================"
 
 CXPROG05_PREFIX="CXPROG05_c++14_using_std_shared_timed_mutex"
-CXPROG05_SOURCE="${CXPROG05_PREFIX}.c"
+CXPROG05_SOURCE="${CXPROG05_PREFIX}.cpp"
 CXPROG05_BINARY="${CXPROG05_PREFIX}.bin.${OSXCROSS_TEST_ARCH}"
 cat <<EOF >"${OSXCROSS_TEST_DIR}/${CXPROG05_SOURCE}"
 // CXPROG05: C++14 Program Using ::std::shared_timed_mutex:
