@@ -66,8 +66,8 @@ is happening.
 #### PowerPC364 ####
 
 The PPC64 compiler reports warning that it cannot find apple gcc intrinsic
-headers. The toolchain seems to work regardless. I dont know how to resolve this
-issue or it it even matters.
+headers. The toolchain seems to work regardless. I don't know how to resolve this
+issue or if it even matters.
 
 ```
 osxcross: warning: cannot find apple gcc intrinsic headers; please report this issue to the OSXCross project
@@ -155,7 +155,7 @@ I obtained the SDK from [here](https://github.com/phracker/MacOSX-SDKs/releases)
 Other options are discussed
 [here](https://github.com/tpoechtrager/osxcross/blob/master/README.md).
 
-**NOTE:** We need to repackage the SDK as .tar.gz so that the scripts can find
+**NOTE:** We need to repackage the SDK as `.tar.gz` so that the scripts can find
 it.
 
 ```
@@ -173,7 +173,7 @@ tar czf ./tarballs/MacOSX10.5.sdk.tar.gz MacOSX10.5.sdk
 #### Build OS X Cross: ####
 
 Build OS X Cross. They will be staged in `$(pwd)/target/bin` wich needs to be
-at the beginning of PATH:
+at the beginning of `PATH`:
 
 ```
 CDEBUG=1 UNATTENDED=1 SDK_VERSION=10.5 ./build.sh
@@ -256,8 +256,8 @@ The script `test_simple.sh` generates single source file programs and compiles
 them using this toolchain. Coverage includes: C (C89 and C11),
 C++ (C++03, C++11, C++14), and Fortran (Fortran77 and Fortran90).
 
-Requires the OSX Cross stage directory `target/bin` at the beginning of PATH and
-`xcrun -f cc` must provide the C compiler program information.
+Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
+and `xcrun -f cc` must provide the C compiler program information.
 
 **NOTE:** Environment variables that effect the test script operations:
 
@@ -276,7 +276,7 @@ The following programs are built:
    - CXPROG02: C++11 Program Using `::std::thread`:
    - CXPROG03: C++11 Program Using Lamdas:
    - CXPROG04: C++14 Program Using Generic Lamdas:
-   - CXPROG05: C++14 Program Using ::std::shared_timed_mutex:
+   - CXPROG05: C++14 Program Using `::std::shared_timed_mutex`:
 
 **NOTE:**: `::std::shared_timed_mutex:` was introduced in MacOS-10.12. Since we
 are using the GNU STDC++ library, we can now use these advanced C++14 features in
@@ -300,8 +300,8 @@ OSXCROSS_TEST_ARCH=powerpc64 ./test_simple.sh
 The script `test_autotools.sh` downloads the mainline source for recent versions
 of OpenSSL, WGet and CURL and builds them using this toolchain.
 
-Requires the OSX Cross stage directory `target/bin` at the beginning of PATH and
-`xcrun -f cc` must provide the C compiler program information.
+Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
+and `xcrun -f cc` must provide the C compiler program information.
 
 **NOTE:** Environment variables that effect the test script operations:
 
