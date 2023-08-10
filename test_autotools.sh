@@ -30,6 +30,8 @@ trap "exit 0" INT EXIT TERM HUP PIPE QUIT ILL KILL ABRT
 #  OSXCROSS_TEST_OPENSSL_VERSION=3.1.2
 #  OSXCROSS_TEST_WGET_VERSION=1.21.4
 #  OSXCROSS_TEST_CURL_VERSION=8.2.1
+#  OSXCROSS_TEST_ZSTD_VERSION=1.5.5
+#  OSXCROSS_TEST_LIBSODIUM_VERSION=1.0.18
 ################################################################################
 
 ################################################################################
@@ -123,7 +125,8 @@ then
    OSXCROSS_TEST_REBUILD=1
    ( \
       cd "${OSXCROSS_TEST_DIR}" \
-      && wget https://www.openssl.org/source/"${OSXCROSS_TEST_OPENSSL_PREFIX}".tar.gz \
+      && wget https://www.openssl.org/source/"\
+${OSXCROSS_TEST_OPENSSL_PREFIX}".tar.gz \
    )
 fi
 if [ -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_OPENSSL_PREFIX}".tar.gz ]
@@ -157,7 +160,8 @@ then
    rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_WGET_TAG}"
    ( \
       cd "${OSXCROSS_TEST_DIR}" \
-      && wget http://ftp.gnu.org/gnu/wget/"${OSXCROSS_TEST_WGET_PREFIX}".tar.gz \
+      && wget http://ftp.gnu.org/gnu/wget/\
+"${OSXCROSS_TEST_WGET_PREFIX}".tar.gz \
    )
 fi
 if [ -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_WGET_PREFIX}".tar.gz ]
@@ -190,7 +194,8 @@ then
    rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_CURL_TAG}"
    ( \
       cd "${OSXCROSS_TEST_DIR}" \
-      && wget http://curl.haxx.se/download/"${OSXCROSS_TEST_CURL_PREFIX}".tar.gz \
+      && wget http://curl.haxx.se/download/\
+"${OSXCROSS_TEST_CURL_PREFIX}".tar.gz \
    )
 fi
 if [ -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_CURL_PREFIX}".tar.gz ]
@@ -211,6 +216,74 @@ then
    ) || {
       echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
          "Failure Uncompressing '${OSXCROSS_TEST_CURL_PREFIX}.tar.gz'." 1>&2
+      exit 1
+   }
+fi
+
+OSXCROSS_TEST_ZSTD_VERSION="${OSXCROSS_TEST_ZSTD_VERSION:-1.5.2}"
+OSXCROSS_TEST_ZSTD_PREFIX="zstd-${OSXCROSS_TEST_ZSTD_VERSION}"
+OSXCROSS_TEST_ZSTD_TAG="${OSXCROSS_TEST_ZSTD_PREFIX}".TAG
+if [ ! -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_PREFIX}".tar.gz ]
+then
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_TAG}"
+   ( \
+      cd "${OSXCROSS_TEST_DIR}" \
+      && wget https://github.com/facebook/zstd/releases/download/v1.5.2/\
+"${OSXCROSS_TEST_ZSTD_PREFIX}".tar.gz \
+   )
+fi
+if [ -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_PREFIX}".tar.gz ]
+then
+   echo "Found: '${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_PREFIX}.tar.gz'."
+else
+   echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+      "Cannot retrieve ZSTD Source." 1>&2
+   exit 1
+fi
+if [ ! -d "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_PREFIX}" ]
+then
+   echo "Uncompressing: '${OSXCROSS_TEST_ZSTD_PREFIX}.tar.gz'."
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_TAG}"
+   ( \
+      cd "${OSXCROSS_TEST_DIR}" \
+      && tar xf "${OSXCROSS_TEST_ZSTD_PREFIX}".tar.gz \
+   ) || {
+      echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+         "Failure Uncompressing '${OSXCROSS_TEST_ZSTD_PREFIX}.tar.gz'." 1>&2
+      exit 1
+   }
+fi
+
+OSXCROSS_TEST_LIBSODIUM_VERSION="${OSXCROSS_TEST_LIBSODIUM_VERSION:-1.0.18}"
+OSXCROSS_TEST_LIBSODIUM_PREFIX="libsodium-${OSXCROSS_TEST_LIBSODIUM_VERSION}"
+OSXCROSS_TEST_LIBSODIUM_TAG="${OSXCROSS_TEST_LIBSODIUM_PREFIX}".TAG
+if [ ! -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_PREFIX}".tar.gz ]
+then
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_TAG}"
+   ( \
+      cd "${OSXCROSS_TEST_DIR}" \
+      && wget https://download.libsodium.org/libsodium/releases/\
+"${OSXCROSS_TEST_LIBSODIUM_PREFIX}".tar.gz \
+   )
+fi
+if [ -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_PREFIX}".tar.gz ]
+then
+   echo "Found: '${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_PREFIX}.tar.gz'."
+else
+   echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+      "Cannot retrieve LIBSODIUM Source." 1>&2
+   exit 1
+fi
+if [ ! -d "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_PREFIX}" ]
+then
+   echo "Uncompressing: '${OSXCROSS_TEST_LIBSODIUM_PREFIX}.tar.gz'."
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_TAG}"
+   ( \
+      cd "${OSXCROSS_TEST_DIR}" \
+      && tar xf "${OSXCROSS_TEST_LIBSODIUM_PREFIX}".tar.gz \
+   ) || {
+      echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+         "Failure Uncompressing '${OSXCROSS_TEST_LIBSODIUM_PREFIX}.tar.gz'." 1>&2
       exit 1
    }
 fi
@@ -271,6 +344,11 @@ then
          ${OSXCROSS_TEST_OPENSSL_TARGET} \
          --prefix="${OSXCROSS_TEST_STAGE_DIR}" \
          -latomic \
+      && make clean \
+         CC="${OSXCROSS_TEST_TOOLCHAIN_CC}" \
+         CXX="${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+         AR="${OSXCROSS_TEST_TOOLCHAIN_AR}" \
+         RANLIB="${OSXCROSS_TEST_TOOLCHAIN_RANLIB}" \
       && make install \
          CC="${OSXCROSS_TEST_TOOLCHAIN_CC}" \
          CXX="${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
@@ -292,8 +370,12 @@ then
    echo "======================================================================"
    file "${OSXCROSS_TEST_STAGE_DIR}/bin/openssl"
    xcrun otool -arch all -hvL "${OSXCROSS_TEST_STAGE_DIR}/bin/openssl"
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_STAGE_DIR}/bin/openssl" 2>/dev/null
    file "${OSXCROSS_TEST_STAGE_DIR}/lib/libssl.dylib"
    xcrun otool -arch all -hvL "${OSXCROSS_TEST_STAGE_DIR}/lib/libssl.dylib"
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_STAGE_DIR}/lib/libssl.dylib" 2>/dev/null
 else
    rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_OPENSSL_TAG}"
    echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
@@ -320,6 +402,7 @@ then
          --prefix="${OSXCROSS_TEST_STAGE_DIR}" \
          --with-ssl=openssl \
          --with-libssl-prefix="${OSXCROSS_TEST_STAGE_DIR}" \
+      && make clean \
       && make install \
       && touch "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_WGET_TAG}" \
    ) || {
@@ -336,6 +419,8 @@ then
    echo "======================================================================"
    file "${OSXCROSS_TEST_STAGE_DIR}/bin/wget"
    xcrun otool -arch all -hvL "${OSXCROSS_TEST_STAGE_DIR}/bin/wget"
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_STAGE_DIR}/bin/wget" 2>/dev/null
 else
    rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_WGET_TAG}"
    echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
@@ -362,6 +447,7 @@ then
          --host="${OSXCROSS_TEST_HOST_PREFIX}" \
          --prefix="${OSXCROSS_TEST_STAGE_DIR}" \
          --with-ssl="${OSXCROSS_TEST_STAGE_DIR}" \
+      && make clean \
       && make install \
       && touch "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_CURL_TAG}" \
    ) || {
@@ -378,9 +464,110 @@ then
    echo "======================================================================"
    file "${OSXCROSS_TEST_STAGE_DIR}/bin/curl"
    xcrun otool -arch all -hvL "${OSXCROSS_TEST_STAGE_DIR}/bin/curl"
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_STAGE_DIR}/bin/curl" 2>/dev/null
 else
    rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_CURL_TAG}"
    echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
       "CURL Objects not Found." 1>&2
+   exit 1
+fi
+
+if [ "${OSXCROSS_TEST_REBUILD}x" = "1x" \
+   -o ! -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_TAG}" \
+   -o ! -e "${OSXCROSS_TEST_STAGE_DIR}/bin/zstd" ]
+then
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_TAG}"
+   ( \
+      cd "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_PREFIX}" \
+      && make clean 2>/dev/null \
+   )
+   ( \
+      cd "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_PREFIX}" \
+      && make clean \
+         UNAME=Darwin \
+         PREFIX="${OSXCROSS_TEST_STAGE_DIR}" \
+         CC="${OSXCROSS_TEST_TOOLCHAIN_CC}" \
+         CXX="${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+         AR="${OSXCROSS_TEST_TOOLCHAIN_AR}" \
+         RANLIB="${OSXCROSS_TEST_TOOLCHAIN_RANLIB}" \
+      && make allmost examples \
+         UNAME=Darwin \
+         PREFIX="${OSXCROSS_TEST_STAGE_DIR}" \
+         CC="${OSXCROSS_TEST_TOOLCHAIN_CC}" \
+         CXX="${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+         AR="${OSXCROSS_TEST_TOOLCHAIN_AR}" \
+         RANLIB="${OSXCROSS_TEST_TOOLCHAIN_RANLIB}" \
+      && make install \
+         UNAME=Darwin \
+         PREFIX="${OSXCROSS_TEST_STAGE_DIR}" \
+         CC="${OSXCROSS_TEST_TOOLCHAIN_CC}" \
+         CXX="${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+         AR="${OSXCROSS_TEST_TOOLCHAIN_AR}" \
+         RANLIB="${OSXCROSS_TEST_TOOLCHAIN_RANLIB}" \
+      && touch "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_TAG}" \
+   ) || {
+      echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+         "Failure Building ZSTD." 1>&2
+      exit 1
+   }
+fi
+if [ -e "${OSXCROSS_TEST_STAGE_DIR}/bin/zstd" ]
+then
+   echo
+   echo "======================================================================"
+   echo " ZSTD Build:"
+   echo "======================================================================"
+   file "${OSXCROSS_TEST_STAGE_DIR}/bin/zstd"
+   xcrun otool -arch all -hvL "${OSXCROSS_TEST_STAGE_DIR}/bin/zstd"
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_STAGE_DIR}/bin/zstd" 2>/dev/null
+else
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_ZSTD_TAG}"
+   echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+      "ZSTD Objects not Found." 1>&2
+   exit 1
+fi
+
+if [ "${OSXCROSS_TEST_REBUILD}x" = "1x" \
+   -o ! -e "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_TAG}" \
+   -o ! -e "${OSXCROSS_TEST_STAGE_DIR}/lib/libsodium.dylib" ]
+then
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_TAG}"
+   ( \
+      cd "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_PREFIX}" \
+      && make clean 2>/dev/null \
+   )
+   ( \
+      cd "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_PREFIX}" \
+      && CC="${OSXCROSS_TEST_TOOLCHAIN_CC}" \
+         CXX="${OSXCROSS_TEST_TOOLCHAIN_CXX}" \
+         ./configure \
+         ${OSXCROSS_TEST_LIBSODIUM_TARGET} \
+         --host="${OSXCROSS_TEST_HOST_PREFIX}" \
+         --prefix="${OSXCROSS_TEST_STAGE_DIR}" \
+      && make clean \
+      && make install \
+      && touch "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_TAG}" \
+   ) || {
+      echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+         "Failure Building LIBSODIUM." 1>&2
+      exit 1
+   }
+fi
+if [ -e "${OSXCROSS_TEST_STAGE_DIR}/bin/wget" ]
+then
+   echo
+   echo "======================================================================"
+   echo " LIBSODIUM Build:"
+   echo "======================================================================"
+   file "${OSXCROSS_TEST_STAGE_DIR}/lib/libsodium.dylib"
+   xcrun otool -arch all -hvL "${OSXCROSS_TEST_STAGE_DIR}/lib/libsodium.dylib"
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_STAGE_DIR}/lib/libsodium.dylib" 2>/dev/null
+else
+   rm -f "${OSXCROSS_TEST_DIR}/${OSXCROSS_TEST_LIBSODIUM_TAG}"
+   echo "${BASH_SOURCE}:${LINENO}:ERROR:" \
+      "LIBSODIUM Objects not Found." 1>&2
    exit 1
 fi

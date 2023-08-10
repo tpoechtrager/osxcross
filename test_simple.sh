@@ -139,6 +139,11 @@ EOF
    && file ./"${FFPROG01_BINARY}" \
    && xcrun otool -arch all -hvL ./"${FFPROG01_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${FFPROG01_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${FFPROG01_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # FFPROG02: Fortran90 Helloworld Program:
@@ -171,6 +176,11 @@ EOF
    && file ./"${FFPROG02_BINARY}" \
    && xcrun otool -arch all -hvL ./"${FFPROG02_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${FFPROG02_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${FFPROG02_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CCPROG01: C89 Helloworld Program:
@@ -207,6 +217,11 @@ EOF
    && file ./"${CCPROG01_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CCPROG01_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CCPROG01_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CCPROG01_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CCPROG02: C11 Program Using PThreads:
@@ -295,6 +310,11 @@ EOF
    && file ./"${CCPROG02_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CCPROG02_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CCPROG02_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CCPROG02_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG01: C++03 Helloworld Program:
@@ -335,6 +355,11 @@ EOF
    && file ./"${CXPROG01_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG01_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG01_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG01_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG02: C++11 Program Using ::std::thread:
@@ -404,6 +429,11 @@ EOF
    && file ./"${CXPROG02_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG02_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG02_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG02_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG03: C++11 Program Using Lamdas:
@@ -441,6 +471,11 @@ EOF
    && file ./"${CXPROG03_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG03_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG03_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG03_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG04: C++14 Program Using Generic Lamdas:
@@ -497,6 +532,11 @@ EOF
    && file ./"${CXPROG04_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG04_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG04_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG04_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG05: C++14 Program Using ::std::shared_timed_mutex:
@@ -615,6 +655,11 @@ EOF
    && file ./"${CXPROG05_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG05_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG05_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG05_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG06: C++17 Program Using ::std::string_view:
@@ -655,6 +700,11 @@ EOF
    && file ./"${CXPROG06_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG06_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG06_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG06_BINARY}" 2>/dev/null
+fi
 
 ################################################################################
 # CXPROG07: C++17 Program Using ::std::shared_mutex:
@@ -733,3 +783,8 @@ EOF
    && file ./"${CXPROG07_BINARY}" \
    && xcrun otool -arch all -hvL ./"${CXPROG07_BINARY}" \
 )
+if [ -x "${OSXCROSS_TEST_DIR}/${CXPROG07_BINARY}" ]
+then
+   xcrun vtool -show-build \
+      "${OSXCROSS_TEST_DIR}/${CXPROG07_BINARY}" 2>/dev/null
+fi

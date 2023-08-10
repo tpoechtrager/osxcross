@@ -248,7 +248,7 @@ single source files.
 
 `test_autotools.sh`: Builds a number of non-trivial Autotools Configured projects
 from recent versions of their mainline source. This includes OpenSSL, WGet
-and CURL.
+CURL, ZSTD, and libsodium.
 
 
 #### Build Some Simple Programs: ####
@@ -301,7 +301,7 @@ OSXCROSS_TEST_ARCH=powerpc64 ./test_simple.sh
 #### Build Some Non-Trivial Autotools Configured Projects: ####
 
 The script `test_autotools.sh` downloads the mainline source for recent versions
-of OpenSSL, WGet and CURL and builds them using this toolchain.
+of OpenSSL, WGet, CURL, ZSTD, and libsodium and builds them using this toolchain.
 
 Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
 and `xcrun -f cc` must provide the C compiler program information.
@@ -319,6 +319,8 @@ OSXCROSS_TEST_REBUILD=0|1
 OSXCROSS_TEST_OPENSSL_VERSION=3.1.2
 OSXCROSS_TEST_WGET_VERSION=1.21.4
 OSXCROSS_TEST_CURL_VERSION=8.2.1
+OSXCROSS_TEST_ZSTD_VERSION=1.5.2
+OSXCROSS_TEST_LIBSODIUM_VERSION=1.0.18
 ```
 
 Run the test:
