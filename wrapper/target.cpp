@@ -699,6 +699,8 @@ bool Target::setup() {
 
   fargs.push_back(compilerexecname);
 
+  std::string ClangIntrinsicPath;
+
   if (isClang()) {
     std::string tmp;
 
@@ -712,7 +714,7 @@ bool Target::setup() {
     tmp.clear();
 
 #ifndef __APPLE__
-    if (!findClangIntrinsicHeaders(tmp)) {
+    if (!findClangIntrinsicHeaders(ClangIntrinsicPath)) {
       warn << "cannot find clang intrinsic headers; please report this "
               "issue to the OSXCross project" << warn.endl();
     } else {
@@ -721,9 +723,6 @@ bool Target::setup() {
             << "(or later)" << err.endl();
         return false;
       }
-
-      fargs.push_back("-isystem");
-      fargs.push_back(tmp);
     }
 
     tmp.clear();
@@ -773,7 +772,7 @@ bool Target::setup() {
   }
 
   auto addCXXHeaderPath = [&](const std::string &path) {
-    fargs.push_back(isClang() ? "-cxx-isystem" : "-isystem");
+    fargs.push_back("-isystem");
     fargs.push_back(path);
   };
 
@@ -807,6 +806,11 @@ bool Target::setup() {
         args.push_back(MacPortsFrameworksDir);
       }
     }
+  }
+
+  if (isClang() && !ClangIntrinsicPath.empty()) {
+    fargs.push_back("-isystem");
+    fargs.push_back(ClangIntrinsicPath);
   }
 
   if (OSNum.Num()) {

@@ -275,7 +275,7 @@ function git_clone_repository
   local branch=$2
   local project_name=$3
 
-  if [ -n "$TP_OSXCROSS_DEV" ]; then
+  if [ -n "$TP_OSXCROSS_DEV" ] && [ -d "$TP_OSXCROSS_DEV/$project_name" ] ; then
     # copy files from local working directory
     rm -rf $project_name
     cp -r $TP_OSXCROSS_DEV/$project_name .
@@ -474,6 +474,21 @@ function test_compiler_cxx11()
   fi
   set -e
 }
+
+function test_compiler_cxx2b()
+{
+  set +e
+  echo -ne "testing $1 -std=c++20 -mmacos-version-min=10.15 ... "
+  $1 $2 -O2 -std=c++20 -mmacos-version-min=10.15 -Wall -o test &>/dev/null
+  if [ $? -eq 0 ]; then
+    rm test
+    echo "works"
+  else
+    echo "failed (ignored)"
+  fi
+  set -e
+}
+
 
 ## Also used in gen_sdk_package_pbzx.sh ##
 

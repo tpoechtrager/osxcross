@@ -148,7 +148,7 @@ else
   fi
 fi
 
-SDKS=$(ls | grep -E "^MacOSX13.*|^MacOSX12.*|^MacOSX11.*|^MacOSX10.*" | grep -v "Patch")
+SDKS=$(ls | grep -E "^MacOSX14.*|^MacOSX13.*|^MacOSX12.*|^MacOSX11.*|^MacOSX10.*" | grep -v "Patch")
 
 if [ -z "$SDKS" ]; then
     echo "No SDK found" 1>&2
@@ -181,7 +181,6 @@ for SDK in $SDKS; do
   mkdir -p $TMP/$SDK/usr/include/c++
 
   # libc++ headers for C++11/C++14
-  echo $TMP/$SDK/usr/include/c++
   if [ ! -f "$TMP/$SDK/usr/include/c++/v1/version" ]; then
     if [ -d $LIBCXXDIR1 ]; then
       cp -rf $LIBCXXDIR1 "$TMP/$SDK/usr/include/c++"

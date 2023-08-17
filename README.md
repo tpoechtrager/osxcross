@@ -187,7 +187,7 @@ Tools for Xcode.
    OSXCross.
 
 \*\*  
--- Xcode up to 12.5 Beta 3 is known to work.  
+-- Xcode up to 15 Beta 6 is known to work.  
 -- Use Firefox if you have problems signing in.
 
 \*\*\*  
