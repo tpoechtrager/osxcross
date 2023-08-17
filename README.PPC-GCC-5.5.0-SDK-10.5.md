@@ -181,7 +181,7 @@ at the beginning of `PATH`:
 
 ```
 # Build OS X Cross:
-CDEBUG=1 UNATTENDED=1 SDK_VERSION=10.5 ./build.sh
+OCDEBUG=1 UNATTENDED=1 SDK_VERSION=10.5 ./build.sh
 ```
 
 Ensure that `xcrun` is working:
@@ -233,7 +233,7 @@ Build mainline GCC-5.5.0 to target MacOS-10.5 PowerPC:
 
 ```
 # Build GCC for POWERPC targets
-DEBUG=1 CDEBUG=1 UNATTENDED=1 GCC_VERSION=5.5.0 ENABLE_FORTRAN=1 POWERPC=1 \
+DEBUG=1 OCDEBUG=1 UNATTENDED=1 GCC_VERSION=5.5.0 ENABLE_FORTRAN=1 POWERPC=1 \
    ./build_gcc.sh
 
 # Make sure it runs:
