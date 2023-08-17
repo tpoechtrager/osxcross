@@ -16,7 +16,8 @@ require cmake
 
 pushd $OSXCROSS_BUILD_DIR &>/dev/null
 
-get_sources https://github.com/tpoechtrager/llvm-dsymutil.git master
+LLVM_DSYMUTIL_REVISION="${LLVM_DSYMUTIL_REVISION:-"master"}"
+get_sources https://github.com/tpoechtrager/llvm-dsymutil.git "$LLVM_DSYMUTIL_REVISION"
 
 if [ $f_res -eq 1 ]; then
   pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
