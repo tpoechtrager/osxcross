@@ -217,9 +217,9 @@ This builds the mainline GCC-5.5.0 to target MacOS-10.5 PowerPC and PowerPC64.
 To work around this issue, we move them to hide them from GCC. Since we will only
 be using GCC with this toolchain from now on and not Clang, this seems fine. We
 had to wait to move them, until after the OS X Cross tools are built with Clang.
-After the OS X Cross tools are built and are usable, we no longer need Clang to
-to process the these SDK headers and we can hide them. NOTE: We will not be able
-to use `oppc32-clang++` or `oppc64-clang++` unless we move the headers back.
+After the OS X Cross tools are built and are usable, we no longer need Clang and
+we can hide them. **NOTE:** We will no longer be able to use `oppc32-clang++`
+or `oppc64-clang++` unless we move the headers back.
 
 ```
 # **NOTE:** the `SDK/include/c++/4.0.0` directory causes issues building GCC and
@@ -233,7 +233,7 @@ Build mainline GCC-5.5.0 to target MacOS-10.5 PowerPC:
 
 ```
 # Build GCC for POWERPC targets
-DEBUG=1 UNATTENDED=1 GCC_VERSION=5.5.0 ENABLE_FORTRAN=1 POWERPC=1 \
+DEBUG=1 CDEBUG=1 UNATTENDED=1 GCC_VERSION=5.5.0 ENABLE_FORTRAN=1 POWERPC=1 \
    ./build_gcc.sh
 
 # Make sure it runs:
@@ -262,10 +262,10 @@ CURL, ZSTD, and libsodium.
 
 The script `test_simple.sh` generates single source file programs and compiles
 them using this toolchain. Coverage includes: C (C89 and C11),
-C++ (C++03, C++11, C++14), and Fortran (Fortran77 and Fortran90).
+C++ (C++03, C++11, C++14, C++17), and Fortran (Fortran77 and Fortran90).
 
-Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
-and `xcrun -f cc` must provide the C compiler program information.
+Requires the OS X Cross stage directory `$(pwd)/target/bin` at the beginning of
+`PATH` and `xcrun -f cc` must provide the C compiler program information.
 
 **NOTE:** Environment variables that effect the test script operations:
 
@@ -310,8 +310,8 @@ OSXCROSS_TEST_ARCH=powerpc64 ./test_simple.sh
 The script `test_autotools.sh` downloads the mainline source for recent versions
 of OpenSSL, WGet, CURL, ZSTD, and libsodium and builds them using this toolchain.
 
-Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
-and `xcrun -f cc` must provide the C compiler program information.
+Requires the OS X Cross stage directory `$(pwd)/target/bin` at the beginning of
+`PATH` and `xcrun -f cc` must provide the C compiler program information.
 
 **NOTE:** Environment variables that effect the test script operations:
 
