@@ -13,13 +13,13 @@ From my testing so far, the toolchain is working flawlessly. I have provided som
 scripts to test the toolchain. See the toolchain test section below.
 
 **NOTE:** MacOS-10.5 does not have native support for C++11 or any recent C++
-standards. With OS X Cross, we can use the GCC-5.5.0 and the GNU STDC++ runtime
-library provided by that toolchain to build C++11 and C++14 code that runs on
-MacOS-10.5 PowerPC targets.
+standards. With OS X Cross, we can use the mainline GCC-5.5.0 and the GNU STDC++
+runtime library provided by that toolchain to build C++11 and C++14 code that
+runs on MacOS-10.5 PowerPC targets.
 
-**NOTE:** I had to make slight modifications to the `build_gcc.sh` script in
-order for it to retrieve the mainline GCC-5.5.0 source and to download the
-build prerequisites.
+**NOTE:** I made a slight modifications to the `build_gcc.sh` script in order for
+it to retrieve the mainline GCC-5.5.0 source and to download the build the
+prerequisites.
 
 **NOTE:** Further testing demonstrates that GCC-10.5.0 also works with these
 instructions.
@@ -66,14 +66,14 @@ The PPC32 Fortran compiler is not being staged (or built?). I dont know why this
 is happening.
 
 
-**NOTE:** Work around seems to work use the powerpc64 gfortran toolchain and
-pass `-m32` on the commandline.
+**NOTE:** A work around that seems to work: use the powerpc64 gfortran compiler
+and pass `-m32` on the commandline.
 
 #### PowerPC364 ####
 
-The PPC64 compiler reports warning that it cannot find apple gcc intrinsic
+The PPC64 compiler reports a warning that it cannot find apple gcc intrinsic
 headers. The toolchain seems to work regardless. I don't know how to resolve this
-issue or if it even matters.
+issue or if it even matters. It doesn't seem to matter.
 
 ```
 osxcross: warning: cannot find apple gcc intrinsic headers; please report this issue to the OSXCross project
@@ -130,11 +130,11 @@ uuid-dev: v2.27.1
 ### Build the Toolchain: ####
 
 
-#### Clone my OS X Cross Branch: ####
+#### Clone the OS X Cross `ppc-test` Branch: ####
 
-I have had to make a few minor changes to the `build_gcc.sh`, added some scripts
-that can be used to test the Toolchain, and added detailed instructions on how I
-built this toolchain. This is currently in an unmerged branch.
+I have made a few minor changes to the `build_gcc.sh`, I have added some scripts
+that can be used to test the Toolchain, and I have added detailed instructions on
+how I built this toolchain.
 
 ```
 # Clone the unmerged branch:
