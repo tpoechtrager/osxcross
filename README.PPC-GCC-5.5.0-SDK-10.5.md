@@ -3,18 +3,18 @@
 
 ### Introduction: ###
 
-These detailed instructions on how I was able to use the `ppc-test` branch of the
-[osxcross](https://github.com/tpoechtrager/osxcross) project to build a toolchain
-on an Ubuntu16 build host to target MacOS-10.5 PowerPC and PowerPC64 using the
-mainline GCC-5.5.0. This toolchain supports C (C89, C90, C11), C++ (up to C++14),
-and GNU Fortran (F77 and F90).
+These are detailed instructions on how I was able to use the `ppc-test` branch of
+the [osxcross](https://github.com/tpoechtrager/osxcross) project to build a
+toolchain on an Ubuntu16 build host to target MacOS-10.5 PowerPC and PowerPC64
+using the mainline GCC-5.5.0. This toolchain supports C (C89, C90, C11),
+C++ (up to C++14), and GNU Fortran (F77 and F90).
 
 From my testing so far, the toolchain is working flawlessly. I have provided some
 scripts to test the toolchain. See the toolchain test section below.
 
-**NOTE:** MakcOS-10.5 does not have native support for C++11 or any recent C++
+**NOTE:** MacOS-10.5 does not have native support for C++11 or any recent C++
 standards. With OS X Cross, we can use the GCC-5.5.0 and the GNU STDC++ runtime
-library provided by that toolchain to build and run C++11 and C++14 code on
+library provided by that toolchain to build C++11 and C++14 code that runs on
 MacOS-10.5 PowerPC targets.
 
 **NOTE:** I had to make slight modifications to the `build_gcc.sh` script in
