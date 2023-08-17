@@ -21,6 +21,9 @@ MacOS-10.5 PowerPC targets.
 order for it to retrieve the mainline GCC-5.5.0 source and to download the
 build prerequisites.
 
+**NOTE:** Further testing demonstrates that GCC-10.5.0 also works with these
+instructions.
+
 My journey to creating this toolchain started
 [here](https://github.com/tpoechtrager/osxcross/issues/50).
 
@@ -62,6 +65,9 @@ I am able to build Fortran77, Fortran90, C99, C11, C++03, C++11, and C++14 code.
 The PPC32 Fortran compiler is not being staged (or built?). I dont know why this
 is happening.
 
+
+**NOTE:** Work around seems to work use the powerpc64 gfortran toolchain and
+pass `-m32` on the commandline.
 
 #### PowerPC364 ####
 
@@ -133,12 +139,12 @@ built this toolchain. This is currently in an unmerged branch.
 ```
 # Clone the unmerged branch:
 git clone \
-   -b ppc-test-202308 \
-   https://github.com/jlsantiago0/osxcross.git \
-   osxcross-ppc-202308
+   -b ppc-test \
+   https://github.com/tpoechtrager/osxcross.git \
+   osxcross-ppc-test
 
 # Change directories:
-cd osxcross-ppc-202308
+cd osxcross-ppc-test
 
 # Add target/bin to the beginning of PATH:
 export PATH="$(pwd)/target/bin:${PATH}"
@@ -350,5 +356,10 @@ GNU STDC++ library is handled by the toolchain.
 3. Create a test for a non-trivial CMake project. Perhaps auto generate a CMake
 Toolchain file to use with the OS X Cross Toolchain.
 
-4. Try to replicate this with a newer GCC Toolchain. Perhaps GCC-10.5.0
-or GCC-13.x.
+4. Improve the test scripts to support testing the Clang Toolchains, and the
+libc++ and libstdc++ runtime for both the Clang and GCC Toolchains.
+
+5. Improve the test scripts to use the 64bit GFortran compiler to target 32bit
+using the `-m32` commandline option.
+
+---
