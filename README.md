@@ -12,6 +12,8 @@ and is able to **target** `arm64`, `arm64e`, `x86_64`, `x86_64h` and `i386`.
 `arm64` requires macOS 11.0 SDK (or later).  
 `arm64e` [requires a recent Apple clang compiler.](https://github.com/apple/llvm-project)
 
+[There is also a `ppc` test branch that has recently seen some daylight.](https://github.com/tpoechtrager/osxcross/blob/ppc-test/README.PPC-GCC-5.5.0-SDK-10.5.md)
+
 ### HOW DOES IT WORK? ###
 
 For cross-compiling for macOS you need
