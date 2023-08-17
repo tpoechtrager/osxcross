@@ -81,6 +81,8 @@ fi
 
 export OSXCROSS_NO_10_5_DEPRECATION_WARNING=1
 
+mkdir -p $BUILD_DIR
+
 pushd $BUILD_DIR &>/dev/null
 
 # Check if a build project for compiler-rt already exists.
