@@ -140,7 +140,7 @@ void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
   }
 }
 
-bool Target::getSDKPath(std::string &path, bool MacOSX10_16Fix) const {
+bool Target::getSDKPath(std::string &path, bool MacOSX10_16Fix, bool majorVersionOnly) const {
   OSVersion SDKVer = getSDKOSNum();
 
   if (SDK) {
@@ -150,7 +150,11 @@ bool Target::getSDKPath(std::string &path, bool MacOSX10_16Fix) const {
       SDKVer = OSVersion(10, 16);
     path = execpath;
     path += "/../SDK/MacOSX";
-    path += SDKVer.shortStr();
+    if (majorVersionOnly) {
+      path += SDKVer.majorStr();
+    } else {
+      path += SDKVer.shortStr();
+    }
     if (SDKVer <= OSVersion(10, 4))
       path += "u";
     path += ".sdk";
@@ -160,6 +164,9 @@ bool Target::getSDKPath(std::string &path, bool MacOSX10_16Fix) const {
     // Some early 11.0 SDKs are misnamed as 10.16
     if (SDKVer == OSVersion(11, 0) && !MacOSX10_16Fix)
       return getSDKPath(path, true);
+
+    if (SDKVer.minor == 0 && !majorVersionOnly)
+      return getSDKPath(path, false, true);
 
     err << "cannot find macOS SDK (expected in: " << path << ")"
         << err.endl();
