@@ -886,6 +886,10 @@ bool Target::setup() {
 #endif
 
   if (isClang()) {
+    if (SDKOSNum >= OSVersion(14, 0) && clangversion < ClangVersion(17, 0)) {
+      // MacOS 14 SDK uses __ENVIRONMENT_OS_VERSION_MIN_REQUIRED__ in AvailabilityInternal.h
+      fargs.push_back("-D__ENVIRONMENT_OS_VERSION_MIN_REQUIRED__=" + OSNum.numStr());
+    }
     if (clangversion >= ClangVersion(3, 8)) {
       //
       // Silence:
