@@ -54,7 +54,9 @@ case $CLANG_VERSION in
   12.* ) BRANCH=release/12.x;    USE_CMAKE=1; ;;
   13.* ) BRANCH=release/13.x;    USE_CMAKE=1; ;;
   14.* ) BRANCH=release/14.x;    USE_CMAKE=1; ;;
-  15.* ) BRANCH=main;            USE_CMAKE=1; ;;
+  15.* ) BRANCH=release/15.x;    USE_CMAKE=1; ;;
+  16.* ) BRANCH=release/16.x;    USE_CMAKE=1; ;;
+  17.* ) BRANCH=main;            USE_CMAKE=1; ;;
      * ) echo "Unsupported Clang version, must be >= 3.2 and <= 15.0" 1>&2; exit 1;
 esac
 
