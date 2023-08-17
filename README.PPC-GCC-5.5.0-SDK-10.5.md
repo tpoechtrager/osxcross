@@ -3,23 +3,26 @@
 
 ### Introduction: ###
 
-These detailed instructions on how I was able to use the `ppc-test` branch of the
-[osxcross](https://github.com/tpoechtrager/osxcross) project to build a toolchain
-on an Ubuntu16 build host to target MacOS-10.5 PowerPC and PowerPC64 using the
-mainline GCC-5.5.0. This toolchain supports C (C89, C90, C11), C++ (up to C++14),
-and GNU Fortran (F77 and F90).
+These are detailed instructions on how I was able to use the `ppc-test` branch of
+the [osxcross](https://github.com/tpoechtrager/osxcross) project to build a
+toolchain on an Ubuntu16 build host to target MacOS-10.5 PowerPC and PowerPC64
+using the mainline GCC-5.5.0. This toolchain supports C (C89, C90, C11),
+C++ (up to C++14), and GNU Fortran (F77 and F90).
 
 From my testing so far, the toolchain is working flawlessly. I have provided some
 scripts to test the toolchain. See the toolchain test section below.
 
-**NOTE:** MakcOS-10.5 does not have native support for C++11 or any recent C++
-standards. With OS X Cross, we can use the GCC-5.5.0 and the GNU STDC++ runtime
-library provided by that toolchain to build and run C++11 and C++14 code on
-MacOS-10.5 PowerPC targets.
+**NOTE:** MacOS-10.5 does not have native support for C++11 or any recent C++
+standards. With OS X Cross, we can use the mainline GCC-5.5.0 and the GNU STDC++
+runtime library provided by that toolchain to build C++11 and C++14 code that
+runs on MacOS-10.5 PowerPC targets.
 
-**NOTE:** I had to make slight modifications to the `build_gcc.sh` script in
-order for it to retrieve the mainline GCC-5.5.0 source and to download the
-build prerequisites.
+**NOTE:** I made a slight modifications to the `build_gcc.sh` script in order for
+it to retrieve the mainline GCC-5.5.0 source and to download the build
+prerequisites.
+
+**NOTE:** Further testing demonstrates that GCC-10.5.0 also works with these
+instructions.
 
 My journey to creating this toolchain started
 [here](https://github.com/tpoechtrager/osxcross/issues/50).
@@ -63,11 +66,14 @@ The PPC32 Fortran compiler is not being staged (or built?). I dont know why this
 is happening.
 
 
-#### PowerPC364 ####
+**NOTE:** A work around that seems to work: use the powerpc64 gfortran compiler
+and pass `-m32` on the commandline.
 
-The PPC64 compiler reports warning that it cannot find apple gcc intrinsic
+#### PowerPC64 ####
+
+The PPC64 compiler reports a warning that it cannot find apple gcc intrinsic
 headers. The toolchain seems to work regardless. I don't know how to resolve this
-issue or if it even matters.
+issue or if it even matters. It doesn't seem to matter.
 
 ```
 osxcross: warning: cannot find apple gcc intrinsic headers; please report this issue to the OSXCross project
@@ -124,21 +130,21 @@ uuid-dev: v2.27.1
 ### Build the Toolchain: ####
 
 
-#### Clone my OS X Cross Branch: ####
+#### Clone the OS X Cross `ppc-test` Branch: ####
 
-I have had to make a few minor changes to the `build_gcc.sh`, added some scripts
-that can be used to test the Toolchain, and added detailed instructions on how I
-built this toolchain. This is currently in an unmerged branch.
+I have made a few minor changes to the `build_gcc.sh`, I have added some scripts
+that can be used to test the Toolchain, and I have added detailed instructions on
+how I built this toolchain.
 
 ```
-# Clone the unmerged branch:
+# Clone the ppc-test branch:
 git clone \
-   -b ppc-test-202308 \
-   https://github.com/jlsantiago0/osxcross.git \
-   osxcross-ppc-202308
+   -b ppc-test \
+   https://github.com/tpoechtrager/osxcross.git \
+   osxcross-ppc-test
 
 # Change directories:
-cd osxcross-ppc-202308
+cd osxcross-ppc-test
 
 # Add target/bin to the beginning of PATH:
 export PATH="$(pwd)/target/bin:${PATH}"
@@ -175,7 +181,7 @@ at the beginning of `PATH`:
 
 ```
 # Build OS X Cross:
-CDEBUG=1 UNATTENDED=1 SDK_VERSION=10.5 ./build.sh
+OCDEBUG=1 UNATTENDED=1 SDK_VERSION=10.5 ./build.sh
 ```
 
 Ensure that `xcrun` is working:
@@ -211,8 +217,9 @@ This builds the mainline GCC-5.5.0 to target MacOS-10.5 PowerPC and PowerPC64.
 To work around this issue, we move them to hide them from GCC. Since we will only
 be using GCC with this toolchain from now on and not Clang, this seems fine. We
 had to wait to move them, until after the OS X Cross tools are built with Clang.
-Because Clang does need these headers. After the OS X Cross tools are built and
-are usable, we no longer need Clang or these headers to build anything else.
+After the OS X Cross tools are built and are usable, we no longer need Clang and
+we can hide them. **NOTE:** We will no longer be able to use `oppc32-clang++`
+or `oppc64-clang++` unless we move the headers back.
 
 ```
 # **NOTE:** the `SDK/include/c++/4.0.0` directory causes issues building GCC and
@@ -226,7 +233,7 @@ Build mainline GCC-5.5.0 to target MacOS-10.5 PowerPC:
 
 ```
 # Build GCC for POWERPC targets
-DEBUG=1 UNATTENDED=1 GCC_VERSION=5.5.0 ENABLE_FORTRAN=1 POWERPC=1 \
+DEBUG=1 OCDEBUG=1 UNATTENDED=1 GCC_VERSION=5.5.0 ENABLE_FORTRAN=1 POWERPC=1 \
    ./build_gcc.sh
 
 # Make sure it runs:
@@ -255,10 +262,10 @@ CURL, ZSTD, and libsodium.
 
 The script `test_simple.sh` generates single source file programs and compiles
 them using this toolchain. Coverage includes: C (C89 and C11),
-C++ (C++03, C++11, C++14), and Fortran (Fortran77 and Fortran90).
+C++ (C++03, C++11, C++14, C++17), and Fortran (Fortran77 and Fortran90).
 
-Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
-and `xcrun -f cc` must provide the C compiler program information.
+Requires the OS X Cross stage directory `$(pwd)/target/bin` at the beginning of
+`PATH` and `xcrun -f cc` must provide the C compiler program information.
 
 **NOTE:** Environment variables that effect the test script operations:
 
@@ -303,8 +310,8 @@ OSXCROSS_TEST_ARCH=powerpc64 ./test_simple.sh
 The script `test_autotools.sh` downloads the mainline source for recent versions
 of OpenSSL, WGet, CURL, ZSTD, and libsodium and builds them using this toolchain.
 
-Requires the OS X Cross stage directory `target/bin` at the beginning of `PATH`
-and `xcrun -f cc` must provide the C compiler program information.
+Requires the OS X Cross stage directory `$(pwd)/target/bin` at the beginning of
+`PATH` and `xcrun -f cc` must provide the C compiler program information.
 
 **NOTE:** Environment variables that effect the test script operations:
 
@@ -350,5 +357,10 @@ GNU STDC++ library is handled by the toolchain.
 3. Create a test for a non-trivial CMake project. Perhaps auto generate a CMake
 Toolchain file to use with the OS X Cross Toolchain.
 
-4. Try to replicate this with a newer GCC Toolchain. Perhaps GCC-10.5.0
-or GCC-13.x.
+4. Improve the test scripts to support testing the Clang Toolchains, and the
+libc++ and libstdc++ runtime for both the Clang and GCC Toolchains.
+
+5. Improve the test scripts to use the 64bit GFortran compiler to target 32bit
+using the `-m32` commandline option.
+
+---
