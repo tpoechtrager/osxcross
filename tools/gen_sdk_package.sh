@@ -181,10 +181,13 @@ for SDK in $SDKS; do
   mkdir -p $TMP/$SDK/usr/include/c++
 
   # libc++ headers for C++11/C++14
-  if [ -d $LIBCXXDIR1 ]; then
-    cp -rf $LIBCXXDIR1 "$TMP/$SDK/usr/include/c++"
-  elif [ -d $LIBCXXDIR2 ]; then
-    cp -rf $LIBCXXDIR2 "$TMP/$SDK/usr/include/c++"
+  echo $TMP/$SDK/usr/include/c++
+  if [ ! -f "$TMP/$SDK/usr/include/c++/v1/version" ]; then
+    if [ -d $LIBCXXDIR1 ]; then
+      cp -rf $LIBCXXDIR1 "$TMP/$SDK/usr/include/c++"
+    elif [ -d $LIBCXXDIR2 ]; then
+      cp -rf $LIBCXXDIR2 "$TMP/$SDK/usr/include/c++"
+    fi
   fi
 
   if [ -d $MANDIR ]; then
