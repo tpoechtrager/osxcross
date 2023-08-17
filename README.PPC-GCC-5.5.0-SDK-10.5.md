@@ -18,7 +18,7 @@ runtime library provided by that toolchain to build C++11 and C++14 code that
 runs on MacOS-10.5 PowerPC targets.
 
 **NOTE:** I made a slight modifications to the `build_gcc.sh` script in order for
-it to retrieve the mainline GCC-5.5.0 source and to download the build the
+it to retrieve the mainline GCC-5.5.0 source and to download the build
 prerequisites.
 
 **NOTE:** Further testing demonstrates that GCC-10.5.0 also works with these
@@ -69,7 +69,7 @@ is happening.
 **NOTE:** A work around that seems to work: use the powerpc64 gfortran compiler
 and pass `-m32` on the commandline.
 
-#### PowerPC364 ####
+#### PowerPC64 ####
 
 The PPC64 compiler reports a warning that it cannot find apple gcc intrinsic
 headers. The toolchain seems to work regardless. I don't know how to resolve this
@@ -137,7 +137,7 @@ that can be used to test the Toolchain, and I have added detailed instructions o
 how I built this toolchain.
 
 ```
-# Clone the unmerged branch:
+# Clone the ppc-test branch:
 git clone \
    -b ppc-test \
    https://github.com/tpoechtrager/osxcross.git \
