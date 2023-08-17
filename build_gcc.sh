@@ -100,7 +100,7 @@ if [ -n "$APPLE_GCC" ]; then
   wget -c "$GCC_MIRROR/tarballs/gcc/gcc-$APPLE_GCC_VERSION.tar.gz"
 else
   if [[ $GCC_VERSION != *-* ]]; then
-    wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
+    wget -c "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.gz"
   else
     wget -c "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.bz2"
   fi
@@ -113,7 +113,8 @@ rm -rf gcc* 2>/dev/null
 if [ -n "$APPLE_GCC" ]; then
   extract "$OSXCROSS_TARBALL_DIR/gcc-$APPLE_GCC_VERSION.tar.gz" 1
 else
-  extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.bz2" 1
+  extract "$OSXCROSS_TARBALL_DIR/gcc-$GCC_VERSION.tar.gz" 1
+  ( cd ./gcc-$GCC_VERSION/ && ./contrib/download_prerequisites )
 fi
 
 echo ""
