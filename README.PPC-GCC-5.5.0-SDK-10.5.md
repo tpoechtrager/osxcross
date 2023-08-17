@@ -217,8 +217,9 @@ This builds the mainline GCC-5.5.0 to target MacOS-10.5 PowerPC and PowerPC64.
 To work around this issue, we move them to hide them from GCC. Since we will only
 be using GCC with this toolchain from now on and not Clang, this seems fine. We
 had to wait to move them, until after the OS X Cross tools are built with Clang.
-Because Clang does need these headers. After the OS X Cross tools are built and
-are usable, we no longer need Clang or these headers to build anything else.
+After the OS X Cross tools are built and are usable, we no longer need Clang to
+to process the these SDK headers and we can hide them. NOTE: We will not be able
+to use `oppc32-clang++` or `oppc64-clang++` unless we move the headers back.
 
 ```
 # **NOTE:** the `SDK/include/c++/4.0.0` directory causes issues building GCC and
