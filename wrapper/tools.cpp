@@ -135,8 +135,9 @@ char *getExecutablePath(char *buf, size_t len) {
     l = 0;
   delete[] argv;
 #else
-  ssize_t l = readlink("/proc/self/exe", buf, len);
+  ssize_t l = readlink("/proc/self/exe", buf, len - 1);
   assert(l > 0 && "/proc not mounted?");
+  if (l > 0) buf[l] = '\0';
 #endif
   if (l <= 0)
     return nullptr;
