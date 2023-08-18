@@ -68,91 +68,134 @@ function rreadlink()
   fi
 }
 
-function set_xcode_dir()
-{
-  local tmp=$(ls $1 2>/dev/null | grep "^Xcode.*.app" | grep -v "beta" | head -n1)
-
-  if [ -z "$tmp" ]; then
-    tmp=$(ls $1 2>/dev/null | grep "^Xcode.*.app" | head -n1)
-  fi
-
-  if [ -n "$tmp" ]; then
-    XCODEDIR="$1/$tmp"
-  fi
-}
-
-
-if [ $(uname -s) != "Darwin" ]; then
-  if [ -z "$XCODEDIR" ]; then
-    echo "This script must be run on macOS" 1>&2
-    echo "... Or with XCODEDIR=... on Linux" 1>&2
-    exit 1
-  else
-    case "$XCODEDIR" in
-      /*) ;;
-      *) XCODEDIR="$PWD/$XCODEDIR" ;;
-    esac
-    set_xcode_dir "$XCODEDIR"
-  fi
-else
-  set_xcode_dir $(echo /Volumes/Xcode* | tr ' ' '\n' | grep -v "beta" | head -n1)
-
-  if [ -z "$XCODEDIR" ]; then
-    set_xcode_dir /Applications
-
-    if [ -z "$XCODEDIR" ]; then
-      set_xcode_dir $(echo /Volumes/Xcode* | tr ' ' '\n' | head -n1)
-
-      if [ -z "$XCODEDIR" ]; then
-        echo "please mount Xcode.dmg" 1>&2
-        exit 1
-      fi
-    fi
-  fi
-fi
-
-if [ ! -d "$XCODEDIR" ]; then
-  echo "cannot find Xcode (XCODEDIR=$XCODEDIR)" 1>&2
-  exit 1
-fi
-
-echo -e "found Xcode: $XCODEDIR"
 
 WDIR=$(pwd)
 
-set -e
+if [ -z "$XCODE_TOOLS" ]; then
+  # Using full fledged Xcode
 
-pushd "$XCODEDIR" &>/dev/null
+  function set_xcode_dir()
+  {
+    local tmp=$(ls $1 2>/dev/null | grep "^Xcode.*.app" | grep -v "beta" | head -n1)
 
-if [ -d "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" ]; then
-  pushd "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" &>/dev/null
-else
-  if [ -d "../Packages" ]; then
-    pushd "../Packages" &>/dev/null
-  elif [ -d "Packages" ]; then
-    pushd "Packages" &>/dev/null
+    if [ -z "$tmp" ]; then
+      tmp=$(ls $1 2>/dev/null | grep "^Xcode.*.app" | head -n1)
+    fi
+
+    if [ -n "$tmp" ]; then
+      XCODEDIR="$1/$tmp"
+    fi
+  }
+
+  if [ $(uname -s) != "Darwin" ]; then
+    if [ -z "$XCODEDIR" ]; then
+      echo "This script must be run on macOS" 1>&2
+      echo "... Or with XCODEDIR=... on Linux" 1>&2
+      exit 1
+    else
+      case "$XCODEDIR" in
+        /*) ;;
+        *) XCODEDIR="$PWD/$XCODEDIR" ;;
+      esac
+      set_xcode_dir "$XCODEDIR"
+    fi
   else
-    if [ $? -ne 0 ]; then
-      echo "Xcode (or this script) is out of date" 1>&2
-      echo "trying some magic to find the SDKs anyway ..." 1>&2
+    set_xcode_dir $(echo /Volumes/Xcode* | tr ' ' '\n' | grep -v "beta" | head -n1)
 
-      SDKDIR=$(find . -name SDKs -type d | grep MacOSX | head -n1)
+    if [ -z "$XCODEDIR" ]; then
+      set_xcode_dir /Applications
 
-      if [ -z "$SDKDIR" ]; then
-        echo "cannot find SDKs!" 1>&2
-        exit 1
+      if [ -z "$XCODEDIR" ]; then
+        set_xcode_dir $(echo /Volumes/Xcode* | tr ' ' '\n' | head -n1)
+
+        if [ -z "$XCODEDIR" ]; then
+          echo "please mount Xcode.dmg" 1>&2
+          exit 1
+        fi
       fi
-
-      pushd "$SDKDIR" &>/dev/null
     fi
   fi
+
+  if [ ! -d "$XCODEDIR" ]; then
+    echo "cannot find Xcode (XCODEDIR=$XCODEDIR)" 1>&2
+    exit 1
+  fi
+
+  echo -e "found Xcode: $XCODEDIR"
+
+  set -e
+
+  pushd "$XCODEDIR" &>/dev/null
+
+  if [ -d "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" ]; then
+    pushd "Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs" &>/dev/null
+  else
+    if [ -d "../Packages" ]; then
+      pushd "../Packages" &>/dev/null
+    elif [ -d "Packages" ]; then
+      pushd "Packages" &>/dev/null
+    else
+      if [ $? -ne 0 ]; then
+        echo "Xcode (or this script) is out of date" 1>&2
+        echo "trying some magic to find the SDKs anyway ..." 1>&2
+
+        SDKDIR=$(find . -name SDKs -type d | grep MacOSX | head -n1)
+
+        if [ -z "$SDKDIR" ]; then
+          echo "cannot find SDKs!" 1>&2
+          exit 1
+        fi
+
+        pushd "$SDKDIR" &>/dev/null
+      fi
+    fi
+  fi
+
+else
+  # Using Xcode Command Line tools
+
+  if [ $(uname -s) != "Darwin" ]; then
+    if [ -z "$XCODE_TOOLS_DIR" ]; then
+      echo "This script must be run on macOS" 1>&2
+      echo "... Or with XCODE_TOOLS_DIR=... on Linux" 1>&2
+      exit 1
+    else
+      case "$XCODE_TOOLS_DIR" in
+        /*) ;;
+        *) XCODE_TOOLS_DIR="$PWD/$XCODE_TOOLS_DIR" ;;
+      esac
+    fi
+  else
+    XCODE_TOOLS_DIR="/Library/Developer/CommandLineTools"
+  fi
+
+  if [ ! -d "$XCODE_TOOLS_DIR" ]; then
+    echo "cannot find Xcode Command Line Tools (XCODE_TOOLS_DIR=$XCODE_TOOLS_DIR)" 1>&2
+    exit 1
+  fi
+
+  echo -e "found Xcode Command Line Tools: $XCODE_TOOLS_DIR"
+
+  pushd "$XCODE_TOOLS_DIR" &>/dev/null
+
+  if [ -d "SDKs" ]; then
+    pushd "SDKs" &>/dev/null
+  else
+    echo "$XCODE_TOOLS_DIR/SDKs does not exist"  1>&2
+    exit 1
+  fi
+
+  XCODEDIR=$XCODE_TOOLS_DIR
+
+  set -e
+
 fi
 
 SDKS=$(ls | grep -E "^MacOSX14.*|^MacOSX13.*|^MacOSX12.*|^MacOSX11.*|^MacOSX10.*" | grep -v "Patch")
 
 if [ -z "$SDKS" ]; then
-    echo "No SDK found" 1>&2
-    exit 1
+  echo "No SDK found" 1>&2
+  exit 1
 fi
 
 # Xcode 5
@@ -160,6 +203,9 @@ LIBCXXDIR1="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/c++/v
 
 # Xcode 6
 LIBCXXDIR2="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"
+
+# Xcode Command Line Tools
+LIBCXXDIR3="usr/include/c++/v1"
 
 # Manual directory
 MANDIR="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man"
@@ -180,12 +226,14 @@ for SDK in $SDKS; do
 
   mkdir -p $TMP/$SDK/usr/include/c++
 
-  # libc++ headers for C++11/C++14
+  # libc++ headers
   if [ ! -f "$TMP/$SDK/usr/include/c++/v1/version" ]; then
     if [ -d $LIBCXXDIR1 ]; then
       cp -rf $LIBCXXDIR1 "$TMP/$SDK/usr/include/c++"
     elif [ -d $LIBCXXDIR2 ]; then
       cp -rf $LIBCXXDIR2 "$TMP/$SDK/usr/include/c++"
+    elif [ -d $LIBCXXDIR3 ]; then
+      cp -rf $LIBCXXDIR3 "$TMP/$SDK/usr/include/c++"
     fi
   fi
 

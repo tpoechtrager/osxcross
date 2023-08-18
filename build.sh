@@ -12,12 +12,12 @@ pushd "${0%/*}" &>/dev/null
 source tools/tools.sh
 
 if [ $SDK_VERSION ]; then
-  echo 'SDK VERSION set in environment variable:' $SDK_VERSION
+  echo "SDK VERSION set in environment variable: $SDK_VERSION"
 else
   guess_sdk_version
   SDK_VERSION=$guess_sdk_version_result
 fi
-verify_sdk_version $SDK_VERSION
+set_and_verify_sdk_path
 
 case $SDK_VERSION in
   10.4*|10.5*)
@@ -184,12 +184,6 @@ create_symlink osxcross-macports omp
 popd &>/dev/null
 
 ## Extract SDK and move it to $SDK_DIR ##
-
-if [[ $SDK_VERSION == *.* ]]; then
-  SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION*)
-else
-  SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION.*| grep -v "\.0")
-fi
 
 echo ""
 extract $SDK

@@ -168,18 +168,19 @@ function guess_sdk_version()
 }
 
 # make sure there is actually a file with the given SDK_VERSION
-function verify_sdk_version()
+function set_and_verify_sdk_path()
 {
-  sdkv=$1
-  for file in tarballs/*; do
-    if [ -f "$file" ] && [ $(echo $file | grep OSX.*$sdkv) ]; then
-      echo "verified at "$file
-      sdk=$file
-    fi
-  done
-  if [ ! $sdk ] ; then
-    echo cant find SDK for OSX $sdkv in tarballs. exiting
+  if [[ $SDK_VERSION == *.* ]]; then
+    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION* || echo "")
+  else
+    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION.*| grep -v "\.0" || echo "")
+  fi
+
+  if [ -z "$SDK" ] ; then
+    echo "cant find SDK for MacOSX $SDK_VERSION in tarballs. exiting."
     exit 1
+  else
+    echo "verified at $SDK"
   fi
 }
 
@@ -490,7 +491,6 @@ function test_compiler_cxx2b()
 }
 
 
-## Also used in gen_sdk_package_pbzx.sh ##
 
 function build_xar()
 {
@@ -511,6 +511,44 @@ function build_xar()
   popd &>/dev/null
 }
 
+function build_p7zip()
+{
+  get_sources https://github.com/tpoechtrager/p7zip.git master
+
+  if [ $f_res -eq 1 ]; then
+    pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+
+    if [ -n "$CC" ] && [ -n "$CXX" ]; then
+      [[ $CC == *clang* ]] && CC="$CC -Qunused-arguments"
+      [[ $CXX == *clang* ]] && CXX="$CXX -Qunused-arguments"
+      $MAKE 7z -j $JOBS CC="$CC" CXX="$CXX -std=gnu++98"
+    else
+      $MAKE 7z -j $JOBS CXX="c++ -std=gnu++98"
+    fi
+
+    $MAKE install DEST_HOME=$TARGET_DIR_SDK_TOOLS
+    find $TARGET_DIR_SDK_TOOLS/share -type f -exec chmod 0664 {} \;
+    find $TARGET_DIR_SDK_TOOLS/share -type d -exec chmod 0775 {} \;
+    popd &>/dev/null
+    build_success
+  fi
+}
+
+function build_pbxz()
+{
+  get_sources https://github.com/tpoechtrager/pbzx.git master
+
+  if [ $f_res -eq 1 ]; then
+    pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+    mkdir -p $TARGET_DIR_SDK_TOOLS/bin
+    verbose_cmd $CC -O2 -Wall \
+                -I $TARGET_DIR/include -L $TARGET_DIR/lib pbzx.c \
+                -o $TARGET_DIR_SDK_TOOLS/bin/pbzx -llzma -lxar \
+                -Wl,-rpath,$TARGET_DIR/lib
+    build_success
+    popd &>/dev/null
+  fi
+}
 
 
 # exit on error

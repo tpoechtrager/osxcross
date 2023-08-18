@@ -31,11 +31,18 @@ require fusermount
 
 set +e
 
-command -v lsb_release 2>&1 > /dev/null
+is_ubuntu=0
+is_wsl=0
+
+command -v lsb_release &>/dev/null
 
 if [[ $? -eq 0 ]] && [[ -n $(lsb_release -a 2>&1 | grep -i ubuntu) ]]; then
-  echo "Using ubuntu, skipping fuse module check"
-else
+  is_ubuntu=1
+elif [[ $(uname -r) == *-WSL* ]]; then
+  is_wsl=1
+fi
+
+if [ $is_ubuntu -eq 0 -a $is_wsl -eq 0 ]; then
   modinfo fuse &>/dev/null
 fi
 
@@ -70,8 +77,10 @@ TMP=$(mktemp -d /tmp/XXXXXXXXX)
 
 function cleanup()
 {
-  fusermount -u $TMP || true
-  rm -rf $TMP
+  if [ -z "$OC_KEEP_TMP_DIR" ]; then
+    fusermount -u $TMP || true
+    rm -rf $TMP
+  fi
 }
 
 trap cleanup EXIT
@@ -79,4 +88,8 @@ trap cleanup EXIT
 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR_SDK_TOOLS/lib \
   $TARGET_DIR/SDK/tools/bin/darling-dmg $XCODEDMG $TMP
 
-XCODEDIR=$TMP ./tools/gen_sdk_package.sh
+if [[ $XCODEDMG == *ools* ]]; then
+  XCODE_TOOLS_DIR=$TMP ./tools/gen_sdk_package_tools.sh
+else
+  XCODEDIR=$TMP ./tools/gen_sdk_package.sh
+fi
