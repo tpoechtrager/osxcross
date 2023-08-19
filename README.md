@@ -91,7 +91,8 @@ To build and install your own `clang` from a recent source tree, using `gcc`,
 run:
 
 ```shell
-    ./build_clang.sh
+    ./build_clang.sh # Builds a mainline version of Clang
+    ./build_apple_clang.sh # Builds Apple's version of Clang
 ```
 
 This installs `clang` into `/usr/local`.  If you want to install somewhere

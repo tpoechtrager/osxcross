@@ -204,6 +204,9 @@ function extract()
     *.tar.bz2)
       bzip2 -dc $1 | tar $tarflags -
       ;;
+    *.zip)
+      unzip $1
+      ;;
     *)
       echo "Unhandled archive type" 2>&1
       exit 1
@@ -438,6 +441,19 @@ function verbose_cmd()
 {
   echo "$@"
   eval "$@"
+}
+
+# Function for yes/no prompt with default 'yes'
+function prompt()
+{
+  while true; do
+    read -p "$1 [Y/n]: " yn
+    case $yn in
+      [Yy]* | "" ) return 0;;  # Default to 'yes' if empty input
+      [Nn]* ) return 1;;
+      * ) echo "Please answer yes or no.";;
+    esac
+  done
 }
 
 
