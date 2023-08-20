@@ -135,31 +135,25 @@ pushd "clang-$CLANG_VERSION" &>/dev/null
 echo "extracting ..."
 extract $TARBALL_DIR/$(basename $CLANG_LLVM_PKG)
 
-if [ -z "$PORTABLE" ]; then
-  export CFLAGS="-march=native"
-  export CXXFLAGS="-march=native"
+# Various Buildfixes
+
+if ([[ $CLANG_VERSION == 15* ]] || [[ $CLANG_VERSION == 14* ]] ||
+    [[ $CLANG_VERSION == 13* ]] || [[ $CLANG_VERSION == 12* ]] ||
+    [[ $CLANG_VERSION == 11* ]] || [[ $CLANG_VERSION == 10* ]]); then
+  $SED -i 's/#include <string>/#include <string>\
+\ #include <cstdint>/' *llvm*/llvm/include/llvm/Support/Signals.h
 fi
 
-# Various Buildfixes for Apple clang
-if [ $GITPROJECT == "apple" ]; then
-  if ([[ $CLANG_VERSION == 15* ]] || [[ $CLANG_VERSION == 14* ]] || 
-      [[ $CLANG_VERSION == 13* ]] || [[ $CLANG_VERSION == 12* ]] ||
-      [[ $CLANG_VERSION == 11* ]]); then
-    $SED -i 's/#include <string>/#include <string>\
-\ \ #include <cstdint>/' *llvm*/llvm/include/llvm/Support/Signals.h
-  fi
+if ([[ $CLANG_VERSION == 11* ]] || [[ $CLANG_VERSION == 10* ]] ||
+    [[ $CLANG_VERSION == 9* ]] || [[ $CLANG_VERSION == 8* ]]); then
+  $SED -i 's/#include <vector>/#include <vector>\
+\ #include <limits>/' *llvm*/llvm/utils/benchmark/src/benchmark_register.h
+fi
 
-  if ([[ $CLANG_VERSION == 11* ]] || [[ $CLANG_VERSION == 10* ]] ||
-      [[ $CLANG_VERSION == 9* ]] || [[ $CLANG_VERSION == 8* ]]); then
-    $SED -i 's/#include <vector>/#include <vector>\
-\ \ #include <limits>/' *llvm*/llvm/utils/benchmark/src/benchmark_register.h
-  fi
-
-  if ([[ $CLANG_VERSION == 9* ]] || [[ $CLANG_VERSION == 8* ]]); then
-    $SED -i 's/#include <array>/#include <array>\
-\ \ #include <cstdint>\
-\ \ #include <string>/' *llvm*/llvm/include/llvm/Demangle/MicrosoftDemangleNodes.h
-  fi
+if ([[ $CLANG_VERSION == 9* ]] || [[ $CLANG_VERSION == 8* ]]); then
+  $SED -i 's/#include <array>/#include <array>\
+\ #include <cstdint>\
+\ #include <string>/' *llvm*/llvm/include/llvm/Demangle/MicrosoftDemangleNodes.h
 fi
 
 function build()
