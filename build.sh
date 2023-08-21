@@ -5,7 +5,7 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
-VERSION=1.4
+VERSION=1.5
 
 pushd "${0%/*}" &>/dev/null
 
@@ -109,7 +109,7 @@ build_xar
 ## Apple TAPI Library ##
 
 if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
-  get_sources https://github.com/tpoechtrager/apple-libtapi.git 1100.0.11
+  get_sources https://github.com/tpoechtrager/apple-libtapi.git 1300.6.5
 
   if [ $f_res -eq 1 ]; then
     pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
@@ -122,8 +122,8 @@ fi
 
 ## cctools and ld64 ##
 
-CCTOOLS_VERSION=973.0.1
-LINKER_VERSION=609
+CCTOOLS_VERSION=986
+LINKER_VERSION=711
 
 get_sources \
   https://github.com/tpoechtrager/cctools-port.git \
