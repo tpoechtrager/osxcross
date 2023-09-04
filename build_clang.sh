@@ -212,7 +212,7 @@ if [ -z "$ENABLE_CLANG_INSTALL" ]; then
   echo "clang/llvm to '$INSTALLPREFIX'"
   echo ""
 else
-  $MAKE install -j $JOBS VERBOSE=1
+  $MAKE -C "$BUILD_DIR/clang-$CLANG_VERSION/$stage" install -j $JOBS VERBOSE=1
   echo ""
   echo "Done!"
   echo ""
