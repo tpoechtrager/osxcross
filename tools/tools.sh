@@ -173,7 +173,7 @@ function set_and_verify_sdk_path()
   if [[ $SDK_VERSION == *.* ]]; then
     SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION* || echo "")
   else
-    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION.*| grep -v "\.0" || echo "")
+    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION.* | grep -v "\.[0-9]\+" || echo "")
   fi
 
   if [ -z "$SDK" ] ; then

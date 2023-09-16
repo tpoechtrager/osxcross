@@ -195,6 +195,11 @@ else
   mv -f *OSX*$SDK_VERSION*sdk* $SDK_DIR
 fi
 
+if [ ! -d "$SDK_DIR/MacOSX$SDK_VERSION.sdk" ]; then
+  echo "Broken SDK! '$SDK_DIR/MacOSX$SDK_VERSION.sdk' does not exist!"
+  exit 1
+fi
+
 ## Fix broken SDKs ##
 
 pushd $SDK_DIR/MacOSX$SDK_VERSION*.sdk &>/dev/null
