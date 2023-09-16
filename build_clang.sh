@@ -91,7 +91,7 @@ function set_package_link()
 
 set_package_link
 
-if [ -z "CLANG_LLVM_PKG" ]; then
+if [ -z "$CLANG_LLVM_PKG" ]; then
   echo "Release $CLANG_VERSION not found!" 1>&2
   exit 1
 fi
