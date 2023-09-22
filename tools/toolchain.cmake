@@ -26,6 +26,7 @@ set(CMAKE_CXX_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang++")
 
 # where is the target environment
 set(CMAKE_FIND_ROOT_PATH
+  "${CMAKE_FIND_ROOT_PATH}"
   "${OSXCROSS_SDK}"
   "${OSXCROSS_TARGET_DIR}/macports/pkgs/opt/local")
 
