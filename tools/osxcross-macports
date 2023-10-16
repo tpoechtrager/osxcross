@@ -316,10 +316,18 @@ getPkgUrl()
           uniq | tail -n1)
   fi
   if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | \
+          grep "$pkgname-$pkgversion" | grep "any_any.noarch" | \
+          uniq | tail -n1)
+  fi
+  if [ -z "$pkg" ]; then
     pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
   fi
   if [ -z "$pkg" ]; then
     pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
+  fi
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | grep "any_any.noarch" | uniq | tail -n1)
   fi
 
   verboseMsg " selected: $pkg"
