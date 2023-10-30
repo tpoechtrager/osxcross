@@ -60,7 +60,7 @@ echo "Processing packages ..."
 mkdir "$TMP_DIR/out"
 for PKG in $TMP_DIR/pkg_data/*.pkg; do
   LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$TARGET_DIR/lib \
-    verbose_cmd "$TARGET_DIR/SDK/tools/bin/pbzx -n \"$PKG/Payload\" | cpio -i -D $TMP_DIR/out"
+    verbose_cmd "$TARGET_DIR/SDK/tools/bin/pbzx -n \"$PKG/Payload\" | (cd $TMP_DIR/out && cpio -i)"
 done
 
 
