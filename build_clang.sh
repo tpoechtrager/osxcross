@@ -91,7 +91,7 @@ function set_package_link()
 
 set_package_link
 
-if [ -z "CLANG_LLVM_PKG" ]; then
+if [ -z "$CLANG_LLVM_PKG" ]; then
   echo "Release $CLANG_VERSION not found!" 1>&2
   exit 1
 fi
@@ -212,7 +212,7 @@ if [ -z "$ENABLE_CLANG_INSTALL" ]; then
   echo "clang/llvm to '$INSTALLPREFIX'"
   echo ""
 else
-  $MAKE install -j $JOBS VERBOSE=1
+  $MAKE -C "$BUILD_DIR/clang-$CLANG_VERSION/$stage" install -j $JOBS VERBOSE=1
   echo ""
   echo "Done!"
   echo ""
