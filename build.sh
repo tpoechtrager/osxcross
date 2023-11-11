@@ -106,6 +106,23 @@ build_xar
 
 # XAR END
 
+## Apple Dispatch/Blocks library ##
+
+if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
+  get_sources https://github.com/tpoechtrager/apple-libdispatch.git main
+
+  if [ $f_res -eq 1 ]; then
+    pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
+    mkdir -p build
+    pushd build &>/dev/null
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$TARGET_DIR
+    $MAKE install -j$JOBS
+    popd &>/dev/null
+    popd &>/dev/null
+    build_success
+  fi
+fi
+
 ## Apple TAPI Library ##
 
 if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
@@ -122,8 +139,8 @@ fi
 
 ## cctools and ld64 ##
 
-CCTOOLS_VERSION=986
-LINKER_VERSION=711
+CCTOOLS_VERSION=1009.2
+LINKER_VERSION=907
 
 get_sources \
   https://github.com/tpoechtrager/cctools-port.git \
@@ -134,6 +151,8 @@ if [ $f_res -eq 1 ]; then
   echo ""
 
   CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
+  CONFFLAGS+="--with-libdispatch=$TARGET_DIR "
+  CONFFLAGS+="--with-libblocksruntime=$TARGET_DIR "
   if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     CONFFLAGS+="--with-libtapi=$TARGET_DIR "
   fi
