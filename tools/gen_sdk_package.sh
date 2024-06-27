@@ -191,8 +191,11 @@ else
 
 fi
 
-SDKS=$(ls | grep -E "^MacOSX14.*|^MacOSX13.*|^MacOSX12.*|^MacOSX11.*|^MacOSX10.*" | grep -v "Patch")
 
+SDKS=$(for sdk in $(ls | grep -E "^MacOSX14.*|^MacOSX13.*|^MacOSX12.*|^MacOSX11.*|^MacOSX10.*" | grep -v "Patch"); do 
+  [ -e "$sdk" ] || continue;  # Skip if the file doesn't exist
+  echo "$(rreadlink "$sdk") $sdk"; 
+done | awk '!seen[$1]++' | awk '{print $2}')
 if [ -z "$SDKS" ]; then
   echo "No SDK found" 1>&2
   exit 1
