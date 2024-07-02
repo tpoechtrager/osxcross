@@ -214,7 +214,9 @@ This method may require up to 45 GB of free disk space.
 An SSD is recommended for this method.
 
 1. Download Xcode like described in 'Packaging the SDK on macOS'
-2. Install `clang`, `make`, `libssl-devel`, `lzma-devel` and `libxml2-devel`
+2. Install the following packages:\
+   On Debian/Ubuntu: `apt install clang make libssl-dev libbz2-dev lzma-dev libxml2-dev`\
+   On Fedora: `dnf install clang make openssl-devel bzip2-devel xz-devel libxml2-devel`
 3. Run `./tools/gen_sdk_package_pbzx.sh <xcode>.xip`
 4. Copy or move the SDK into the tarballs/ directory
 
