@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ##
-## A minimalistic MacPorts Packet Manager for OSXCross,
+## A minimalistic MacPorts Package Manager for OSXCross,
 ## based on: https://github.com/maci0/pmmacports.
 ## Please see README.MACPORTS for more.
 ## License: GPLv2.

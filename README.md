@@ -44,9 +44,9 @@ Note: The "compiler-rt" library can be needed to link code that uses the
 Basically everything you can build on macOS with clang/gcc should build with
 this cross toolchain as well.
 
-### PACKET MANAGERS ###
+### PACKAGE MANAGERS ###
 
-OSXCross comes with a minimalistic MacPorts Packet Manager.
+OSXCross comes with a minimalistic MacPorts Package Manager.
 See [README.MACPORTS](README.MACPORTS.md) for more.
 
 ### INSTALLATION: ###

@@ -1,6 +1,6 @@
 ## OSXCROSS-MACPORTS ##
 
-`osxcross-macports` is a small "packet manager" for 16.000+ binary MacPorts packages.
+`osxcross-macports` is a small "package manager" for 16.000+ binary MacPorts packages.
 
 Packages are installed to `target/macports/pkgs`.
 

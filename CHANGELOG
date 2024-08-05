@@ -150,7 +150,7 @@ Changed:
 Added:
  * binutils / gdb build script
  * OSXCROSS_GCC_NO_STATIC_RUNTIME option (env)
- * osxcross-macports: A minimalistic macports packet manager
+ * osxcross-macports: A minimalistic macports package manager
 
 /******************************* v0.8 *******************************/
 
