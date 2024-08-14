@@ -227,7 +227,7 @@ int xcrun(int argc, char **argv, Target &target) {
 
   auto dummy = [](Target*, char**) { return 0; };
 
-  ArgParser<int (*)(Target*, char**), 20> argParser = {{
+  ArgParser<int (*)(Target*, char**), 21> argParser = {{
     {"h", help},
     {"help", help},
     {"version", version},
@@ -247,6 +247,7 @@ int xcrun(int argc, char **argv, Target &target) {
     {"run", run, 1},
     {"show-sdk-path", showSDKPath},
     {"show-sdk-version", showSDKVersion},
+    {"show-sdk-platform-version", showSDKVersion},
     {"show-sdk-platform-path", showPlatformPath}
   }};
 
