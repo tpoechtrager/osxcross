@@ -75,7 +75,22 @@ OSVersion Target::getSDKOSNum() const {
 
     if (n >= 20.0f) {
       int major = 11 + ((int)n % 20);
-      int minor = (((n - (int)n) * 10.0) - 1.0) + 0.1;
+      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
+
+      // Adjust for early versions where the minor version was offset by -1
+
+      // Darwin 23.0 => macOS 14.0
+      // Darwin 23.1 => macOS 14.1
+
+      // Darwin 22.1 => macOS 13.0
+      // Darwin 22.2 => macOS 13.1
+
+      // ...
+
+      if (n < 23.0f) {
+        minor -= 1;
+      }
+
       return OSVersion(major, minor);
     } else {
       return OSVersion(10, (int)n - 4);
@@ -902,6 +917,7 @@ bool Target::setup() {
       if (wliblto == -1)
         fargs.push_back("-Wno-liblto");
     }
+
     if (getenv("OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION"))
       fargs.push_back("-Werror=implicit-function-declaration");
   } else if (isGCC()) {
