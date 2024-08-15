@@ -56,9 +56,10 @@ case $CLANG_VERSION in
   14.* ) BRANCH=release/14.x;    USE_CMAKE=1; ;;
   15.* ) BRANCH=release/15.x;    USE_CMAKE=1; ;;
   16.* ) BRANCH=release/16.x;    USE_CMAKE=1; ;;
-  17.* ) BRANCH=main;            USE_CMAKE=1; ;;
-  18.* ) BRANCH=main;            USE_CMAKE=1; ;;
-     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 18.0" 1>&2; exit 1;
+  17.* ) BRANCH=release/17.x;    USE_CMAKE=1; ;;
+  18.* ) BRANCH=main;            USE_CMAKE=1; ;; # Does not build with release/18.x
+  19.* ) BRANCH=main;            USE_CMAKE=1; ;;
+     * ) echo "Unsupported Clang version, must be >= 3.2 and <= 19.0" 1>&2; exit 1;
 esac
 
 if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
@@ -131,6 +132,12 @@ if [ $f_res -eq 1 ]; then
       cmake/Modules/CompilerRTDarwinUtils.cmake
 
     $SED -i "s/COMMAND ld /COMMAND xcrun ld /g" \
+      cmake/Modules/CompilerRTDarwinUtils.cmake
+
+    $SED -i "s/COMMAND sysctl hw.cputype/COMMAND true/g" \
+      cmake/Modules/CompilerRTDarwinUtils.cmake
+
+    $SED -i "s/COMMAND sysctl hw.cpusubtype/COMMAND true/g" \
       cmake/Modules/CompilerRTDarwinUtils.cmake
 
     $SED -i "s/COMMAND codesign /COMMAND true /g" \
