@@ -321,6 +321,9 @@ getPkgUrl()
   if [ -z "$pkg" ]; then
     pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
   fi
+  if [ -z "$pkg" ]; then
+    pkg=$(echo "$pkgs" | grep "any" | grep "noarch" | uniq | tail -n1)
+  fi
 
   verboseMsg " selected: $pkg"
 
