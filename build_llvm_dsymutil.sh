@@ -29,7 +29,7 @@ if [ $f_res -eq 1 ]; then
     -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64" \
     -DLLVM_ENABLE_ASSERTIONS=Off
 
-  $MAKE -f tools/dsymutil/Makefile -j$JOBS
+  $CMAKE --build . --target llvm-dsymutil -j$JOBS
   cp bin/llvm-dsymutil $OSXCROSS_TARGET_DIR/bin/osxcross-llvm-dsymutil
   echo "installed llvm-dsymutil to $OSXCROSS_TARGET_DIR/bin/osxcross-llvm-dsymutil"
 
