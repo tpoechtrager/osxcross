@@ -19,7 +19,13 @@ PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
 PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 
 PLATFORM=$(uname -s)
-ARCH="x86_64"
+ARCH="$(uname -m)"
+ARCH="${ARCH/aarch64/arm64}"
+
+TAR="tar"
+if command -v bsdtar >/dev/null; then
+  TAR="bsdtar"
+fi
 
 if [ -z "$BASHPID" ]; then
   BASHPID=$(sh -c 'echo $PPID')
@@ -275,6 +281,19 @@ verifyFileIntegrity()
   set -e
 }
 
+logPkgCandidates() {
+  local context="$1"
+  shift
+  local pkgs="$@"
+  local count=$(echo "$pkgs" | wc -w)
+  local list_pkgs=""
+  if [ $count -lt 5 ]; then
+    list_pkgs=$(echo "$pkgs")
+  fi
+
+  verboseMsg "  ${context}: ${count} packages left.. ${list_pkgs}"
+}
+
 getPkgUrl()
 {
   local pkgname="$1"
@@ -292,7 +311,7 @@ getPkgUrl()
 
   pkgs=$(getFileStdout "$MIRROR/$pkgname/?C=M;O=A" | \
          grep -o -E 'href="([^"#]+)"' | \
-         cut -d'"' -f2 | grep '.tbz2$')
+         cut -d'"' -f2 | grep '.tbz2$' | uniq)
 
   local ec=$?
 
@@ -309,32 +328,19 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | \
-              grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep $ARCH | \
-              uniq | tail -n1)
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | \
-          grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep "noarch" | \
-          uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep "noarch" | uniq | tail -n1)
-  fi
+  local step1=$(echo "$pkgs" | grep "$pkgname-$pkgversion")
+  logPkgCandidates "step1" $step1
+  local step2=$(echo "$step1" | egrep "\.(${OSXVERSION}|darwin_any|any_any)\.")
+  logPkgCandidates "step2" $step2
+  local step3=$(echo "$step2" | egrep "\.(${ARCH}|noarch)\.")
+  logPkgCandidates "step3" $step3
+  local pkg=$(echo "$step3" | uniq | tail -n1)
 
   verboseMsg " selected: $pkg"
 
   if [ -z "$pkg" ]; then
     verboseMsg -n "  "
-    errorMsg "no suitable version found for $OSXVERSION"
+    errorMsg "no suitable version found for $OSXVERSION on $ARCH"
     return
   fi
 
@@ -406,7 +412,7 @@ installPkg()
   echo "installing $pkgname ..."
   verboseMsg " extracting $pkgfile ..."
 
-  bzip2 -dc "$CACHE/$pkgfile" | tar xf -
+  bzip2 -dc "$CACHE/$pkgfile" | ${TAR} xf -
 
   if [ -d opt/local ]; then
     verboseMsg " fixing permissions ..."
@@ -612,7 +618,7 @@ main()
       elif [ $opt == "-32" -o $opt == "--i386" ]; then
         ARCH="i386"
       elif [ $opt == "-universal" -o $opt == "--universal" ]; then
-        ARCH="i386-x86_64"
+        ARCH="arm64-x86_64"
       elif [ $opt == "-arm64" -o $opt == "--arm64" ]; then
         ARCH="arm64"
       elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
