@@ -22,7 +22,7 @@ fi
 
 # gdb version to build
 if [ -z "$GDB_VERSION" ]; then
-  GDB_VERSION=8.3
+  GDB_VERSION=16.2
 fi
 
 # architecture to target
