@@ -398,7 +398,6 @@ enum Arch {
   i586,
   i686,
   x86_64,
-  x86_64h, // Haswell
   unknown
 };
 
@@ -410,7 +409,6 @@ constexpr const char *ArchNames[] = {
   "i586",
   "i686",
   "x86_64",
-  "x86_64h",
   "unknown"
 };
 

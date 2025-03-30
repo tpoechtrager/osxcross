@@ -8,13 +8,6 @@ popd &>/dev/null
 set +e
 if [ -n "$VERSION" ]; then
   if [ -n "$SDK_VERSION" ]; then
-    if [ -z "$X86_64H_SUPPORTED" ]; then
-      if [ $(osxcross-cmp $SDK_VERSION ">=" 10.8) -eq 1 ]; then
-        X86_64H_SUPPORTED=1
-      else
-        X86_64H_SUPPORTED=0
-      fi
-    fi
     if [ -z "$I386_SUPPORTED" ]; then
       if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
         I386_SUPPORTED=1
@@ -37,10 +30,6 @@ if [ -z "$I386_SUPPORTED" ]; then
   I386_SUPPORTED=1
 fi
 
-if [ -z "$X86_64H_SUPPORTED" ]; then
-  X86_64H_SUPPORTED=0
-fi
-
 if [ -z "$ARM_SUPPORTED" ]; then
   ARM_SUPPORTED=0
 fi
@@ -60,7 +49,6 @@ function create_wrapper_link
   #  -> osxcross
   #  -> i386-apple-darwinXX-osxcross
   #  -> x86_64-apple-darwinXX-osxcross
-  #  -> x86_64h-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
     verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
@@ -76,11 +64,6 @@ function create_wrapper_link
     "x86_64-apple-${TARGET}-${1}"
 
   if ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-    if [ $X86_64H_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "x86_64h-apple-${TARGET}-${1}"
-    fi
-
     if [ $ARM_SUPPORTED -eq 1 ]; then
       verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
         "aarch64-apple-${TARGET}-${1}"
@@ -99,12 +82,6 @@ function create_wrapper_link
 
     verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
       "o64-${1}"
-
-    if [ $X86_64H_SUPPORTED -eq 1 ] &&
-       ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "o64h-${1}"
-    fi
 
     if [ $ARM_SUPPORTED -eq 1 ]; then
       verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
@@ -166,6 +143,7 @@ if [ -n "$BWCOMPILEONLY" ]; then
   exit 0
 fi
 
+verbose_cmd mkdir -p ${TARGET_DIR}/bin
 verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper"
 
 pushd "${TARGET_DIR}/bin" &>/dev/null
@@ -185,6 +163,35 @@ fi
 create_wrapper_link cc
 create_wrapper_link c++
 
+create_wrapper_link dsymutil 1
+create_wrapper_link ld
+create_wrapper_link otool 1
+create_wrapper_link lipo 1
+create_wrapper_link nm
+create_wrapper_link ar
+create_wrapper_link libtool
+create_wrapper_link readtapi
+create_wrapper_link objdump
+create_wrapper_link strip
+create_wrapper_link strings
+create_wrapper_link size
+create_wrapper_link symbolizer
+create_wrapper_link cov
+create_wrapper_link profdata
+create_wrapper_link readobj
+create_wrapper_link readelf
+create_wrapper_link dwarfdump
+create_wrapper_link cxxfilt
+create_wrapper_link objcopy
+create_wrapper_link config
+create_wrapper_link as
+create_wrapper_link dis
+create_wrapper_link link
+create_wrapper_link lto
+create_wrapper_link lto2
+create_wrapper_link bcanalyzer
+create_wrapper_link bitcode-strip
+
 create_wrapper_link osxcross 1
 create_wrapper_link osxcross-conf 1
 create_wrapper_link osxcross-env 1
@@ -192,29 +199,9 @@ create_wrapper_link osxcross-cmp 1
 create_wrapper_link osxcross-man 1
 create_wrapper_link pkg-config
 
-if [ "$PLATFORM" != "Darwin" ]; then
-  create_wrapper_link sw_vers 1
-
-  if which dsymutil &>/dev/null; then
-    # If dsymutil is in PATH then it's most likely a recent
-    # LLVM dsymutil version. In this case don't wrap it.
-    # Just create target symlinks.
-
-    verbose_cmd create_symlink $(which dsymutil) x86_64-apple-$TARGET-dsymutil
-
-    if [ $I386_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink $(which dsymutil) i386-apple-$TARGET-dsymutil
-    fi
-    if [ $X86_64H_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink $(which dsymutil) x86_64h-apple-$TARGET-dsymutil
-    fi
-  else
-    create_wrapper_link dsymutil 1
-  fi
-
-  create_wrapper_link xcrun 1
-  create_wrapper_link xcodebuild 1
-fi
+create_wrapper_link sw_vers 1
+create_wrapper_link xcrun 1
+create_wrapper_link xcodebuild 1
 
 popd &>/dev/null
 popd &>/dev/null

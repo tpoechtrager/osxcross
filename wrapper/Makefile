@@ -9,7 +9,7 @@ LINKER_VERSION ?= 134.9
 LIBLTO_PATH ?=
 ADDITIONAL_CXXFLAGS ?=
 
-override CXXFLAGS=-std=c++0x -Wall -Wextra
+override CXXFLAGS=-std=c++14 -Wall -Wextra
 override CXXFLAGS+=-Wno-missing-field-initializers
 override CXXFLAGS+=-I. -O$(OPTIMIZE)
 
@@ -54,6 +54,7 @@ SRCS= \
  main.cpp \
  tools.cpp \
  target.cpp \
+ progs.cpp \
  programs/osxcross-version.cpp \
  programs/osxcross-env.cpp \
  programs/osxcross-conf.cpp \
@@ -62,8 +63,7 @@ SRCS= \
  programs/sw_vers.cpp \
  programs/pkg-config.cpp \
  programs/xcrun.cpp \
- programs/xcodebuild.cpp \
- programs/dsymutil.cpp
+ programs/xcodebuild.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
 

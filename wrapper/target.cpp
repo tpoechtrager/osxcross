@@ -545,7 +545,6 @@ bool Target::setup() {
     bool lower;
   } RequiredSDKVersion[] = {
     { Arch::i386,    {10, 13}, true },
-    { Arch::x86_64h, {10, 8} },
     { Arch::arm64,   {11, 0} },
     { Arch::arm64e,  {11, 0} },
   };
@@ -578,11 +577,6 @@ bool Target::setup() {
     if (haveArch(Arch::arm64) || haveArch(Arch::arm64e)) {
       // Default to >= 11.0 for arm64
       OSNum = std::max(defaultMinTarget, OSVersion(11, 0));
-    }
-
-    if (haveArch(Arch::x86_64h)) {
-      // Default to >= 10.8 for x86_64h
-      OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 8)));
     }
 
     if (stdlib == StdLib::libcxx) {
@@ -739,12 +733,6 @@ bool Target::setup() {
     if (!findClangIntrinsicHeaders(ClangIntrinsicPath)) {
       warn << "cannot find clang intrinsic headers; please report this "
               "issue to the OSXCross project" << warn.endl();
-    } else {
-      if (haveArch(Arch::x86_64h) && clangversion < ClangVersion(3, 5)) {
-        err << "'" << getArchName(Arch::x86_64h) << "' requires clang 3.5 "
-            << "(or later)" << err.endl();
-        return false;
-      }
     }
 
     tmp.clear();
@@ -866,7 +854,6 @@ bool Target::setup() {
       isArm = true;
       // falls through
     case Arch::x86_64:
-    case Arch::x86_64h:
       if (isGCC()) {
         if (arch != Arch::x86_64 && arch != Arch::i386) {
           err << "gcc does not support architecture '" << getArchName(arch)
@@ -901,6 +888,12 @@ bool Target::setup() {
 #endif
 
   if (isClang()) {
+    if (std::find(args.begin(), args.end(), "-c") == args.end() &&
+        std::find(args.begin(), args.end(), "-E") == args.end() &&
+        std::find(args.begin(), args.end(), "-S") == args.end()) {
+      fargs.push_back("-fuse-ld=lld");
+    }
+
     if (SDKOSNum >= OSVersion(14, 0) && clangversion < ClangVersion(17, 0)) {
       // MacOS 14 SDK uses __ENVIRONMENT_OS_VERSION_MIN_REQUIRED__ in AvailabilityInternal.h
       fargs.push_back("-D__ENVIRONMENT_OS_VERSION_MIN_REQUIRED__=" + OSNum.numStr());
