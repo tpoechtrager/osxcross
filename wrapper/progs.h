@@ -124,6 +124,7 @@ static constexpr char size[]           = "llvm-size";
 static constexpr char symbolizer[]     = "llvm-symbolizer";
 static constexpr char cov[]            = "llvm-cov";
 static constexpr char profdata[]       = "llvm-profdata";
+static constexpr char ranlib[]         = "llvm-ranlib";
 static constexpr char readobj[]        = "llvm-readobj";
 static constexpr char readelf[]        = "llvm-readelf";
 static constexpr char dwarfdump[]      = "llvm-dwarfdump";
@@ -154,6 +155,7 @@ constexpr prog programs[] = {
   { "nm",            llvm::wrap<llvm::nm> },
   { "ar",            llvm::wrap<llvm::ar> },
   { "libtool",       llvm::wrap<llvm::libtool> },
+  { "ranlib",        llvm::wrap<llvm::ranlib> },
   { "readtapi",      llvm::wrap<llvm::readtapi> },
   { "objdump",       llvm::wrap<llvm::objdump> },
   { "strip",         llvm::wrap<llvm::strip> },

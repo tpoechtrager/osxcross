@@ -13,8 +13,7 @@ int execute(const char *toolName, int argc, char **argv) {
     std::vector<char *> args;
     args.reserve(argc + 1);
     args.emplace_back(const_cast<char *>(toolName));
-    for (int i = 1; i < argc; ++i)
-    args.emplace_back(argv[i]);
+    for (int i = 1; i < argc; ++i) args.emplace_back(argv[i]);
     args.emplace_back(nullptr);
 
     execvp(toolName, args.data());
