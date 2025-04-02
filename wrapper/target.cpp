@@ -723,9 +723,6 @@ bool Target::setup() {
     fargs.push_back("-target");
     fargs.push_back(getTriple());
 
-    tmp = "-mlinker-version=";
-    tmp += getLinkerVersion();
-
     fargs.push_back(tmp);
     tmp.clear();
 

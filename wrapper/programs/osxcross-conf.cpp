@@ -67,7 +67,6 @@ int conf(Target &target) {
   print("BUILD_DIR", BuildDir);
   print("CCTOOLS_PATH", target.execpath);
   print("LIBLTO_PATH", ltopath);
-  print("LINKER_VERSION", getLinkerVersion());
 
   return 0;
 }
