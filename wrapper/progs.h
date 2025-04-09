@@ -81,7 +81,7 @@ int xcrun(int argc, char **argv, Target &target);
 int xcodebuild(int argc, char **argv, Target &target);
 int dsymutil(int argc, char **argv, target::Target &target);
 int ld(int argc, char **argv, target::Target &target);
-int otool(int argc, char **argv, target::Target &target);
+int lipo(int argc, char **argv);
 
 namespace osxcross {
 int version();
@@ -92,15 +92,6 @@ int man(int argc, char **argv, Target &target);
 int pkg_config(int argc, char **argv, Target &target);
 } // namespace osxcross
 
-namespace osxcross {
-  int version();
-  int env(int argc, char **argv);
-  int conf(Target &target);
-  int cmp(int argc, char **argv);
-  int man(int argc, char **argv, Target &target);
-  int pkg_config(int argc, char **argv, Target &target);
-  } // namespace osxcross
-  
 namespace llvm {
 int execute(const char *toolName, int argc, char **argv);
 
@@ -151,7 +142,7 @@ constexpr prog programs[] = {
   { "dsymutil",      llvm::wrap<llvm::dsymutil> },
   { "ld",            llvm::wrap<llvm::lld> },
   { "otool",         llvm::wrap<llvm::otool> },
-  { "lipo",          llvm::wrap<llvm::lipo> },
+  { "lipo",          lipo },
   { "nm",            llvm::wrap<llvm::nm> },
   { "ar",            llvm::wrap<llvm::ar> },
   { "libtool",       llvm::wrap<llvm::libtool> },
