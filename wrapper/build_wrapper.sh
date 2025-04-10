@@ -8,13 +8,6 @@ popd &>/dev/null
 set +e
 if [ -n "$VERSION" ]; then
   if [ -n "$SDK_VERSION" ]; then
-    if [ -z "$I386_SUPPORTED" ]; then
-      if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
-        I386_SUPPORTED=1
-      else
-        I386_SUPPORTED=0
-      fi
-    fi
     if [ -z "$ARM_SUPPORTED" ]; then
       if [ $(osxcross-cmp $SDK_VERSION ">=" 11.0) -eq 1 ]; then
         ARM_SUPPORTED=1
@@ -25,10 +18,6 @@ if [ -n "$VERSION" ]; then
   fi
 fi
 set -e
-
-if [ -z "$I386_SUPPORTED" ]; then
-  I386_SUPPORTED=1
-fi
 
 if [ -z "$ARM_SUPPORTED" ]; then
   ARM_SUPPORTED=0
@@ -47,17 +36,11 @@ function create_wrapper_link
   #  create_wrapper_link osxcross 1
   # creates the following symlinks:
   #  -> osxcross
-  #  -> i386-apple-darwinXX-osxcross
   #  -> x86_64-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
     verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
       "${1}"
-  fi
-
-  if [ $I386_SUPPORTED -eq 1 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-      "i386-apple-${TARGET}-${1}"
   fi
 
   verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
@@ -75,11 +58,6 @@ function create_wrapper_link
   fi
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
-    if [ $I386_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "o32-${1}"
-    fi
-
     verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
       "o64-${1}"
 

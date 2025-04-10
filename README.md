@@ -24,7 +24,9 @@ Currently, this is only a test branch and still needs substantial cleanup.
 
 - **Host OSes**: Linux, FreeBSD, OpenBSD
 - **Host architectures**: x86, x86\_64, ARM, AArch64/arm64
-- **Target architectures**: arm64, arm64e, x86\_64, i386
+- **Target architectures**: arm64, arm64e, x86\_64
+
+This branch does not support `i386` as target, as `ld64.lld` does not - and likely never will - support it.
 
 > Note:  [A ppc test branch is available here](https://github.com/tpoechtrager/osxcross/blob/ppc-test/README.PPC-GCC-5.5.0-SDK-10.5.md).
 
@@ -181,7 +183,6 @@ SDKs can be extracted either from the full Xcode or from the Xcode Command Line 
 
 **x86**
 
-- 32-bit: `o32-clang++ test.cpp -O3 -o test`
 - 64-bit: `o64-clang++ test.cpp -O3 -o test`
 
 **ARM**
@@ -196,47 +197,47 @@ Check your target version with `osxcross-conf`, see `TARGET`.
 #### Build Makefile project
 
 ```sh
-make CC=o32-clang CXX=o32-clang++
+make CC=o64-clang CXX=o64-clang++
 ```
 
 #### Build autotools project
 
 ```sh
-CC=o32-clang CXX=o32-clang++ ./configure --host=i386-apple-darwinXX
+CC=o64-clang CXX=o64-clang++ ./configure --host=x86_64-apple-darwinXX
 ```
 
 #### libc++ Example (macOS 10.7+ required)
 
 ```sh
-o32-clang++ -stdlib=libc++ -std=c++11 test.cpp -o test
+o64-clang++ -stdlib=libc++ -std=c++11 test.cpp -o test
 ```
 
 Shortcut:
 
 ```sh
-o32-clang++-libc++ -std=c++11 test.cpp -o test
+o64-clang++-libc++ -std=c++11 test.cpp -o test
 ```
 
 #### LTO Example
 
 ```sh
-o32-clang++ test1.cpp -O3 -flto -c
-o32-clang++ test2.cpp -O3 -flto -c
-o32-clang++ -O3 -flto test1.o test2.o -o test
+o64-clang++ test1.cpp -O3 -flto -c
+o64-clang++ test2.cpp -O3 -flto -c
+o64-clang++ -O3 -flto test1.o test2.o -o test
 ```
 
 #### Universal Binary
 
 ```sh
-o64-clang++ test.cpp -O3 -arch i386 -arch x86_64 -o test
+o64-clang++ test.cpp -O3 -arch x86_64 -arch arm64 -o test
 ```
 
 GCC:
 
 ```sh
-o32-g++ test.cpp -O3 -o test.i386
-o64-g++ test.cpp -O3 -o test.x86_64
-x86_64-apple-darwinXX-lipo -create test.i386 test.x86_64 -output test
+xcrun clang++ -arch x86_64 test.cpp -O3 -o test.x86_64
+xcrun clang++ -arch arm64 test.cpp -O3 -o test.arm64
+x86_64-apple-darwinXX-lipo -create test.x86_64 test.arm64 -output test
 ```
 
 ---

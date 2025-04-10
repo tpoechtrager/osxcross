@@ -29,43 +29,43 @@ esac
 
 
 case $SDK_VERSION in
-  10.6*)  TARGET=darwin10; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.7*)  TARGET=darwin11; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.8*)  TARGET=darwin12; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.9*)  TARGET=darwin13; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.10*) TARGET=darwin14; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.11*) TARGET=darwin15; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.12*) TARGET=darwin16; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.13*) TARGET=darwin17; I386_SUPPORTED=1; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
-  10.14*) TARGET=darwin18; I386_SUPPORTED=0; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.9;  ;;
-  10.15*) TARGET=darwin19; I386_SUPPORTED=0; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.9;  ;;
-  10.16*) TARGET=darwin20; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  11|11.0*)  TARGET=darwin20.1; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  11.1*)  TARGET=darwin20.2; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  11.2*)  TARGET=darwin20.3; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  11.3*)  TARGET=darwin20.4; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  12|12.0*)  TARGET=darwin21.1; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  12.1*)  TARGET=darwin21.2; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  12.2*)  TARGET=darwin21.3; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  12.3*)  TARGET=darwin21.4; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  12.4*)  TARGET=darwin21.5; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  13|13.0*)  TARGET=darwin22.1; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  13.1*)  TARGET=darwin22.2; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  13.2*)  TARGET=darwin22.3; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  13.3*)  TARGET=darwin22.4; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  14|14.0*)  TARGET=darwin23; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  14.1*)  TARGET=darwin23.1; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  14.2*)  TARGET=darwin23.2; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  14.3*)  TARGET=darwin23.3; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  14.4*)  TARGET=darwin23.4; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  14.5*)  TARGET=darwin23.5; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  14.6*)  TARGET=darwin23.6; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  15|15.0*)  TARGET=darwin24; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  15.1*)  TARGET=darwin24.1; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  15.2*)  TARGET=darwin24.2; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  15.3*)  TARGET=darwin24.3; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
-  15.4*)  TARGET=darwin24.4; I386_SUPPORTED=0; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13;  ;;
- *) echo "Unsupported SDK"; exit 1 ;;
+  10.6*)  TARGET=darwin10; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.7*)  TARGET=darwin11; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.8*)  TARGET=darwin12; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.9*)  TARGET=darwin13; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.10*) TARGET=darwin14; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.11*) TARGET=darwin15; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.12*) TARGET=darwin16; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.13*) TARGET=darwin17; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.6;  ;;
+  10.14*) TARGET=darwin18; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.9;  ;;
+  10.15*) TARGET=darwin19; ARM_SUPPORTED=0; OSX_VERSION_MIN_INT=10.9;  ;;
+  10.16*) TARGET=darwin20; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  11|11.0*)  TARGET=darwin20.1; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  11.1*)  TARGET=darwin20.2; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  11.2*)  TARGET=darwin20.3; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  11.3*)  TARGET=darwin20.4; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  12|12.0*)  TARGET=darwin21.1; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  12.1*)  TARGET=darwin21.2; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  12.2*)  TARGET=darwin21.3; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  12.3*)  TARGET=darwin21.4; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  12.4*)  TARGET=darwin21.5; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  13|13.0*)  TARGET=darwin22.1; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  13.1*)  TARGET=darwin22.2; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  13.2*)  TARGET=darwin22.3; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  13.3*)  TARGET=darwin22.4; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.9;  ;;
+  14|14.0*)  TARGET=darwin23; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  14.1*)  TARGET=darwin23.1; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  14.2*)  TARGET=darwin23.2; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  14.3*)  TARGET=darwin23.3; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  14.4*)  TARGET=darwin23.4; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  14.5*)  TARGET=darwin23.5; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  14.6*)  TARGET=darwin23.6; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  15|15.0*)  TARGET=darwin24; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  15.1*)  TARGET=darwin24.1; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  15.2*)  TARGET=darwin24.2; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  15.3*)  TARGET=darwin24.3; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  15.4*)  TARGET=darwin24.4; ARM_SUPPORTED=1; OSX_VERSION_MIN_INT=10.13; ;;
+  *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
 # Minimum targeted macOS version
@@ -193,7 +193,6 @@ export BUILD_DIR
 export OSX_VERSION_MIN
 export LIBLTO_PATH
 export LINKER_VERSION
-export I386_SUPPORTED
 export ARM_SUPPORTED
 export TOP_BUILD_SCRIPT=1
 
@@ -217,10 +216,6 @@ cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
 cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
 
 chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
-
-if [ $I386_SUPPORTED -eq 1 ]; then
-  create_symlink osxcross-cmake "$TARGET_DIR/bin/i386-apple-$TARGET-cmake"
-fi
 
 create_symlink osxcross-cmake "$TARGET_DIR/bin/x86_64-apple-$TARGET-cmake"
 
@@ -270,9 +265,6 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
   fi
   popd &>/dev/null
   echo ""
-  if [ $I386_SUPPORTED -eq 1 ]; then
-    test_compiler_cxx11 i386-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx.cpp
-  fi
   test_compiler_cxx11 x86_64-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx.cpp
   echo ""
 fi
@@ -291,12 +283,6 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 13.3) -eq 1 ]; then
   else
     echo "Skipping complex c++20 test. Requires clang >= 13.0."
   fi
-fi
-
-if [ $I386_SUPPORTED -eq 1 ]; then
-  test_compiler i386-apple-$TARGET-clang $BASE_DIR/oclang/test.c "required"
-  test_compiler i386-apple-$TARGET-clang++ $BASE_DIR/oclang/test.cpp "required"
-  echo ""
 fi
 
 if [ $ARM_SUPPORTED -eq 1 ]; then
@@ -320,12 +306,12 @@ echo ""
 echo "to your PATH variable."
 echo ""
 
-echo "All done! Now you can use o32-clang(++) and o64-clang(++) like a normal compiler."
+echo "All done! Now you can use o64-clang(++) like a normal compiler."
 echo ""
 echo "Example usage:"
 echo ""
-echo "Example 1: CC=o32-clang ./configure --host=i386-apple-$TARGET"
-echo "Example 2: CC=i386-apple-$TARGET-clang ./configure --host=i386-apple-$TARGET"
+echo "Example 1: CC=o64-clang ./configure --host=x86_64-apple-$TARGET"
+echo "Example 2: CC=x86_64-apple-$TARGET-clang ./configure --host=x86_64-apple-$TARGET"
 echo "Example 3: o64-clang -Wall test.c -o test"
 echo "Example 4: x86_64-apple-$TARGET-strip -x test"
 echo ""
@@ -334,13 +320,6 @@ if [ $ARM_SUPPORTED -eq 1 ]; then
   echo "!!! Use aarch64-apple-$TARGET-* instead of arm64-* when dealing with Automake !!!"
   echo "!!! CC=aarch64-apple-$TARGET-clang ./configure --host=aarch64-apple-$TARGET !!!"
   echo "!!! CC=\"aarch64-apple-$TARGET-clang -arch arm64e\" ./configure --host=aarch64-apple-$TARGET !!!"
-  echo ""
-fi
-
-
-if [ $I386_SUPPORTED -eq 0 ]; then
-  echo "Your SDK does not support i386."
-  echo "Use <= 10.13 SDK if you need i386 support."
   echo ""
 fi
 

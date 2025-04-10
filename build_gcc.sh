@@ -131,15 +131,11 @@ if [ -n "$ENABLE_FORTRAN" ]; then
   LANGS+=",fortran"
 fi
 
-if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
-  EXTRACONFFLAGS+="--with-multilib-list=m32,m64 --enable-multilib "
-else
-  EXTRACONFFLAGS+="--disable-multilib "
-fi
-
 ../configure \
   --target=x86_64-apple-$TARGET \
   --with-sysroot=$SDK \
+  --disable-multilib \
+  --disable-libsanitizer \
   --disable-nls \
   --enable-languages=$LANGS \
   --without-headers \
@@ -179,21 +175,8 @@ source tools/tools.sh
 
 pushd $TARGET_DIR/bin &>/dev/null
 
-if [ ! -f i386-apple-$TARGET-base-gcc ]; then
-  mv x86_64-apple-$TARGET-gcc \
-    x86_64-apple-$TARGET-base-gcc
-
-  mv x86_64-apple-$TARGET-g++ \
-    x86_64-apple-$TARGET-base-g++
-
-  if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
-    create_symlink x86_64-apple-$TARGET-base-gcc \
-                   i386-apple-$TARGET-base-gcc
-
-    create_symlink x86_64-apple-$TARGET-base-g++ \
-                   i386-apple-$TARGET-base-g++
-  fi
-fi
+mv x86_64-apple-$TARGET-gcc  x86_64-apple-$TARGET-base-gcc
+mv x86_64-apple-$TARGET-g++ x86_64-apple-$TARGET-base-g++
 
 echo "compiling wrapper ..."
 
@@ -204,22 +187,17 @@ popd &>/dev/null # wrapper dir
 
 echo ""
 
-if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
-  test_compiler o32-gcc $BASE_DIR/oclang/test.c
-  test_compiler o32-g++ $BASE_DIR/oclang/test.cpp
-fi
-
 test_compiler o64-gcc $BASE_DIR/oclang/test.c
 test_compiler o64-g++ $BASE_DIR/oclang/test.cpp
 
 echo ""
 
-echo "Done! Now you can use o32-gcc/o32-g++ and o64-gcc/o64-g++ as compiler"
+echo "Done! Now you can use o64-gcc/o64-g++ as compiler"
 echo ""
 echo "Example usage:"
 echo ""
-echo "Example 1: CC=o32-gcc ./configure --host=i386-apple-$TARGET"
-echo "Example 2: CC=i386-apple-$TARGET-gcc ./configure --host=i386-apple-$TARGET"
+echo "Example 1: CC=o64-gcc ./configure --host=x86_64-apple-$TARGET"
+echo "Example 2: CC=x86_64-apple-$TARGET-gcc ./configure --host=x86_64-apple-$TARGET"
 echo "Example 3: o64-gcc -Wall test.c -o test"
 echo "Example 4: x86_64-apple-$TARGET-strip -x test"
 echo ""

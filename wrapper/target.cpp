@@ -454,7 +454,7 @@ do {                                                                           \
 #undef TRYDIR3
 }
 
-void Target::setupGCCLibs(Arch arch) {
+void Target::setupGCCLibs(Arch) {
   assert(stdlib == StdLib::libstdcxx);
   fargs.push_back("-nodefaultlibs");
 
@@ -470,17 +470,6 @@ void Target::setupGCCLibs(Arch arch) {
              << gccversion.Str();
 
   GCCLibSTDCXXPath << SDKPath << "/../../" << otriple << "/lib";
-
-  switch (arch) {
-  case Arch::i386:
-  case Arch::i486:
-  case Arch::i586:
-  case Arch::i686:
-    GCCLibPath << "/" << getArchName(Arch::i386);
-    GCCLibSTDCXXPath << "/" << getArchName(i386);
-  default:
-    ;
-  }
 
   if (dynamic) {
     fargs.push_back("-L");
@@ -543,7 +532,6 @@ bool Target::setup() {
     OSVersion SDKVer;
     bool lower;
   } RequiredSDKVersion[] = {
-    { Arch::i386,    {10, 13}, true },
     { Arch::arm64,   {11, 0} },
     { Arch::arm64e,  {11, 0} },
   };
@@ -609,12 +597,6 @@ bool Target::setup() {
   if (SDKOSNum >= OSVersion(10, 14)) {
     if (!isGCC() && !usegcclibs && stdlib == StdLib::libstdcxx) {
         err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
-            << err.endl();
-        return false;
-    }
-
-    if (haveArch(Arch::i386)) {
-        err << "macOS SDK '>= 10.14' does not support i386 anymore"
             << err.endl();
         return false;
     }
@@ -830,16 +812,9 @@ bool Target::setup() {
   }
 
   for (auto arch : targetarch) {
-    bool is32bit = false;
     bool isArm = false;
 
     switch (arch) {
-    case Arch::i386:
-    case Arch::i486:
-    case Arch::i586:
-    case Arch::i686:
-      is32bit = true;
-      // falls through
     case Arch::arm64:
       isArm = true;
       // falls through
@@ -848,7 +823,7 @@ bool Target::setup() {
       // falls through
     case Arch::x86_64:
       if (isGCC()) {
-        if (arch != Arch::x86_64 && arch != Arch::i386) {
+        if (arch != Arch::x86_64) {
           err << "gcc does not support architecture '" << getArchName(arch)
               << "'" << err.endl();
           return false;
@@ -858,7 +833,7 @@ bool Target::setup() {
           break;
 
         if (!isArm)
-          fargs.push_back(is32bit ? "-m32" : "-m64");
+          fargs.push_back("-m64");
       } else if (isClang()) {
         if (usegcclibs && targetarch.size() > 1)
           break;
