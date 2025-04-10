@@ -93,7 +93,7 @@
   
   namespace llvm {
   int lipo(int argc, char **argv);
-  int ld(int argc, char **argv);
+  int ld(int argc, char **argv, target::Target &target);
   int as(int argc, char **argv);
   int execute(const char *toolName, int argc, char **argv);
   
