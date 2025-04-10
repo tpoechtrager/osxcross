@@ -163,7 +163,7 @@ fi
 create_wrapper_link cc
 create_wrapper_link c++
 
-create_wrapper_link dsymutil 1
+create_wrapper_link dsymutil
 create_wrapper_link ld
 create_wrapper_link otool 1
 create_wrapper_link lipo 1

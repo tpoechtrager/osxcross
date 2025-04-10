@@ -509,7 +509,6 @@ void Target::setupGCCLibs(Arch arch) {
   addLib(GCCLibPath, "gcc_eh");
 
   fargs.push_back("-lc");
-  fargs.push_back("-Wl,-no_compact_unwind");
 }
 
 bool Target::setup() {
@@ -773,9 +772,6 @@ bool Target::setup() {
       fargs.push_back("-static-libgcc");
       fargs.push_back("-static-libstdc++");
     }
-
-    if (!isGCH())
-      fargs.push_back("-Wl,-no_compact_unwind");
   }
 
   auto addCXXHeaderPath = [&](const std::string &path) {

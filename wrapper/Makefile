@@ -62,7 +62,9 @@ SRCS= \
  programs/pkg-config.cpp \
  programs/xcrun.cpp \
  programs/xcodebuild.cpp \
- programs/lipo.cpp
+ programs/lipo.cpp \
+ programs/ld.cpp \
+ programs/as.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
 

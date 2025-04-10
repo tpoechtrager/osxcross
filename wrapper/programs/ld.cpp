@@ -19,27 +19,21 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
-#include "proginc.h"
+ #include "proginc.h"
  
-using namespace tools;
- 
-namespace program {
-namespace llvm {
- 
-int lipo(int argc, char **argv) {
-  (void)argc;
+ using namespace tools;
+  
+ namespace program {
+ namespace llvm {
+  
+ int ld(int argc, char **argv) {
+   if (argc >= 2 && !strcmp(argv[1], "-v")) {
+    std::cout << "@(#)PROGRAM:ld  PROJECT:ld64-9999.9 (lld - use --version to see the LLVM version)" << std::endl;
+    return 0;
+   }
 
-  std::string lipo;
- 
-  if (getenv("OSXCROSS_FORCE_LLVM_LIPO") || !realPath("osxcross-replacement-lipo", lipo)) {
-    lipo = "llvm-lipo";
-  }
- 
-  if (execvp(lipo.c_str(), argv))
-    err << "cannot execute '" << lipo << "'" << err.endl();
- 
-  return 1;
-}
- 
-} // namespace llvm
-} // namespace program
+   return execute("ld64.lld", argc, argv);
+ }
+  
+ } // namespace llvm
+ } // namespace program

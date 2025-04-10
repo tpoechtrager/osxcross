@@ -101,6 +101,10 @@ if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
   echo ""
 fi
 
+# Fix LD64 build
+$SED -i 's/-r -keep_private_externs/-lSystem -lemutls_w -Wl,-dylib/g' libstdc++-v3/configure
+$SED -i 's/ %:version-compare(>= 10\.6 mmacosx-version-min= -no_compact_unwind) //' gcc/config/darwin.h
+
 
 mkdir -p build
 pushd build &>/dev/null
@@ -122,7 +126,7 @@ if [ "$PLATFORM" != "Darwin" ]; then
   EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/x86_64-apple-$TARGET-as "
 fi
 
-LANGS="c,c++,objc,obj-c++"
+LANGS="c,c++"
 
 if [ -n "$ENABLE_FORTRAN" ]; then
   LANGS+=",fortran"
