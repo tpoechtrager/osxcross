@@ -30,7 +30,7 @@ int lipo(int argc, char **argv) {
 
   std::string lipo;
  
-  if (!realPath("osxcross-replacement-lipo", lipo)) {
+  if (getenv("OSXCROSS_FORCE_LLVM_LIPO") || !realPath("osxcross-replacement-lipo", lipo)) {
     lipo = "llvm-lipo";
   }
  

@@ -2,7 +2,9 @@
 
 ### Test branch
 
-**This is a test branch that's solely based on LLVM tooling.**  
+**This is a test branch that's solely based on LLVM tooling**  
+***(... besides the option to build a cctools-based lipo to improve compatibility)***
+
 Please report any issues you encounter.
 
 Crashes or bugs in LLVM tools (like `lipo`, etc.) should be reported to the [LLVM project](https://github.com/llvm/llvm-project).

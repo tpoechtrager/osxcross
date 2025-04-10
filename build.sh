@@ -94,12 +94,45 @@ echo ""
 export PATH=$TARGET_DIR/bin:$PATH
 
 mkdir -p $BUILD_DIR
-mkdir -p $TARGET_DIR
+mkdir -p $TARGET_DIR/bin
 mkdir -p $SDK_DIR
 
 source $BASE_DIR/tools/trap_exit.sh
 
 pushd $BUILD_DIR &>/dev/null
+
+## cctools-port lipo
+
+if [ -z "$UNATTENDED" ]; then
+  message=$'Use lipo from cctools instead of llvm-lipo to improve compatibility?\n'
+  message+=$'You can still use llvm-lipo afterwards by setting the env. variable OSXCROSS_FORCE_LLVM_LIPO to 1.'
+  if prompt "$message"; then
+    echo "Enabling cctools lipo ..."
+    ENABLE_REPLACEMENT_LIPO=1
+  else
+    echo "Using llvm-lipo ..."
+  fi
+else
+  ENABLE_REPLACEMENT_LIPO=1
+fi
+
+
+if [ -n "$ENABLE_REPLACEMENT_LIPO" ]; then
+
+get_sources \
+  https://github.com/tpoechtrager/cctools-port.git \
+  lipo-1010.6
+
+if [ $f_res -eq 1 ]; then
+  pushd $CURRENT_BUILD_PROJECT_NAME/lipo &>/dev/null
+  echo ""
+  ./configure $CONFFLAGS
+  $MAKE -j$JOBS
+  cp misc/lipo $TARGET_DIR/bin/osxcross-replacement-lipo
+  popd &>/dev/null
+fi
+
+fi
 
 ## Extract SDK and move it to $SDK_DIR ##
 
