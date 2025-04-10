@@ -102,7 +102,7 @@ if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
 fi
 
 # Fix LD64 build
-$SED -i 's/-r -keep_private_externs/-lSystem -lemutls_w -Wl,-dylib/g' libstdc++-v3/configure
+$SED -i 's/-r -keep_private_externs/-lSystem -lemutls_w -Wl,-weak-liconv -Wl,-dylib/g' libstdc++-v3/configure
 $SED -i 's/ %:version-compare(>= 10\.6 mmacosx-version-min= -no_compact_unwind) //' gcc/config/darwin.h
 
 
