@@ -125,7 +125,7 @@ if [ "$PLATFORM" != "Darwin" ]; then
   EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/x86_64-apple-$TARGET-as "
 fi
 
-LANGS="c,c++"
+LANGS="c,c++,objc,obj-c++"
 
 if [ -n "$ENABLE_FORTRAN" ]; then
   LANGS+=",fortran"
