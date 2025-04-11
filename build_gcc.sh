@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build and install gcc/gcc++ as a cross-compiler with target OSX,
-# using `clang`.
+# Build and install gcc/gcc++ as a cross-compiler with target OSX.
 #
 # You may want to run this script if you want to build software using
 # gcc. Please refer to the README.md for details.
@@ -18,7 +17,7 @@ source tools/tools.sh
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=13.2.0
+  GCC_VERSION=14.2.0
   #GCC_VERSION=5-20200228 # snapshot
 fi
 

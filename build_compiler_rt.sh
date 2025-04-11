@@ -57,8 +57,10 @@ case $CLANG_VERSION in
   15.* ) BRANCH=release/15.x;    USE_CMAKE=1; ;;
   16.* ) BRANCH=release/16.x;    USE_CMAKE=1; ;;
   17.* ) BRANCH=release/17.x;    USE_CMAKE=1; ;;
-  18.* ) BRANCH=main;            USE_CMAKE=1; ;; # Does not build with release/18.x
-  19.* ) BRANCH=main;            USE_CMAKE=1; ;;
+  18.* ) BRANCH=release/18.x;    USE_CMAKE=1; ;;
+  19.* ) BRANCH=release/19.x;    USE_CMAKE=1; ;;
+  20.* ) BRANCH=release/20.x;    USE_CMAKE=1; ;;
+  21.* ) BRANCH=main;            USE_CMAKE=1; ;;
      * ) echo "Unsupported Clang version, must be >= 3.2 and <= 19.0" 1>&2; exit 1;
 esac
 
