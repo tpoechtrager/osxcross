@@ -47,6 +47,10 @@
        Qflag = true;
        continue;
      }
+
+     if (strcmp(arg, "-q") == 0) {
+       continue;
+     }
  
      /*
       * If we have not seen some some_input_files or a "-" or "--" to
