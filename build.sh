@@ -5,7 +5,7 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
-VERSION=1.5
+VERSION=1.6-testing
 
 pushd "${0%/*}" &>/dev/null
 
@@ -150,8 +150,8 @@ fi
 
 ## cctools and ld64 ##
 
-CCTOOLS_VERSION=1010.6
-LINKER_VERSION=951.9
+CCTOOLS_VERSION=1021.4
+LINKER_VERSION=954.16
 
 get_sources \
   https://github.com/tpoechtrager/cctools-port.git \
