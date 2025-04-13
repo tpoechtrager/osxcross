@@ -55,10 +55,8 @@ Move your
 [packaged SDK](https://github.com/tpoechtrager/osxcross#packaging-the-sdk)
 to the tarballs/ directory.
 
-Then ensure you have the following installed on your system:
-
-`Clang 3.9+`, `cmake`, `git`, `patch`, `Python`, `libssl-dev` (openssl)
-`lzma-dev`, `libxml2-dev`, `xz`, `bzip2`, `cpio`, `libbz2`, `zlib1g-dev`
+Ensure you have the following installed on your system:
+`sudo apt-get install clang cmake git patch python libssl-dev lzma-dev libxml2-dev xz bzip2 cpio libbz2 zlib1g-dev`
 and the `bash shell`.
 
 You can run 'sudo tools/get\_dependencies.sh' to get these (and the
@@ -70,7 +68,7 @@ optional packages) automatically. (outdated)
 - `llvm-devel`: For ld64 `-bitcode_bundle` support
 - `uuid-devel`: For ld64 `-random_uuid` support
 
-On Ubuntu trusty you must upgrade CMake to >= 3.2.3 first. Or do this:
+On Ubuntu Trusty you must upgrade CMake to >= 3.2.3 first. Or do this:
 
 ```shell
     curl -sSL https://cmake.org/files/v3.14/cmake-3.14.5-Linux-x86_64.tar.gz | sudo tar -xzC /opt
@@ -149,10 +147,10 @@ Fortran compiler as well:
 
 \[A gfortran usage example can be found [here](https://github.com/tpoechtrager/osxcross/issues/28#issuecomment-67047134)]
 
-Before you do this, make sure you have the GCC build depedencies installed on
+Before you do this, make sure you have the GCC build dependencies installed on
 your system.
 
-On debian like systems you can install these using:
+On Debian-like systems, install these with:
 
 ```shell
     sudo apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev
@@ -272,7 +270,7 @@ An SSD is recommended for this method.
 
 ### USAGE EXAMPLES: ###
 
-##### Example.  To compile a file called test.cpp, you can run: #####
+##### Example.  To compile a file called test.cpp with -O3 optimisations, you can run: #####
 
 ##### x86 #####
 
@@ -306,8 +304,7 @@ then see `TARGET`.
 You can use the shortcuts `o32-...` for `i386-apple-darwin...`, depending on
 which you prefer.
 
-*I'll continue from here on with `o32-clang`, but remember,
- you can simply replace it with `o32-gcc` or `i386-apple-darwin...`.*
+*From here on, examples will use `o32-clang`. However, you can simply replace it with `o32-gcc` or `i386-apple-darwin`...*
 
 ##### Building Makefile based projects: #####
 
