@@ -167,8 +167,7 @@ SDKs can be extracted either from the full Xcode or from the Xcode Command Line 
 4. Follow the on-screen instructions from the script
 5. Move the SDK to the `tarballs/` directory
 
-**From Xcode Command Line Tools**\
-*Requires up to 45 GB free disk space. SSD strongly recommended.*
+**From Xcode Command Line Tools**
 
 1. Download Command Line Tools as described above
 2. Install: `clang`, `make`, `libssl-devel`, `lzma-devel`, and `libxml2-devel`
