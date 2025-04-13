@@ -56,7 +56,7 @@ Move your
 to the tarballs/ directory.
 
 Ensure you have the following installed on your system:
-`sudo apt-get install clang cmake git patch Python libssl-dev lzma-dev libxml2-dev xz bzip2 cpio libbz2 zlib1g-dev`
+`sudo apt-get install clang cmake git patch python libssl-dev lzma-dev libxml2-dev xz bzip2 cpio libbz2 zlib1g-dev`
 and the `bash shell`.
 
 You can run 'sudo tools/get\_dependencies.sh' to get these (and the
