@@ -102,6 +102,7 @@ fi
 
 
 mkdir -p build
+./contrib/download_prerequisites
 pushd build &>/dev/null
 
 if [[ $PLATFORM == *BSD ]]; then
