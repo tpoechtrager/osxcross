@@ -26,8 +26,6 @@ fully replacing `cctools` and `ld64` with LLVM equivalents.
 
 This branch does not support `i386` as target, as `ld64.lld` does not - and likely never will - support it.
 
-> Note:  [A ppc test branch is available here](https://github.com/tpoechtrager/osxcross/blob/ppc-test/README.PPC-GCC-5.5.0-SDK-10.5.md).
-
 ---
 
 ### How It Works
@@ -37,7 +35,7 @@ macOS cross-compilation requires:
 - Clang/LLVM (cross-compilation supported by default)
 - A macOS SDK
 
-OSXCross is now fully LLVM-based. All necessary tools (compiler, linker, binary utilities) are provided by LLVM.
+This branch of OSXCross is fully LLVM-based. All necessary tools (compiler, linker, binary utilities) are provided by LLVM.
 
 OSXCross includes a collection of scripts for preparing the SDK and building the compiler wrapper.
 
@@ -90,7 +88,7 @@ Add `<target>/bin` to your `PATH` after installation.
 
 ```sh
 ./build_gcc.sh
-GCC_VERSION=5.2.0 ENABLE_FORTRAN=1 ./build_gcc.sh
+[GCC_VERSION=14.2.0] [ENABLE_FORTRAN=1] ./build_gcc.sh
 ```
 
 Install GCC dependencies:
@@ -178,14 +176,15 @@ SDKs can be extracted either from the full Xcode or from the Xcode Command Line 
 
 #### Compile test.cpp
 
-**x86**
+- x86_64: `x86_64-apple-darwinXX-clang++ test.cpp -O3 -o test`
+- arm64: `arm64-apple-darwinXX-clang++ test.cpp -O3 -o test`
+- arm64e: `arm64e-apple-darwinXX-clang++ test.cpp -O3 -o test`
 
-- 64-bit: `o64-clang++ test.cpp -O3 -o test`
+Or by using xcrun:
 
-**ARM**
-
-- arm64: `oa64-clang++ test.cpp -O3 -o test`
-- arm64e: `oa64e-clang++ test.cpp -O3 -o test`
+- x86_64: `xcrun clang++ -arch x86_64 test.cpp -O3 -o test`
+- arm64: `xcrun clang++ -arch arm64 test.cpp -O3 -o test`
+- arm64e: `xcrun clang++ -arch arm64e test.cpp -O3 -o test`
 
 **GCC:** Replace `clang++` with `g++` as needed
 
@@ -193,48 +192,50 @@ Check your target version with `osxcross-conf`, see `TARGET`.
 
 #### Build Makefile project
 
+`xcrun -f clang` prints the path to clang.
+
 ```sh
-make CC=o64-clang CXX=o64-clang++
+make CC=$(xcrun -f clang) CXX=$(xcrun -f clang++)
 ```
 
 #### Build autotools project
 
 ```sh
-CC=o64-clang CXX=o64-clang++ ./configure --host=x86_64-apple-darwinXX
+CC=x86_64-apple-darwinXX-clang CXX=x86_64-apple-darwinXX-clang++ ./configure --host=x86_64-apple-darwinXX
 ```
 
 #### libc++ Example (macOS 10.7+ required)
 
 ```sh
-o64-clang++ -stdlib=libc++ -std=c++11 test.cpp -o test
+xcrun clang++ -stdlib=libc++ -std=c++11 test.cpp -o test
 ```
 
 Shortcut:
 
 ```sh
-o64-clang++-libc++ -std=c++11 test.cpp -o test
+x86_64-apple-darwinXX-clang++-libc++ -std=c++11 test.cpp -o test
 ```
 
 #### LTO Example
 
 ```sh
-o64-clang++ test1.cpp -O3 -flto -c
-o64-clang++ test2.cpp -O3 -flto -c
-o64-clang++ -O3 -flto test1.o test2.o -o test
+xcrun clang++ test1.cpp -O3 -flto -c
+xcrun clang++ test2.cpp -O3 -flto -c
+xcrun clang++ -O3 -flto test1.o test2.o -o test
 ```
 
 #### Universal Binary
 
 ```sh
-o64-clang++ test.cpp -O3 -arch x86_64 -arch arm64 -o test
+xcrun clang++ test.cpp -O3 -arch x86_64 -arch arm64 -o test
 ```
 
 GCC:
 
 ```sh
-xcrun clang++ -arch x86_64 test.cpp -O3 -o test.x86_64
-xcrun clang++ -arch arm64 test.cpp -O3 -o test.arm64
-x86_64-apple-darwinXX-lipo -create test.x86_64 test.arm64 -output test
+xcrun g++ -arch x86_64 test.cpp -O3 -o test.x86_64
+xcrun g++ -arch arm64 test.cpp -O3 -o test.arm64
+xcrun lipo -create test.x86_64 test.arm64 -output test
 ```
 
 ---
