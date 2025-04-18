@@ -20,7 +20,7 @@ fully replacing `cctools` and `ld64` with LLVM equivalents.
 
 ### Supported OSes and architectures
 
-- **Host OSes**: Linux, FreeBSD, OpenBSD
+- **Host OSes**: Linux, *BSD
 - **Host architectures**: x86, x86\_64, ARM, AArch64/arm64
 - **Target architectures**: arm64, arm64e, x86\_64
 
