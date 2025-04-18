@@ -1,0 +1,12 @@
+--- ld64/src/ld/code-sign-blobs/blob.h	2025-04-18 19:53:25.923808041 +0200
++++ ld64/src/ld/code-sign-blobs/blob.h	2025-04-18 19:53:41.203807875 +0200
+@@ -180,9 +180,6 @@
+ 			return p;
+ 		return NULL;
+ 	}
+-	
+-	BlobType *clone() const
+-	{ assert(validateBlob()); return specific(this->BlobCore::clone());	}
+ 
+ 	static BlobType *readBlob(int fd)
+ 	{ return specific(BlobCore::readBlob(fd, _magic, sizeof(BlobType), 0), true); }

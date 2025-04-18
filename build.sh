@@ -153,6 +153,7 @@ if [ $APPLY_LD64_ADD_PPC_SUPPORT_PATCH -eq 1 ]; then
   patch -p0 < $PATCH_DIR/ld64-add-ppc-support.patch
   popd &>/dev/null
 fi
+patch -p0 < $PATCH_DIR/ld64-remove-clone.patch
 patch -p0 < $PATCH_DIR/ld64-antique-ubuntu.patch
 patch -p0 < $PATCH_DIR/cctools-port-buildfix.patch
 patch -p0 < $PATCH_DIR/cctools-port-buildfix-configure.patch  --forward || true
@@ -160,7 +161,9 @@ echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
-./configure $CONFFLAGS
+LLVM_INCLUDE="-I$(command -v llvm-config >/dev/null 2>&1 && llvm-config --includedir || echo)"
+CXXFLAGS="${LLVM_INCLUDE} " CFLAGS="${LLVM_INCLUDE} " \
+  ./configure $CONFFLAGS
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
 popd &>/dev/null
@@ -194,10 +197,12 @@ set -e
 
 if [ $NEED_XAR -ne 0 ]; then
 
-extract $TARBALL_DIR/xar*.tar.gz 2
+rm -rf xar
+require git
+git clone https://github.com/tpoechtrager/xar.git
 
-pushd xar* &>/dev/null
-[ $PLATFORM == "NetBSD" ] && patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
+pushd xar*/xar &>/dev/null
+#[ $PLATFORM == "NetBSD" ] && patch -p0 -l < $PATCH_DIR/xar-netbsd.patch
 CFLAGS+=" -w" ./configure --prefix=$TARGET_DIR
 $MAKE -j$JOBS
 $MAKE install -j$JOBS
