@@ -37,13 +37,13 @@ macOS cross-compilation requires:
 
 This branch of OSXCross is fully LLVM-based. All necessary tools (compiler, linker, binary utilities) are provided by LLVM.
 
-OSXCross includes a collection of scripts for preparing the SDK and building the compiler wrapper.
+OSXCross provides scripts for preparing the macOS SDK and setting up the compiler wrapper.
 
 It also includes scripts for optionally building:
 
-- Up-to-date LLVM tools and clang
-- Vanilla GCC as a cross-compiler for target macOS
-- The "compiler-rt" runtime library
+- Up-to-date LLVM tools and clang (`./build_clang.sh`, `./build_apple_clang.sh`)
+- Vanilla GCC as a cross-compiler for target macOS (`./build_gcc.sh`
+- The "compiler-rt" runtime library (`./build_compiler_rt.sh`)
 
 ---
 
