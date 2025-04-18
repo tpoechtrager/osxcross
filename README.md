@@ -1,8 +1,8 @@
 ## macOS Cross-Toolchain for Linux and \*BSD
 
-### Test branch
+### 2.0-llvm branch
 
-**This is a test branch that's solely based on LLVM tooling**  
+**This branch is solely based on LLVM tooling**  
 ***(... besides the option to build a cctools-based lipo to improve compatibility)***
 
 Please report any issues you encounter.
@@ -11,8 +11,6 @@ Crashes or bugs in LLVM tools (like `lipo`, etc.) should be reported to the [LLV
 
 This branch may be merged into master once the macOS LLVM tools are stable enough,  
 fully replacing `cctools` and `ld64` with LLVM equivalents.
-
-Currently, this is only a test branch and still needs substantial cleanup.
 
 ---
 
