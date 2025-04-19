@@ -161,7 +161,11 @@ echo ""
 CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
 CONFFLAGS+="--disable-clang-as "
 [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
-LLVM_INCLUDE="-I$(command -v llvm-config >/dev/null 2>&1 && llvm-config --includedir || echo)"
+if command -v llvm-config >/dev/null 2>&1; then
+  LLVM_INCLUDE="-I$(llvm-config --includedir)"
+else
+  LLVM_INCLUDE=""
+fi
 CXXFLAGS="${LLVM_INCLUDE} " CFLAGS="${LLVM_INCLUDE} " \
   ./configure $CONFFLAGS
 $MAKE -j$JOBS
