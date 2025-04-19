@@ -99,9 +99,9 @@ fi
 
 require $SED
 require $MAKE
-require $CMAKE
 require patch
 require gunzip
+require ld64.lld
 
 
 # enable debug messages
