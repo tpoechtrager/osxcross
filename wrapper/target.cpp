@@ -391,6 +391,8 @@ do {                                                                           \
 #ifdef __x86_64__
   // opensuse uses lib64 instead of lib on x86_64
   TRYDIR2("/../lib64/clang");
+  // Fedora installs clang into /usr/lib64/llvm*
+  TRYDIR2("/../../../lib/clang/");
 #elif __i386__
   TRYDIR2("/../lib32/clang");
 #endif
