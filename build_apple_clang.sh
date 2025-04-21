@@ -5,7 +5,7 @@
 pushd "${0%/*}" &>/dev/null
 
 if [ -z "$CLANG_VERSION" ]; then
-  CLANG_VERSION=17
+  CLANG_VERSION=21
 fi
 
 GITPROJECT=apple CLANG_VERSION=$CLANG_VERSION \

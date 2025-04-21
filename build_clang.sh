@@ -60,19 +60,22 @@ function set_package_link()
     # with Apple LLVM we only get each major version as a stable branch so we just compare the input major version
     CLANG_VERSION_PARTS=(${CLANG_VERSION//./ })
     case ${CLANG_VERSION_PARTS[0]} in
-
-      17) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20230725.zip" ;;
-      16) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20221013.zip" ;;
-      15) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20220421.zip" ;;
-      14) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20211026.zip" ;;
-      13) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20210726.zip" ;;
-      12) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20210107.zip" ;;
-      11) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200714.zip" ;;
-      10) CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200108.zip" ;;
-      9)  CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20190619.zip" ;;
-      8)  CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20190104.zip" ;;
-      7)  CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20180801.zip" ;;
-
+      next) CLANG_LLVM_PKG="https://github.com/swiftlang/llvm-project/archive/refs/heads/next.zip" ;;
+      21)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20250402.zip" ;;
+      # Can't find a stable branch for 20.
+      19)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20240723.zip" ;;
+      18)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20240123.zip" ;;    
+      17)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20230725.zip" ;;
+      16)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20221013.zip" ;;
+      15)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20220421.zip" ;;
+      14)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20211026.zip" ;;
+      13)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20210726.zip" ;;
+      12)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20210107.zip" ;;
+      11)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200714.zip" ;;
+      10)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20200108.zip" ;;
+      9)    CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20190619.zip" ;;
+      8)    CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20190104.zip" ;;
+      7)    CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/apple/stable/20180801.zip" ;;
       *)
         echo "Unknown Apple Clang version $CLANG_VERSION!" 1>&2
         exit 1
@@ -116,12 +119,16 @@ else
   ENABLE_BOOTSTRAP=1
 fi
 
-# download the GitHub repo as a ZIP file - but only if it doesn't exist already
+# Download the GitHub repo as a ZIP file
 pushd $TARBALL_DIR &>/dev/null
 
-if [ ! -f $(basename $CLANG_LLVM_PKG) ]; then
-  download $CLANG_LLVM_PKG
+if [ $GITPROJECT == "apple" ]; then
+  # Resuming downloads of branch archives is not possible.
+  # Always download them newly.
+  rm -f $(basename $CLANG_LLVM_PKG)
 fi
+
+download $CLANG_LLVM_PKG
 
 popd &>/dev/null #$TARBALL_DIR
 
@@ -136,6 +143,14 @@ echo "extracting ..."
 extract $TARBALL_DIR/$(basename $CLANG_LLVM_PKG)
 
 # Various Buildfixes
+
+if [ $GITPROJECT == "apple" ]; then
+  pushd *llvm* &>/dev/null
+  # lld has been broken by this PR:
+  # https://github.com/swiftlang/llvm-project/pull/8119
+  patch -p1 < $PATCH_DIR/unbreak-apple-lld.patch || true
+  popd &>/dev/null
+fi
 
 if ([[ $CLANG_VERSION == 15* ]] || [[ $CLANG_VERSION == 14* ]] ||
     [[ $CLANG_VERSION == 13* ]] || [[ $CLANG_VERSION == 12* ]] ||

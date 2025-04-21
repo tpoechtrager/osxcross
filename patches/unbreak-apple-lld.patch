@@ -1,0 +1,16 @@
+diff --git a/lld/MachO/InputFiles.cpp b/lld/MachO/InputFiles.cpp
+index 71ad31684a4e6a3014ecd9934869d2e92d3b3a7d..79aab1b6aed58d03b2f34d7ecdba16d09e73ffb2 100644
+--- a/lld/MachO/InputFiles.cpp
++++ b/lld/MachO/InputFiles.cpp
+@@ -157,11 +157,6 @@ static bool checkCompatibility(const InputFile *input) {
+   if (platformInfos.empty())
+     return true;
+ 
+-  // Swift LLVM fork downstream change start
+-  error("This version of lld does not support linking for platform " + getPlatformName(platformInfos.front().target.Platform));
+-  return false;
+-  // Swift LLVM fork downstream change end
+-
+   auto it = find_if(platformInfos, [&](const PlatformInfo &info) {
+     return removeSimulator(info.target.Platform) ==
+            removeSimulator(config->platform());
