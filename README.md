@@ -79,7 +79,8 @@ To specify a different installation path or run the build unattended,
 set the `TARGET_DIR` and/or `UNATTENDED` environment variables accordingly.
 
 ```sh
-[TARGET_DIR=/usr/local/osxcross] [UNATTENDED=1] ./build.sh 
+./build.sh 
+[TARGET_DIR=/usr/local/osxcross] [OSX_VERSION_MIN=XX.X] [UNATTENDED=1] ./build.sh 
 ```
 
 Add `<target>/bin` to your `PATH` after installation.
@@ -243,17 +244,18 @@ xcrun lipo -create test.x86_64 test.arm64 -output test
 ### Deployment Target
 
 Default:
+* SDK ≤ 10.13 → macOS 10.6
+* SDK ≥ 10.14 → macOS 10.9
+* SDK ≥ 14.0 → macOS 10.13
 
-- SDK <= 10.13: macOS 10.6
-- SDK >= 10.14: macOS 10.9
+Can be overriden via:
 
-Override via:
+1. During the build: `OSX_VERSION_MIN=XX.X ./build.sh`.
+2. By passing `-mmacos-version-min=XX.X` to the compiler.
+3. By setting `MACOSX_DEPLOYMENT_TARGET=XX.X` env var.
 
-1. `OSX_VERSION_MIN=10.x ./build.sh`
-2. `-mmacosx-version-min=10.x` to compiler
-3. `MACOSX_DEPLOYMENT_TARGET` env var
-
-Note: >= 10.9 defaults to `libc++`, override via `-stdlib=libstdc++`
+Note: Deployment target ≥ 10.9 defaults to `libc++`.  
+Can be explicitely overriden by setting the C++ library to `libstdc++` via `-stdlib=libstdc++`.
 
 ---
 
