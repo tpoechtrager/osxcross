@@ -96,6 +96,7 @@
   int ld(int argc, char **argv, target::Target &target);
   int as(int argc, char **argv);
   int execute(const char *toolName, int argc, char **argv);
+  void printArgs(int argc, char **argv, std::vector<char*> &args);
   
   template<const char *Name>
   int wrap(int argc, char **argv) {

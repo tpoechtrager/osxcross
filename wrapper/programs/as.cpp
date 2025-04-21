@@ -34,6 +34,8 @@ int as(int argc, char **argv) {
   * clang is used for assembling as long as -Q is not given.
   */
 
+  bool debug = !!getenv("OCDEBUG");
+
   bool Qflag = false;
   bool some_input_files = false;
   bool oflag_specified = false;
@@ -118,8 +120,8 @@ int as(int argc, char **argv) {
   }
 
   /*
-  * clang requires a "-o a.out" if not -o is specified.
-  */
+   * clang requires a "-o a.out" if not -o is specified.
+   */
   if (!oflag_specified) {
     args.push_back(const_cast<char*>("-o"));
     args.push_back(const_cast<char*>("a.out"));
@@ -133,6 +135,15 @@ int as(int argc, char **argv) {
 
   /* Silence clang warnings for unused -I etc. */
   args.push_back(const_cast<char*>("-Wno-unused-command-line-argument"));
+
+  /* Set target version if set by env variable. */
+  if (char *p = getenv("OSXCROSS_AS_TARGET_VERSION")) {
+    std::string tmp = "-mmacos-version-min=";
+    tmp += p;
+    args.push_back(strdup(tmp.c_str()));
+  }
+
+  if (debug) printArgs(argc, argv, args);
 
   args.push_back(nullptr);
 

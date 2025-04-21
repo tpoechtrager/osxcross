@@ -563,18 +563,24 @@ bool Target::setup() {
   if (!OSNum.Num()) {
     OSVersion defaultMinTarget = getDefaultMinTarget();
 
-    if (haveArch(Arch::arm64) || haveArch(Arch::arm64e)) {
-      // Default to >= 11.0 for arm64
-      OSNum = std::max(defaultMinTarget, OSVersion(11, 0));
+    if (defaultMinTarget != OSVersion()) {
+      // Default version is given via -DOSXCROSS_OSX_VERSION_MIN=XX
+      
+      if (haveArch(Arch::arm64) || haveArch(Arch::arm64e)) {
+        // Default to >= 11.0 for arm64
+        OSNum = std::max(defaultMinTarget, OSVersion(11, 0));
+      }
+
+      if (stdlib == StdLib::libcxx) {
+        // Default to >= 10.7 for libc++
+        OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 7)));
+      }
     }
 
-    if (stdlib == StdLib::libcxx) {
-      // Default to >= 10.7 for libc++
-      OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 7)));
+    if (!OSNum.Num()) {
+      // Default min version = -DOSXCROSS_OSX_VERSION_MIN=XX or SDK version
+      OSNum = defaultMinTarget != OSVersion() ? defaultMinTarget : SDKOSNum;
     }
-
-    if (!OSNum.Num())
-      OSNum = defaultMinTarget;
   }
 
   if (stdlib == StdLib::unset) {
@@ -803,9 +809,11 @@ bool Target::setup() {
   if (OSNum.Num()) {
     std::string tmp;
     tmp = "-mmacosx-version-min=";
-    if (clangversion < ClangVersion(11, 0) &&
+    if (isClang() && clangversion < ClangVersion(11, 0) &&
         OSNum >= OSVersion(11, 0)) {
       // Clang <= 10 can't parse -mmacosx-version-min=11.x
+      warn << "Your clang installation is outdated and can't parse '-mmacosx-version-min=" << OSNum.shortStr() << "'. "
+           << "Setting it to 10.16."  << warn.endl();
       tmp += "10.16";
     } else {
       tmp += OSNum.Str();
@@ -922,9 +930,12 @@ bool Target::setup() {
       return false;
   }
 
-  // Silence 'operator new[]' warning in ld64
-  if (isgcclibstdcxx)
-    setenv("OSXCROSS_GCC_LIBSTDCXX", "1", 1);
+  if (isGCC()) {
+    // When building with GCC, we store the target version in an environment variable
+    // so it can be accessed later in programs/as.cpp. There's no other way
+    // to determine the correct version at that point.
+    setenv("OSXCROSS_AS_TARGET_VERSION", OSNum.shortStr().c_str(), 1);
+  }
 
   return true;
 }

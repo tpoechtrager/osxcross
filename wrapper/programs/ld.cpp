@@ -33,6 +33,8 @@ int ld(int argc, char **argv, target::Target &target) {
     return 0;
   }
 
+  bool debug = !!getenv("OCDEBUG");
+
   std::vector<char*> args;
   args.push_back(const_cast<char*>("ld64.lld"));
 
@@ -70,6 +72,8 @@ int ld(int argc, char **argv, target::Target &target) {
       strdup(target.getSDKOSNum().shortStr().c_str())
     });
   }
+
+  if (debug) printArgs(argc, argv, args);
 
   args.push_back(nullptr);
 
