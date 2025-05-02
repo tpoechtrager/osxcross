@@ -113,8 +113,9 @@ if [ "$SDK_VERSION" != "$OLD_SDK_VERSION" ]; then
 fi
 
 # XAR
-
-build_xar
+if [[ $PLATFORM != Darwin ]]; then
+  build_xar
+fi
 
 # XAR END
 
@@ -149,7 +150,9 @@ if [ $f_res -eq 1 ]; then
   if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     CONFFLAGS+="--with-libtapi=$TARGET_DIR "
   fi
-  CONFFLAGS+="--with-libxar=$TARGET_DIR "
+  if [[ $PLATFORM != Darwin ]]; then
+    CONFFLAGS+="--with-libxar=$TARGET_DIR "
+  fi
   [ -n "$DISABLE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
   [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
   ./configure $CONFFLAGS
