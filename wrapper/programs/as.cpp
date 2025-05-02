@@ -31,12 +31,11 @@ int as(int argc, char **argv) {
   * Try to replicate the original as driver as much as possible:
   * https://github.com/tpoechtrager/cctools-port/blob/93ffa47ee2139aba177deb07de9b6626486037ae/cctools/as/driver.c#L300
   * 
-  * clang is used for assembling as long as -Q is not given.
+  * clang is used for assembling.
   */
 
   bool debug = !!getenv("OCDEBUG");
 
-  bool Qflag = false;
   bool some_input_files = false;
   bool oflag_specified = false;
 
@@ -45,20 +44,16 @@ int as(int argc, char **argv) {
   for (int i = 1; i < argc; ++i) {
     const char *arg = argv[i];
 
-    if (strcmp(arg, "-Q") == 0) {
-      Qflag = true;
-      continue;
-    }
-
-    if (strcmp(arg, "-q") == 0) {
+    /* Ignore -Q and -q */
+    if (strcmp(arg, "-Q") == 0 || strcmp(arg, "-q") == 0) {
       continue;
     }
 
     /*
-    * If we have not seen some some_input_files or a "-" or "--" to
-    * indicate we are assembling stdin add a "-" so clang will
-    * assemble stdin as as(1) would.
-    */
+     * If we have not seen some some_input_files or a "-" or "--" to
+     * indicate we are assembling stdin add a "-" so clang will
+     * assemble stdin as as(1) would.
+     */
     if (strcmp(arg, "--") == 0 || strcmp(arg, "-") == 0 || arg[0] != '-') {
       some_input_files = true;
     }
@@ -71,49 +66,39 @@ int as(int argc, char **argv) {
     given_args.push_back(argv[i]);
   }
 
-  if (Qflag) {
-    std::vector<char*> llvm_args;
-    llvm_args.push_back(const_cast<char*>("llvm-as"));
-    llvm_args.insert(llvm_args.end(), given_args.begin(), given_args.end());
-    llvm_args.push_back(nullptr);
-
-    execvp(llvm_args[0], llvm_args.data());
-    return 1;
-  }
-
   std::vector<char*> args;
 
   args.push_back(const_cast<char*>("xcrun"));
   args.push_back(const_cast<char*>("clang"));
 
   /*
-  * Add "-x assembler" in case the input does not end in .s this must
-  * come before "-" or the clang driver will issue an error:
-  * "error: -E or -x required when input is from standard input"
-  */
+   * Add "-x assembler" in case the input does not end in .s this must
+   * come before "-" or the clang driver will issue an error:
+   * "error: -E or -x required when input is from standard input"
+   */
   args.push_back(const_cast<char*>("-x"));
   args.push_back(const_cast<char*>("assembler"));
 
   /*
-  * If we have not seen some some_input_files or a "-" or "--" to
-  * indicate we are assembling stdin add a "-" so clang will
-  * assemble stdin as as(1) would.
-  */
+   * If we have not seen some some_input_files or a "-" or "--" to
+   * indicate we are assembling stdin add a "-" so clang will
+   * assemble stdin as as(1) would.
+   */
   if (!some_input_files) {
     args.push_back(const_cast<char*>("-"));
   }
 
   for (char* arg : given_args) {
     /*
-    * Translate as(1) use of "--" for stdin to clang's use of "-".
-    */
+     * Translate as(1) use of "--" for stdin to clang's use of "-".
+     */
     if (strcmp(arg, "--") == 0) {
       args.push_back(const_cast<char*>("-"));
     }
     /*
-    * Do not pass command line argument that are Unknown to
-    * to clang.
-    */
+     * Do not pass command line argument that are Unknown to
+     * to clang.
+     */
     else if (strcmp(arg, "-V") != 0) {
       args.push_back(arg);
     }
