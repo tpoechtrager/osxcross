@@ -148,6 +148,7 @@ create_wrapper_link lipo 1
 create_wrapper_link nm
 create_wrapper_link ar
 create_wrapper_link libtool
+create_wrapper_link install-name-tool
 create_wrapper_link ranlib
 create_wrapper_link readtapi
 create_wrapper_link objdump
