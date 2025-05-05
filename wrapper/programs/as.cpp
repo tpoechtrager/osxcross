@@ -25,6 +25,7 @@ using namespace tools;
 
 namespace program {
 namespace llvm {
+namespace clang {
 
 int as(int argc, char **argv) {
   /*
@@ -128,7 +129,7 @@ int as(int argc, char **argv) {
     args.push_back(strdup(tmp.c_str()));
   }
 
-  if (debug) printArgs(argc, argv, args);
+  if (debug) llvm::printArgs(argc, argv, args);
 
   args.push_back(nullptr);
 
@@ -137,5 +138,6 @@ int as(int argc, char **argv) {
   return 1;
 }
 
+} // namespace clang
 } // namespace llvm
 } // namespace program

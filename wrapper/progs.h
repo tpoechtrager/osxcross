@@ -94,7 +94,11 @@
   namespace llvm {
   int lipo(int argc, char **argv);
   int ld(int argc, char **argv, target::Target &target);
-  int as(int argc, char **argv);
+
+  namespace clang {
+    int as(int argc, char **argv);
+  }
+
   int execute(const char *toolName, int argc, char **argv);
   void printArgs(int argc, char **argv, std::vector<char*> &args);
   
@@ -131,7 +135,7 @@
   static constexpr char bcanalyzer[]        = "llvm-bcanalyzer";
   static constexpr char bitcode_strip[]     = "llvm-bitcode-strip";
   } // namespace llvm
-  
+
   static int dummy() { return 0; }
   
   constexpr prog programs[] = {
@@ -140,10 +144,11 @@
     { "xcodebuild", xcodebuild },
   
     // LLVM/Xcode
-    { "dsymutil",          llvm::wrap<llvm::dsymutil> },
     { "ld",                llvm::ld },
-    { "otool",             llvm::wrap<llvm::otool> },
     { "lipo",              llvm::lipo },
+    { "as",                llvm::clang::as },
+    { "dsymutil",          llvm::wrap<llvm::dsymutil> },
+    { "otool",             llvm::wrap<llvm::otool> },
     { "nm",                llvm::wrap<llvm::nm> },
     { "ar",                llvm::wrap<llvm::ar> },
     { "libtool",           llvm::wrap<llvm::libtool> },
@@ -163,7 +168,6 @@
     { "cxxfilt",           llvm::wrap<llvm::cxxfilt> },
     { "objcopy",           llvm::wrap<llvm::objcopy> },
     { "config",            llvm::wrap<llvm::config> },
-    { "as",                llvm::as },
     { "dis",               llvm::wrap<llvm::dis> },
     { "link",              llvm::wrap<llvm::link> },
     { "lto",               llvm::wrap<llvm::lto> },
