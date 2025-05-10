@@ -15,7 +15,7 @@
 
 `testing`:
 
-* Uses the latest versions of `cctools` and `ld64` — currently `cctools 1021.4` and `ld64 954.16`.  
+* Uses the latest versions of `cctools` and `ld64` — currently `cctools 1024.3` and `ld64 955.13`.  
   Takes the longest to build due to additional dependencies introduced in the latest versions.
 
 `ppc-test`:
