@@ -151,8 +151,8 @@ fi
 
 ## cctools and ld64 ##
 
-CCTOOLS_VERSION=1021.4
-LINKER_VERSION=954.16
+CCTOOLS_VERSION=1024.3
+LINKER_VERSION=955.13
 
 get_sources \
   https://github.com/tpoechtrager/cctools-port.git \
