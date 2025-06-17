@@ -125,7 +125,7 @@ SDKs can be extracted either from the full Xcode or from the Xcode Command Line 
 
 **From Command Line Tools**
 
-1. [Download Command Line Tools](https://developer.apple.com/download/more)
+1. [Download Command Line Tools](https://developer.apple.com/download/all/?q=Command%20Line%20Tools%20for%20Xcode)
 2. Mount the `Command_Line_Tools_for_Xcode.dmg` (Open With → DiskImageMounter)
 3. Install `Command Line Tools.pkg` (Open With → Installer)
 4. Run: `./tools/gen_sdk_package_tools.sh`
