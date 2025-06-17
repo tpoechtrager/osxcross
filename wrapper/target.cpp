@@ -911,9 +911,8 @@ bool Target::setup() {
 #endif
 
   if (isClang()) {
-    if (getenv("OSXCROSS_PRETEND_TO_BE_APPLE_CLANG"))
-    {
-        fargs.push_back("-D__apple_build_version__=1");
+    if (getenv("OSXCROSS_PRETEND_TO_BE_APPLE_CLANG")) {
+      fargs.push_back("-D__apple_build_version__=1");
     }
 
     if (SDKOSNum >= OSVersion(14, 0) && clangversion < ClangVersion(17, 0)) {
