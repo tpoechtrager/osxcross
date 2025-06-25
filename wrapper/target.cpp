@@ -843,7 +843,7 @@ bool Target::setup() {
     fargs.push_back(ClangIntrinsicPath);
   }
 
-  if (OSNum.Num()) {
+  if (!getenv("OSXCROSS_LET_TOOLCHAIN_SET_MIN_VERSION") && OSNum.Num()) {
     std::string tmp;
     tmp = "-mmacosx-version-min=";
     if (isClang() && clangversion < ClangVersion(11, 0) &&
