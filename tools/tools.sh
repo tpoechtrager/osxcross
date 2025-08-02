@@ -101,7 +101,9 @@ require $SED
 require $MAKE
 require patch
 require gunzip
-require ld64.lld
+if [ $SCRIPT == "build.sh" ]; then
+  require ld64.lld
+fi
 
 
 # enable debug messages
