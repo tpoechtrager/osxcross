@@ -73,7 +73,16 @@ OSVersion Target::getSDKOSNum() const {
 
     double n = atof(target.c_str() + 6);
 
-    if (n >= 20.0f) {
+    if (n >= 25.0f) {
+      // MacOS 26.0 or later
+
+      int major = 21 + ((int)n % 20);
+      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
+
+      return OSVersion(major, minor);
+    } else if (n >= 20.0f) {
+      // MacOS 11-15
+
       int major = 11 + ((int)n % 20);
       int minor = (int)(((n - (int)n) * 10.0) + 0.1);
 
@@ -93,6 +102,7 @@ OSVersion Target::getSDKOSNum() const {
 
       return OSVersion(major, minor);
     } else {
+      // MacOS 10
       return OSVersion(10, (int)n - 4);
     }
   }
