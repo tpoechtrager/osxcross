@@ -190,7 +190,15 @@ else
 
 fi
 
-SDKS=$(ls | grep -E "^MacOSX15.*|^MacOSX14.*|^MacOSX13.*|^MacOSX12.*|^MacOSX11.*|^MacOSX10.*" | grep -v "Patch")
+SDKS=()
+for pat in MacOS[0-9]*.sdk MacOSX[0-9]*.sdk; do
+  while IFS= read -r d; do
+    if [[ "$d" != "MacOS.sdk" && "$d" != "MacOSX.sdk" && "$d" != *Patch* && -d "$d" ]]; then
+      SDKS+=("$d")
+    fi
+  done < <(compgen -G "$pat")
+done
+
 
 if [ -z "$SDKS" ]; then
   echo "No SDK found" 1>&2
@@ -209,7 +217,7 @@ LIBCXXDIR3="usr/include/c++/v1"
 # Manual directory
 MANDIR="Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/share/man"
 
-for SDK in $SDKS; do
+for SDK in "${SDKS[@]}"; do
   echo -n "packaging $(echo "$SDK" | sed -E "s/(.sdk|.pkg)//g") SDK "
   echo "(this may take several minutes) ..."
 
