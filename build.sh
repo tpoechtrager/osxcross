@@ -338,6 +338,16 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
     fi
     fi
   fi
+  if [ -f "usr/include/c++/v1/typeinfo" ]; then
+    if [ $(osxcross-cmp "$SDK_VERSION" ">=" 10.7) -eq 1 ]; then
+    if [ $(osxcross-cmp "$SDK_VERSION" "<=" 10.8) -eq 1 ]; then
+      echo "SDK needs patching for libc++ typeinfo issue ..."
+      sed_expr='s/_ATTRIBUTE(noreturn) friend void rethrow_exception(exception_ptr);/'
+      sed_expr+='friend void rethrow_exception(exception_ptr);/g'
+      $SED -i "$sed_expr" usr/include/c++/v1/exception
+    fi
+    fi
+  fi
   if [ -f "usr/include/Availability.h" ]; then
     if [ $(osxcross-cmp $SDK_VERSION "==" 10.15) -eq 1 ]; then
       # 10.15 comes with a broken Availability.h header file
