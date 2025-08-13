@@ -17,7 +17,7 @@ source tools/tools.sh
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=15.1.0
+  GCC_VERSION=15.2.0
   #GCC_VERSION=5-20200228 # snapshot
 fi
 
@@ -28,7 +28,7 @@ fi
 
 # GCC mirror
 # Official GNU "ftp" doesn't have GCC snapshots
-GCC_MIRROR="https://ftp.gnu.org/pub/gnu/gcc"
+GCC_MIRROR="https://ftp.fu-berlin.de/unix/languages/gcc/releases/"
 GCC_MIRROR_WITH_SNAPSHOTS="https://mirror.koddos.net/gcc"
 
 pushd $BUILD_DIR &>/dev/null
