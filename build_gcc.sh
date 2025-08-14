@@ -17,7 +17,7 @@ source tools/tools.sh
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=15.1.0
+  GCC_VERSION=15.2.0
   #GCC_VERSION=5-20200228 # snapshot
 fi
 
@@ -26,9 +26,18 @@ if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
   exit 1
 fi
 
+if [ -z "$SUPPORTED_ARCHS" ]; then
+  SUPPORTED_ARCHS=$OSXCROSS_SUPPORTED_ARCHS
+fi
+
+if ! arch_supported x86_64; then
+  echo "Your SDK must supported x86_64 to build GCC!" 1>&2
+  exit 1
+fi
+
 # GCC mirror
 # Official GNU "ftp" doesn't have GCC snapshots
-GCC_MIRROR="https://ftp.gnu.org/pub/gnu/gcc"
+GCC_MIRROR="https://ftp.fu-berlin.de/unix/languages/gcc/releases/"
 GCC_MIRROR_WITH_SNAPSHOTS="https://mirror.koddos.net/gcc"
 
 pushd $BUILD_DIR &>/dev/null

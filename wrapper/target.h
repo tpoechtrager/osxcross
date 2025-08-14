@@ -46,6 +46,25 @@ constexpr Compiler getDefaultCXXCompilerIdentifier() {
   return Compiler::CLANGXX;
 }
 
+constexpr const char *getSupportedArchsString() { return OSXCROSS_SUPPORTED_ARCHS; }
+
+static inline std::vector<Arch> getSupportedArchs() {
+  std::vector<Arch> result;
+  std::istringstream iss(OSXCROSS_SUPPORTED_ARCHS);
+  std::string token;
+  while (iss >> token) {
+    result.push_back(parseArch(token.c_str()));
+  }
+  return result;
+}
+
+static inline Arch getDefaultArch() {
+  std::istringstream iss(OSXCROSS_SUPPORTED_ARCHS);
+  std::string first;
+  iss >> first;
+  return parseArch(first.c_str());
+}
+
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
 constexpr const char *getBuildDir() { return OSXCROSS_BUILD_DIR; }
 
@@ -105,6 +124,8 @@ struct Target {
   bool getMacPortsLibDir(std::string &path) const;
   bool getMacPortsFrameworksDir(std::string &path) const;
 
+  bool archSupported(const Arch arch);
+  bool checkArchs();
   void addArch(const Arch arch);
   bool haveArch(const Arch arch);
 
@@ -130,8 +151,9 @@ struct Target {
 
   const char *vendor;
   const char *SDK;
+  std::vector<Arch> supportedarchs;
   Arch arch;
-  std::vector<Arch> targetarch;
+  std::vector<Arch> targetarchs;
   std::string target;
   OSVersion OSNum;
   StdLib stdlib;

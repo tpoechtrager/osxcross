@@ -30,7 +30,7 @@ namespace osxcross {
 template<typename A>
 
 void print(const char *var, const A &val) {
-  std::cout << "export OSXCROSS_" << var << "=" << val << std::endl;
+  std::cout << "export OSXCROSS_" << var << "=" << "\"" << val << "\"" << std::endl;
 };
 
 int conf(Target &target) {
@@ -68,6 +68,8 @@ int conf(Target &target) {
   print("CCTOOLS_PATH", target.execpath);
   print("LIBLTO_PATH", ltopath);
   print("LINKER_VERSION", getLinkerVersion());
+  print("SUPPORTED_ARCHS", getSupportedArchsString());
+  print("DEFAULT_ARCH", getArchName(getDefaultArch()));
 
   return 0;
 }

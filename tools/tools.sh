@@ -59,6 +59,14 @@ if [[ $PLATFORM == Darwin ]]; then
   export LIBRARY_PATH=${LDFLAGS_OPENSSL:2}
 fi
 
+function arch_supported() {
+  [[ " $SUPPORTED_ARCHS " == *" $1 "* ]]
+}
+
+function first_supported_arch() {
+  echo "${SUPPORTED_ARCHS%% *}"
+}
+
 function require()
 {
   if ! command -v $1 &>/dev/null; then
@@ -433,9 +441,12 @@ function download()
 
 function create_symlink()
 {
-  ln -sf $1 $2
+  if [ "$1" = "$2" ]; then
+    echo "Symlink target and source are identical. Rebuild from scratch."
+    exit 1
+  fi
+  ln -sf "$1" "$2"
 }
-
 
 function verbose_cmd()
 {
