@@ -153,7 +153,19 @@ int run(Target *target, char **argv) {
   std::string toolpath;
   std::string command;
 
-  if (!getToolPath(target, toolpath, argv[0]))
+  const std::string toolname = argv[0];
+
+  // GCC is x86-only.
+  // If the default Architecture is not i386 and also not x86_64, GCC may not be found.
+  // Therefore set the architecture to x86_64 to ensure GCC is found.
+
+  if ((toolname.rfind("gcc", 0) == 0 || toolname.rfind("g++", 0) == 0) &&
+      (target->arch != Arch::i386 && target->arch != Arch::x86_64) && 
+      target->archSupported(Arch::x86_64)) {
+    target->arch = Arch::x86_64;
+  }
+
+  if (!getToolPath(target, toolpath, toolname.c_str()))
     exit(1);
 
   std::vector<char *> args;

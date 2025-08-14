@@ -5,44 +5,13 @@ pushd .. &>/dev/null
 source ./tools/tools.sh
 popd &>/dev/null
 
-set +e
-if [ -n "$VERSION" ]; then
-  if [ -n "$SDK_VERSION" ]; then
-    if [ -z "$X86_64H_SUPPORTED" ]; then
-      if [ $(osxcross-cmp $SDK_VERSION ">=" 10.8) -eq 1 ]; then
-        X86_64H_SUPPORTED=1
-      else
-        X86_64H_SUPPORTED=0
-      fi
-    fi
-    if [ -z "$I386_SUPPORTED" ]; then
-      if [ $(osxcross-cmp $SDK_VERSION "<=" 10.13) -eq 1 ]; then
-        I386_SUPPORTED=1
-      else
-        I386_SUPPORTED=0
-      fi
-    fi
-    if [ -z "$ARM_SUPPORTED" ]; then
-      if [ $(osxcross-cmp $SDK_VERSION ">=" 11.0) -eq 1 ]; then
-        ARM_SUPPORTED=1
-      else
-        ARM_SUPPORTED=0
-      fi
-    fi
-  fi
-fi
-set -e
-
-if [ -z "$I386_SUPPORTED" ]; then
-  I386_SUPPORTED=1
+if [ -z "$SUPPORTED_ARCHS" ]; then
+  export SUPPORTED_ARCHS=$OSXCROSS_SUPPORTED_ARCHS
 fi
 
-if [ -z "$X86_64H_SUPPORTED" ]; then
-  X86_64H_SUPPORTED=0
-fi
-
-if [ -z "$ARM_SUPPORTED" ]; then
-  ARM_SUPPORTED=0
+if [ -z "$SUPPORTED_ARCHS" ]; then
+  echo "SUPPORTED_ARCHS not set. Rebuild from scratch." 1>&2
+  exit 1
 fi
 
 function create_wrapper_link
@@ -63,61 +32,51 @@ function create_wrapper_link
   #  -> x86_64h-apple-darwinXX-osxcross
 
   if [ $# -ge 2 ] && [ $2 -eq 1 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-      "${1}"
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "${1}"
   fi
 
-  if [ $I386_SUPPORTED -eq 1 ]; then
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-      "i386-apple-${TARGET}-${1}"
+  if arch_supported i386; then
+    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "i386-apple-${TARGET}-${1}"
   fi
 
-  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-    "x86_64-apple-${TARGET}-${1}"
+  verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "x86_64-apple-${TARGET}-${1}"
 
   if ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-    if [ $X86_64H_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "x86_64h-apple-${TARGET}-${1}"
+    if arch_supported x86_64h; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "x86_64h-apple-${TARGET}-${1}"
     fi
 
-    if [ $ARM_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "aarch64-apple-${TARGET}-${1}"
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "arm64-apple-${TARGET}-${1}"
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "arm64e-apple-${TARGET}-${1}"
+    if arch_supported arm64; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "aarch64-apple-${TARGET}-${1}"
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "arm64-apple-${TARGET}-${1}"
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "arm64e-apple-${TARGET}-${1}"
     fi
   fi
 
   if [ $# -ge 2 ] && [ $2 -eq 2 ]; then
-    if [ $I386_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "o32-${1}"
+    if arch_supported i386; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "o32-${1}"
     fi
 
-    verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-      "o64-${1}"
-
-    if [ $X86_64H_SUPPORTED -eq 1 ] &&
-       ([[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]); then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "o64h-${1}"
+    if arch_supported x86_64; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "o64-${1}"
     fi
 
-    if [ $ARM_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "oa64-${1}"
-      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" \
-        "oa64e-${1}"
+    if arch_supported x86_64h &&
+      [[ $1 != gcc* ]] && [[ $1 != g++* ]] && [[ $1 != *gstdc++ ]]; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "o64h-${1}"
+    fi
+
+    if arch_supported arm64; then
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "oa64-${1}"
+      verbose_cmd create_symlink "${TARGETTRIPLE}-wrapper" "oa64e-${1}"
     fi
   fi
 }
 
 [ -z "$TARGETCOMPILER" ] && TARGETCOMPILER=clang
 
-TARGETTRIPLE=x86_64-apple-${TARGET}
+TARGETTRIPLE=$(first_supported_arch)-apple-${TARGET}
 
 FLAGS=""
 
@@ -200,14 +159,9 @@ if [ "$PLATFORM" != "Darwin" ]; then
     # LLVM dsymutil version. In this case don't wrap it.
     # Just create target symlinks.
 
-    verbose_cmd create_symlink $(which dsymutil) x86_64-apple-$TARGET-dsymutil
-
-    if [ $I386_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink $(which dsymutil) i386-apple-$TARGET-dsymutil
-    fi
-    if [ $X86_64H_SUPPORTED -eq 1 ]; then
-      verbose_cmd create_symlink $(which dsymutil) x86_64h-apple-$TARGET-dsymutil
-    fi
+    for ARCH in $SUPPORTED_ARCHS; do
+      verbose_cmd create_symlink "$(which dsymutil)" "$ARCH-apple-$TARGET-dsymutil"
+    done
   else
     create_wrapper_link dsymutil 1
   fi

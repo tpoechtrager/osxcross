@@ -42,7 +42,8 @@ namespace target {
 
 Target::Target()
     : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
-      arch(Arch::x86_64), target(getDefaultTarget()), stdlib(StdLib::unset),
+      supportedarchs(getSupportedArchs()),
+      arch(getDefaultArch()), target(getDefaultTarget()), stdlib(StdLib::unset),
       usegcclibs(), wliblto(-1), compiler(getDefaultCompilerIdentifier()),
       compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
@@ -248,8 +249,23 @@ bool Target::getMacPortsFrameworksDir(std::string &path) const {
   return dirExists(path);
 }
 
+bool Target::archSupported(const Arch arch) {
+  return std::find(supportedarchs.begin(), supportedarchs.end(), arch) != supportedarchs.end();
+}
+
+bool Target::checkArchs() {
+  for (auto a : targetarchs) {
+    if (!archSupported(a)) {
+      err << "architecture '" << getArchName(a) << "' is not supported!" << err.endl();
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void Target::addArch(const Arch arch) {
-  auto &v = targetarch;
+  auto &v = targetarchs;
   for (size_t i = 0; i < v.size(); ++i) {
     if (v[i] == arch) {
       v.erase(v.begin() + i);
@@ -261,7 +277,7 @@ void Target::addArch(const Arch arch) {
 }
 
 bool Target::haveArch(const Arch arch) {
-  for (auto a : targetarch) {
+  for (auto a : targetarchs) {
     if (arch == a)
       return true;
   }
@@ -525,6 +541,13 @@ void Target::setupGCCLibs(Arch arch) {
 }
 
 bool Target::setup() {
+  if (targetarchs.empty())
+    addArch(arch);
+
+  if (!checkArchs()) {
+    return false;
+  }
+
   std::string SDKPath;
   OSVersion SDKOSNum = getSDKOSNum();
 
@@ -533,9 +556,6 @@ bool Target::setup() {
 
   if (!getSDKPath(SDKPath))
     return false;
-
-  if (targetarch.empty())
-    targetarch.push_back(arch);
 
   triple = getArchName(arch);
   triple += "-";
@@ -634,12 +654,6 @@ bool Target::setup() {
   if (SDKOSNum >= OSVersion(10, 14)) {
     if (!isGCC() && !usegcclibs && stdlib == StdLib::libstdcxx) {
         err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
-            << err.endl();
-        return false;
-    }
-
-    if (haveArch(Arch::i386)) {
-        err << "macOS SDK '>= 10.14' does not support i386 anymore"
             << err.endl();
         return false;
     }
@@ -782,10 +796,10 @@ bool Target::setup() {
         fargs.push_back("-Qunused-arguments");
       }
 
-      if (stdlib == StdLib::libstdcxx && usegcclibs && targetarch.size() < 2 &&
+      if (stdlib == StdLib::libstdcxx && usegcclibs && targetarchs.size() < 2 &&
           !isGCH()) {
         // Use libs from './build_gcc' installation
-        setupGCCLibs(targetarch[0]);
+        setupGCCLibs(targetarchs[0]);
       }
     }
   } else if (isGCC()) {
@@ -868,7 +882,7 @@ bool Target::setup() {
     fargs.push_back(tmp);
   }
 
-  for (auto arch : targetarch) {
+  for (auto arch : targetarchs) {
     bool is32bit = false;
     bool isArm = false;
 
@@ -894,13 +908,13 @@ bool Target::setup() {
           return false;
         }
 
-        if (targetarch.size() > 1)
+        if (targetarchs.size() > 1)
           break;
 
         if (!isArm)
           fargs.push_back(is32bit ? "-m32" : "-m64");
       } else if (isClang()) {
-        if (usegcclibs && targetarch.size() > 1)
+        if (usegcclibs && targetarchs.size() > 1)
           break;
         fargs.push_back("-arch");
         fargs.push_back(getArchName(arch));

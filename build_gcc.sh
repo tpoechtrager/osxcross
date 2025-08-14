@@ -26,6 +26,15 @@ if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
   exit 1
 fi
 
+if [ -z "$SUPPORTED_ARCHS" ]; then
+  SUPPORTED_ARCHS=$OSXCROSS_SUPPORTED_ARCHS
+fi
+
+if ! arch_supported x86_64; then
+  echo "Your SDK must supported x86_64 to build GCC!" 1>&2
+  exit 1
+fi
+
 # GCC mirror
 # Official GNU "ftp" doesn't have GCC snapshots
 GCC_MIRROR="https://ftp.fu-berlin.de/unix/languages/gcc/releases/"
