@@ -204,13 +204,13 @@ function extract()
 
   case $1 in
     *.tar.xz)
-      xz -dc $1 | tar $tarflags -
+      tar $tarflags $1
       ;;
     *.tar.gz)
-      gunzip -dc $1 | tar $tarflags -
+      tar $tarflags $1
       ;;
     *.tar.bz2)
-      bzip2 -dc $1 | tar $tarflags -
+      tar $tarflags $1
       ;;
     *.zip)
       unzip $1
