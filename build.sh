@@ -69,6 +69,17 @@ case $SDK_VERSION in
   *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
+if [ -n "$ENABLE_ARCHS" ]; then
+  for arch in $ENABLE_ARCHS; do
+    if ! arch_supported "$arch"; then
+      echo "ENABLE_ARCHS: Architecture '$arch' not supported by selected SDK '$SDK_VERSION'" >&2
+      exit 1
+    fi
+  done
+  # trim + normalize whitespace
+  SUPPORTED_ARCHS="$(printf '%s\n' $ENABLE_ARCHS)"
+fi
+
 # Minimum targeted macOS version
 # Must be <= SDK_VERSION
 if [ -n "$OSX_VERSION_MIN_INT" -a -z "$OSX_VERSION_MIN" ]; then
@@ -80,8 +91,9 @@ export TARGET
 echo ""
 echo "Building OSXCross toolchain, Version: $VERSION"
 echo ""
-echo "macOS SDK Version: $SDK_VERSION, Target: $TARGET"
+echo "MacOS SDK Version: $SDK_VERSION, Target: $TARGET"
 echo "Minimum targeted macOS Version: $OSX_VERSION_MIN"
+echo "Enabled/Supported Archs: ${SUPPORTED_ARCHS// /, }"
 echo "Tarball Directory: $TARBALL_DIR"
 echo "Build Directory: $BUILD_DIR"
 echo "Install Directory: $TARGET_DIR"
