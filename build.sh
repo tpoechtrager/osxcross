@@ -243,15 +243,6 @@ for ARCH in $SUPPORTED_ARCHS; do
   create_symlink osxcross-cmake "$TARGET_DIR/bin/$ARCH-apple-$TARGET-cmake"
 done
 
-## MacPorts ##
-
-pushd $TARGET_DIR/bin &>/dev/null
-rm -f osxcross-macports
-cp $BASE_DIR/tools/osxcross-macports osxcross-macports
-create_symlink osxcross-macports osxcross-mp
-create_symlink osxcross-macports omp
-popd &>/dev/null
-
 ## Compiler test ##
 
 unset MACOSX_DEPLOYMENT_TARGET
