@@ -31,7 +31,7 @@ if [ -z "$SUPPORTED_ARCHS" ]; then
 fi
 
 if ! arch_supported x86_64; then
-  echo "Your SDK must supported x86_64 to build GCC!" 1>&2
+  echo "Your SDK must support x86_64 to build GCC!" 1>&2
   exit 1
 fi
 
