@@ -150,7 +150,14 @@ fi
 ## Apple TAPI Library ##
 
 if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
-  get_sources https://github.com/tpoechtrager/apple-libtapi.git 1300.6.5
+  if ! arch_supported x86_64h; then
+    # https://github.com/tpoechtrager/apple-libtapi/issues/32#issuecomment-2870102119
+    TAPI_VERSION=1600.0.11.8
+  else
+    TAPI_VERSION=1300.6.5
+  fi
+
+  get_sources https://github.com/tpoechtrager/apple-libtapi.git $TAPI_VERSION
 
   if [ $f_res -eq 1 ]; then
     pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
