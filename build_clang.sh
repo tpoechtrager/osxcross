@@ -152,6 +152,16 @@ if [ $GITPROJECT == "apple" ]; then
   popd &>/dev/null
 fi
 
+if ([[ $CLANG_VERSION == 18* ]] || [[ $CLANG_VERSION == 17* ]] ||
+    [[ $CLANG_VERSION == 16* ]] || [[ $CLANG_VERSION == 15* ]] ||
+    [[ $CLANG_VERSION == 14* ]] || [[ $CLANG_VERSION == 13* ]] ||
+    [[ $CLANG_VERSION == 12* ]] || [[ $CLANG_VERSION == 11* ]]); then
+  $SED -i 's/#include <cstddef>/#include <cstddef>\
+\ #include <cstdint>/' *llvm*/llvm/include/llvm/ADT/SmallVector.h
+  $SED -i 's/#include <string>/#include <string>\
+\ #include <cstdint>/' *llvm*/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
+fi
+
 if ([[ $CLANG_VERSION == 15* ]] || [[ $CLANG_VERSION == 14* ]] ||
     [[ $CLANG_VERSION == 13* ]] || [[ $CLANG_VERSION == 12* ]] ||
     [[ $CLANG_VERSION == 11* ]] || [[ $CLANG_VERSION == 10* ]]); then
