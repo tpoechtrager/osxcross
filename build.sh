@@ -66,6 +66,7 @@ case $SDK_VERSION in
   15.4*)   TARGET=darwin24.4; SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
   15.5*)   TARGET=darwin24.5; SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
   26|26.0*) TARGET=darwin25;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.1*) TARGET=darwin25.1;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
   *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
