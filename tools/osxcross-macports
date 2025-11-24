@@ -80,22 +80,23 @@ elif tar --version 2>/dev/null | grep -q "GNU tar"; then
 fi
 
 case $MACOSX_DEPLOYMENT_TARGET in
-  10.6*  ) OSXVERSION="darwin_10" ;;
-  10.7*  ) OSXVERSION="darwin_11" ;;
-  10.8*  ) OSXVERSION="darwin_12" ;;
-  10.9*  ) OSXVERSION="darwin_13" ;;
-  10.10* ) OSXVERSION="darwin_14" ;;
-  10.11* ) OSXVERSION="darwin_15" ;;
-  10.12* ) OSXVERSION="darwin_16" ;;
-  10.13* ) OSXVERSION="darwin_17" ;;
-  10.14* ) OSXVERSION="darwin_18" ;;
-  10.15* ) OSXVERSION="darwin_19" ;;
-  10.16* ) OSXVERSION="darwin_20" ;;
-  11.*   ) OSXVERSION="darwin_20" ;;
-  12.*   ) OSXVERSION="darwin_21" ;;
-  13.*   ) OSXVERSION="darwin_22" ;;
-  14.*   ) OSXVERSION="darwin_23" ;;
-  15.*   ) OSXVERSION="darwin_24" ;;
+  10.6*  ) OSXVERSION="darwin_10"; UNIVERSAL_ARCHS="i386-x86_64" ;;
+  10.7*  ) OSXVERSION="darwin_11"; UNIVERSAL_ARCHS="i386-x86_64"  ;;
+  10.8*  ) OSXVERSION="darwin_12"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.9*  ) OSXVERSION="darwin_13"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.10* ) OSXVERSION="darwin_14"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.11* ) OSXVERSION="darwin_15"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.12* ) OSXVERSION="darwin_16"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.13* ) OSXVERSION="darwin_17"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.14* ) OSXVERSION="darwin_18"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.15* ) OSXVERSION="darwin_19"; UNIVERSAL_ARCHS="x86_64" ;;
+  10.16* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64" ;;
+  11.*   ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  12.*   ) OSXVERSION="darwin_21"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  13.*   ) OSXVERSION="darwin_22"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  14.*   ) OSXVERSION="darwin_23"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  15.*   ) OSXVERSION="darwin_24"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  26.*   ) OSXVERSION="darwin_25"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
        * ) unsupportedDepTarget ;;
 esac
 
@@ -285,6 +286,19 @@ verifyFileIntegrity()
   set -e
 }
 
+logPkgCandidates() {
+  local context="$1"
+  shift
+  local pkgs="$@"
+  local count=$(echo "$pkgs" | wc -w)
+  local list_pkgs=""
+  if [ $count -lt 5 ]; then
+    list_pkgs=$(echo "$pkgs")
+  fi
+
+  verboseMsg "  ${context}: ${count} packages left.. ${list_pkgs}"
+}
+
 getPkgUrl()
 {
   local pkgname="$1"
@@ -302,7 +316,7 @@ getPkgUrl()
 
   pkgs=$(getFileStdout "$MIRROR/$pkgname/?C=M;O=A" | \
          grep -o -E 'href="([^"#]+)"' | \
-         cut -d'"' -f2 | grep '.tbz2$')
+         cut -d'"' -f2 | grep '.tbz2$' | uniq)
 
   local ec=$?
 
@@ -319,32 +333,19 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | \
-              grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep $ARCH | \
-              uniq | tail -n1)
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | \
-          grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep "noarch" | \
-          uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep "noarch" | uniq | tail -n1)
-  fi
+  local step1=$(echo "$pkgs" | grep "$pkgname-$pkgversion")
+  logPkgCandidates "step1" $step1
+  local step2=$(echo "$step1" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
+  logPkgCandidates "step2" $step2
+  local step3=$(echo "$step2" | grep -E "\.(${ARCH}|noarch)\.")
+  logPkgCandidates "step3" $step3
+  local pkg=$(echo "$step3" | uniq | tail -n1)
 
   verboseMsg " selected: $pkg"
 
   if [ -z "$pkg" ]; then
     verboseMsg -n "  "
-    errorMsg "no suitable version found for $OSXVERSION"
+    errorMsg "no suitable version found for $OSXVERSION on $ARCH"
     return
   fi
 
@@ -622,7 +623,7 @@ main()
       elif [ $opt == "-32" -o $opt == "--i386" ]; then
         ARCH="i386"
       elif [ $opt == "-universal" -o $opt == "--universal" ]; then
-        ARCH="i386-x86_64"
+        ARCH=${UNIVERSAL_ARCHS}
       elif [ $opt == "-arm64" -o $opt == "--arm64" ]; then
         ARCH="arm64"
       elif [ $opt == "-sm" -o $opt == "--select-mirror" ]; then
