@@ -286,6 +286,19 @@ verifyFileIntegrity()
   set -e
 }
 
+logPkgCandidates() {
+  local context="$1"
+  shift
+  local pkgs="$@"
+  local count=$(echo "$pkgs" | wc -w)
+  local list_pkgs=""
+  if [ $count -lt 5 ]; then
+    list_pkgs=$(echo "$pkgs")
+  fi
+
+  verboseMsg "  ${context}: ${count} packages left.. ${list_pkgs}"
+}
+
 getPkgUrl()
 {
   local pkgname="$1"
@@ -303,7 +316,7 @@ getPkgUrl()
 
   pkgs=$(getFileStdout "$MIRROR/$pkgname/?C=M;O=A" | \
          grep -o -E 'href="([^"#]+)"' | \
-         cut -d'"' -f2 | grep '.tbz2$')
+         cut -d'"' -f2 | grep '.tbz2$' | uniq)
 
   local ec=$?
 
@@ -320,26 +333,13 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local pkg=$(echo "$pkgs" | \
-              grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep $ARCH | \
-              uniq | tail -n1)
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | \
-          grep "$pkgname-$pkgversion" | grep $OSXVERSION | grep "noarch" | \
-          uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep $OSXVERSION | grep "noarch" | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep $ARCH | uniq | tail -n1)
-  fi
-  if [ -z "$pkg" ]; then
-    pkg=$(echo "$pkgs" | grep "any" | grep "noarch" | uniq | tail -n1)
-  fi
+  local step1=$(echo "$pkgs" | grep "$pkgname-$pkgversion")
+  logPkgCandidates "step1" $step1
+  local step2=$(echo "$step1" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
+  logPkgCandidates "step2" $step2
+  local step3=$(echo "$step2" | grep -E "\.(${ARCH}|noarch)\.")
+  logPkgCandidates "step3" $step3
+  local pkg=$(echo "$step3" | uniq | tail -n1)
 
   verboseMsg " selected: $pkg"
 
