@@ -21,11 +21,6 @@ PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 PLATFORM=$(uname -s)
 ARCH="x86_64"
 
-TAR="tar"
-if command -v bsdtar >/dev/null; then
-  TAR="bsdtar"
-fi
-
 if [ -z "$BASHPID" ]; then
   BASHPID=$(sh -c 'echo $PPID')
 fi
@@ -73,6 +68,16 @@ unsupportedDepTarget()
 }
 
 require "openssl"
+require "bzip2"
+require "tar"
+
+# Prefer bsdtar (handles SCHILY.* pax headers quietly); fall back to GNU tar with warning suppression.
+TAR_CMD=(tar)
+if command -v bsdtar &>/dev/null; then
+  TAR_CMD=(bsdtar)
+elif tar --version 2>/dev/null | grep -q "GNU tar"; then
+  TAR_CMD=(tar --warning=no-unknown-keyword)
+fi
 
 case $MACOSX_DEPLOYMENT_TARGET in
   10.6*  ) OSXVERSION="darwin_10"; UNIVERSAL_ARCHS="i386-x86_64" ;;
@@ -412,7 +417,7 @@ installPkg()
   echo "installing $pkgname ..."
   verboseMsg " extracting $pkgfile ..."
 
-  bzip2 -dc "$CACHE/$pkgfile" | ${TAR} xf -
+  bzip2 -dc "$CACHE/$pkgfile" | "${TAR_CMD[@]}" -xf -
 
   if [ -d opt/local ]; then
     verboseMsg " fixing permissions ..."
