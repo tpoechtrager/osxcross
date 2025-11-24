@@ -68,6 +68,16 @@ unsupportedDepTarget()
 }
 
 require "openssl"
+require "bzip2"
+require "tar"
+
+# Prefer bsdtar (handles SCHILY.* pax headers quietly); fall back to GNU tar with warning suppression.
+TAR_CMD=(tar)
+if command -v bsdtar &>/dev/null; then
+  TAR_CMD=(bsdtar)
+elif tar --version 2>/dev/null | grep -q "GNU tar"; then
+  TAR_CMD=(tar --warning=no-unknown-keyword)
+fi
 
 case $MACOSX_DEPLOYMENT_TARGET in
   10.6*  ) OSXVERSION="darwin_10" ;;
@@ -406,7 +416,7 @@ installPkg()
   echo "installing $pkgname ..."
   verboseMsg " extracting $pkgfile ..."
 
-  bzip2 -dc "$CACHE/$pkgfile" | tar xf -
+  bzip2 -dc "$CACHE/$pkgfile" | "${TAR_CMD[@]}" -xf -
 
   if [ -d opt/local ]; then
     verboseMsg " fixing permissions ..."
