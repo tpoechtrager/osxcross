@@ -19,7 +19,6 @@ PUBKEYRMD160="d3a22f5be7184d6575afcc1be6fdb82fd25562e8"
 PUBKEYSHA1="214baa965af76ff71187e6c1ac91c559547f48ab"
 
 PLATFORM=$(uname -s)
-ARCH="x86_64"
 
 if [ -z "$BASHPID" ]; then
   BASHPID=$(sh -c 'echo $PPID')
@@ -79,6 +78,16 @@ elif tar --version 2>/dev/null | grep -q "GNU tar"; then
   TAR_CMD=(tar --warning=no-unknown-keyword)
 fi
 
+# Set ARCH based on MACOSX_DEPLOYMENT_TARGET
+major="${MACOSX_DEPLOYMENT_TARGET%%.*}"
+minor="${MACOSX_DEPLOYMENT_TARGET#*.}"
+
+if [ "$major" -lt 10 ] || { [ "$major" -eq 10 ] && [ "$minor" -le 16 ]; }; then
+  ARCH="x86_64"
+else
+  ARCH="arm64"
+fi
+
 case $MACOSX_DEPLOYMENT_TARGET in
   10.6*  ) OSXVERSION="darwin_10"; UNIVERSAL_ARCHS="i386-x86_64" ;;
   10.7*  ) OSXVERSION="darwin_11"; UNIVERSAL_ARCHS="i386-x86_64"  ;;
@@ -90,14 +99,14 @@ case $MACOSX_DEPLOYMENT_TARGET in
   10.13* ) OSXVERSION="darwin_17"; UNIVERSAL_ARCHS="x86_64" ;;
   10.14* ) OSXVERSION="darwin_18"; UNIVERSAL_ARCHS="x86_64" ;;
   10.15* ) OSXVERSION="darwin_19"; UNIVERSAL_ARCHS="x86_64" ;;
-  10.16* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64" ;;
-  11.*   ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
-  12.*   ) OSXVERSION="darwin_21"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
-  13.*   ) OSXVERSION="darwin_22"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-  14.*   ) OSXVERSION="darwin_23"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-  15.*   ) OSXVERSION="darwin_24"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-  26.*   ) OSXVERSION="darwin_25"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-       * ) unsupportedDepTarget ;;
+  10.16* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  11|11.* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  12|12.* ) OSXVERSION="darwin_21"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  13|13.* ) OSXVERSION="darwin_22"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  14|14.* ) OSXVERSION="darwin_23"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  15|15.* ) OSXVERSION="darwin_24"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  26|26.* ) OSXVERSION="darwin_25"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+    * ) unsupportedDepTarget ;;
 esac
 
 require "osxcross-conf"
