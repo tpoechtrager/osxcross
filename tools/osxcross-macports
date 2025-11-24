@@ -68,6 +68,7 @@ unsupportedDepTarget()
 }
 
 require "openssl"
+require "bzip2"
 require "tar"
 
 # Prefer bsdtar (handles SCHILY.* pax headers quietly); fall back to GNU tar with warning suppression.
