@@ -66,6 +66,13 @@ unsupportedDepTarget()
   exit 1
 }
 
+if uname | grep -qi bsd; then
+  SORT="gsort"
+else
+  SORT="sort"
+fi
+
+require $SORT
 require "openssl"
 require "bzip2"
 require "tar"
@@ -102,10 +109,10 @@ case $MACOSX_DEPLOYMENT_TARGET in
   10.16* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
   11|11.* ) OSXVERSION="darwin_20"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
   12|12.* ) OSXVERSION="darwin_21"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
-  13|13.* ) OSXVERSION="darwin_22"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-  14|14.* ) OSXVERSION="darwin_23"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-  15|15.* ) OSXVERSION="darwin_24"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
-  26|26.* ) OSXVERSION="darwin_25"; UNIVERSAL_ARCHS="arm64e-arm64-x86_64" ;;
+  13|13.* ) OSXVERSION="darwin_22"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  14|14.* ) OSXVERSION="darwin_23"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  15|15.* ) OSXVERSION="darwin_24"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
+  26|26.* ) OSXVERSION="darwin_25"; UNIVERSAL_ARCHS="x86_64-arm64" ;;
     * ) unsupportedDepTarget ;;
 esac
 
@@ -308,6 +315,36 @@ logPkgCandidates() {
   verboseMsg "  ${context}: ${count} packages left.. ${list_pkgs}"
 }
 
+supportsRequestedArches() {
+  local candidate_arch="$1"
+  local requested_arches="$2"
+  local requested=()
+  local candidate_list=()
+
+  # Architecture independent packages always work.
+  if [ "$candidate_arch" == "noarch" ]; then
+    return 0
+  fi
+
+  IFS='-' read -ra requested <<< "$requested_arches"
+  IFS='-' read -ra candidate_list <<< "$candidate_arch"
+
+  for req in "${requested[@]}"; do
+    local found=1
+    for cand in "${candidate_list[@]}"; do
+      if [ "$req" == "$cand" ]; then
+        found=0
+        break
+      fi
+    done
+    if [ $found -ne 0 ]; then
+      return 1
+    fi
+  done
+
+  return 0
+}
+
 getPkgUrl()
 {
   local pkgname="$1"
@@ -342,13 +379,73 @@ getPkgUrl()
     verboseMsg "  $p"
   done
 
-  local step1=$(echo "$pkgs" | grep "$pkgname-$pkgversion")
-  logPkgCandidates "step1" $step1
-  local step2=$(echo "$step1" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
-  logPkgCandidates "step2" $step2
-  local step3=$(echo "$step2" | grep -E "\.(${ARCH}|noarch)\.")
-  logPkgCandidates "step3" $step3
-  local pkg=$(echo "$step3" | uniq | tail -n1)
+  # Find the newest version that supports every requested architecture. We
+  # still try the API-advertised version first, then fall back to older ones.
+  local os_filtered=$(echo "$pkgs" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
+  local versions=$(echo "$os_filtered" | \
+                   sed -E "s/^${pkgname}-//" | \
+                   sed -E 's/\.darwin.*//' | \
+                   sed -E 's/\+.*//' | $SORT -u -V)
+
+  local ordered_versions=()
+  if [ -n "$pkgversion" ]; then
+    ordered_versions+=("$pkgversion")
+  fi
+  while read -r v; do
+    if [ "$v" != "$pkgversion" ]; then
+      ordered_versions+=("$v")
+    fi
+  done < <(echo "$versions" | $SORT -rV)
+
+  for version in "${ordered_versions[@]}"; do
+    [ -z "$version" ] && continue
+
+    local step1=$(echo "$pkgs" | grep "$pkgname-$version")
+    logPkgCandidates "step1" $step1
+
+    local step2=$(echo "$step1" | grep -E "\.(${OSXVERSION}|darwin_any|any_any)\.")
+    logPkgCandidates "step2" $step2
+
+    local best_pkg=""
+    local best_score=-1
+    local step3=""
+
+    for candidate in $step2; do
+      # Extract the arch suffix regardless of darwin/any prefix.
+      local arch=$(echo "$candidate" | sed -n 's/.*\.\([^.]*\)\.tbz2/\1/p')
+
+      if [ -z "$arch" ]; then
+        continue
+      fi
+
+      if ! supportsRequestedArches "$arch" "$ARCH"; then
+        continue
+      fi
+
+      step3+="$candidate "
+
+      # Prefer an exact arch match, then fat/universal that include all arches,
+      # and finally noarch.
+      local score=1
+      if [ "$arch" == "$ARCH" ]; then
+        score=3
+      elif [ "$arch" != "noarch" ]; then
+        score=2
+      fi
+
+      if [ $score -gt $best_score ]; then
+        best_score=$score
+        best_pkg=$candidate
+      fi
+    done
+
+    logPkgCandidates "step3" $step3
+
+    if [ -n "$best_pkg" ]; then
+      pkg=$best_pkg
+      break
+    fi
+  done
 
   verboseMsg " selected: $pkg"
 
@@ -491,7 +588,7 @@ updateSearchCache()
   getFile $MIRROR $CACHE/packages
 
   cat packages | grep -o -E 'href="([^"#]+)"' | cut -d'"' -f2 | \
-    sed 's/.\{1\}$//' | uniq | sort > INDEXCACHE
+    sed 's/.\{1\}$//' | uniq | $SORT > INDEXCACHE
 
   rm -f packages
   echo "generated index cache for $(cat INDEXCACHE | wc -l) packages"
@@ -629,6 +726,8 @@ main()
       elif [ $opt == "-l" -o $opt == "--ldflags" ]; then
         showLDFLAGS $2
         exit
+      elif [ $opt == "-x86_64" -o $opt == "--x86_64" -o $opt == "-x86-64" -o $opt == "--x86-64" ]; then
+        ARCH="x86_64"
       elif [ $opt == "-32" -o $opt == "--i386" ]; then
         ARCH="i386"
       elif [ $opt == "-universal" -o $opt == "--universal" ]; then
