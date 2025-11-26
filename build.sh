@@ -79,7 +79,7 @@ if [ -n "$ENABLE_ARCHS" ]; then
     fi
   done
   # trim + normalize whitespace
-  SUPPORTED_ARCHS="$(printf '%s\n' $ENABLE_ARCHS)"
+  SUPPORTED_ARCHS="$(echo $ENABLE_ARCHS | xargs)"
 fi
 
 # Minimum targeted macOS version
