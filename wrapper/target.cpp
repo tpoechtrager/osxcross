@@ -794,6 +794,10 @@ bool Target::setup() {
           (stdlib == StdLib::libstdcxx && usegcclibs)) {
         fargs.push_back("-nostdinc++");
         fargs.push_back("-Qunused-arguments");
+
+        if ((SDKOSNum >= OSVersion(11, 1)) && (stdlib == StdLib::libcxx)) {
+          fargs.push_back("-lc++");
+        }
       }
 
       if (stdlib == StdLib::libstdcxx && usegcclibs && targetarchs.size() < 2 &&
