@@ -90,50 +90,7 @@
         };
 
         # Development shell for working on osxcross itself
-        devShells.default = pkgs.mkShell {
-          name = "osxcross-dev";
-
-          buildInputs = with pkgs; [
-            # Build tools
-            clang
-            llvmPackages.llvm
-            cmake
-            gnumake
-            autoconf
-            automake
-            libtool
-            pkg-config
-
-            # Required dependencies
-            git
-            gnupatch
-            python3
-            openssl
-            xz
-            libxml2
-            bzip2
-            cpio
-            zlib
-            bash
-            libuuid
-
-            # Optional but recommended
-            curl
-            wget
-          ];
-
-          shellHook = ''
-            echo "OSXCross development environment"
-            echo ""
-            echo "To build osxcross manually:"
-            echo "  1. Place SDK tarball in ./tarballs/"
-            echo "  2. Run: ./build.sh"
-            echo ""
-            echo "To use Nix flake:"
-            echo "  nix build .#mkOsxcross --impure"
-            echo ""
-          '';
-        };
+        devShells.default = import ./nix/devshell.nix {inherit pkgs;};
 
         # Library outputs for use in other flakes
         lib = {
