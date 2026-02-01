@@ -8,6 +8,7 @@
   gzip,
   bzip2,
   cpio,
+  jq,
   pbzx ? null, # Optional: for .xip extraction
   sdkTarball,
   sdkVersion,
@@ -63,6 +64,7 @@ in
         gzip
         bzip2
         cpio
+        jq
       ]
       ++ lib.optional (pbzx != null) pbzx;
 
@@ -78,16 +80,18 @@ in
 
     installPhase = let
       # Generate the search logic for SDK directory
-      searchScript = lib.concatMapStringsSep "\n" (pattern: ''
-        if [ -z "$sdkSource" ]; then
-          for dir in ${pattern}; do
-            if [ -d "$dir" ]; then
-              sdkSource="$dir"
-              break
-            fi
-          done
-        fi
-      '') sdkSearchPaths;
+      searchScript =
+        lib.concatMapStringsSep "\n" (pattern: ''
+          if [ -z "$sdkSource" ]; then
+            for dir in ${pattern}; do
+              if [ -d "$dir" ]; then
+                sdkSource="$dir"
+                break
+              fi
+            done
+          fi
+        '')
+        sdkSearchPaths;
     in ''
       runHook preInstall
 
@@ -107,8 +111,32 @@ in
       echo "Found SDK at: $sdkSource"
       sdkName=$(basename "$sdkSource")
 
+      # Validate SDK version from SDKSettings.json
+      settingsFile="$sdkSource/SDKSettings.json"
+      if [ -f "$settingsFile" ]; then
+        actualVersion=$(jq -r '.Version' "$settingsFile")
+        expectedVersion="${sdkVersion}"
+
+        if [ "$actualVersion" != "$expectedVersion" ]; then
+          echo "ERROR: SDK version mismatch!"
+          echo "  Expected (from filename): $expectedVersion"
+          echo "  Actual (from SDKSettings.json): $actualVersion"
+          echo ""
+          echo "If the tarball was renamed, pass the correct version:"
+          echo "  mkOsxcross { sdkPath = ...; sdkVersion = \"$actualVersion\"; }"
+          exit 1
+        fi
+        echo "SDK version verified: $actualVersion"
+      else
+        echo "WARNING: SDKSettings.json not found, cannot verify SDK version"
+        actualVersion="${sdkVersion}"
+      fi
+
       # Move SDK to output
       mv "$sdkSource" "$out/$sdkName"
+
+      # Write the verified version to output for reference
+      echo "$actualVersion" > "$out/sdk-version"
 
       # Apply SDK fixups (from build.sh)
       # Remove problematic libcxx.imp file that can cause build issues
@@ -125,13 +153,13 @@ in
       runHook postInstall
     '';
 
-  # Don't run fixup - SDK should remain as-is
-  dontFixup = true;
+    # Don't run fixup - SDK should remain as-is
+    dontFixup = true;
 
-  meta = with lib; {
-    description = "macOS ${sdkVersion} SDK";
-    license = licenses.unfree; # Apple SDK license
-    platforms = platforms.all;
-    maintainers = [];
-  };
-}
+    meta = with lib; {
+      description = "macOS ${sdkVersion} SDK";
+      license = licenses.unfree; # Apple SDK license
+      platforms = platforms.all;
+      maintainers = [];
+    };
+  }
