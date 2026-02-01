@@ -5,7 +5,6 @@
 #
 # Usage:
 #   nix develop            # Enter the dev shell (uses flake.nix devShells.default)
-#   nix develop .#dev      # Explicit dev shell entry
 #
 # Formatting:
 #   This project uses Alejandra for Nix code formatting.
@@ -15,16 +14,19 @@
 #     alejandra .
 #
 #   To format specific files:
-#     alejandra flake.nix devshell.nix
+#     alejandra flake.nix nix/devshell.nix
 #
 #   To check formatting without modifying (useful for CI):
 #     alejandra --check .
 #
 #   Alejandra docs: https://github.com/kamadorueda/alejandra
 #
-{pkgs ? import <nixpkgs> {}}: let
-  # Build dependencies for OSXCross
-  buildDeps = with pkgs; [
+{pkgs}:
+pkgs.mkShell {
+  name = "osxcross-dev";
+
+  packages = with pkgs; [
+    # Build tools
     clang
     llvmPackages.llvm
     cmake
@@ -33,10 +35,8 @@
     automake
     libtool
     pkg-config
-  ];
 
-  # Runtime dependencies
-  runtimeDeps = with pkgs; [
+    # Required dependencies
     git
     gnupatch
     python3
@@ -48,46 +48,33 @@
     zlib
     bash
     libuuid
-  ];
 
-  # Optional utilities
-  utilityDeps = with pkgs; [
+    # Utilities
     curl
     wget
-  ];
 
-  # Development and formatting tools
-  devTools = with pkgs; [
     # Nix formatting - Alejandra is an opinionated Nix formatter
     # Usage: alejandra .          (format all nix files)
     #        alejandra --check .  (check without modifying)
     alejandra
 
-    # Testing
+    # Testing (bats for wrapper unit tests)
     bats
   ];
-in
-  pkgs.mkShell {
-    name = "osxcross-dev";
 
-    buildInputs = buildDeps ++ runtimeDeps ++ utilityDeps ++ devTools;
-
-    shellHook = ''
-      echo "╔══════════════════════════════════════════════════════════════╗"
-      echo "║          OSXCross Development Environment                    ║"
-      echo "╚══════════════════════════════════════════════════════════════╝"
-      echo ""
-      echo "Build commands:"
-      echo "  ./build.sh              Build toolchain (SDK required in ./tarballs/)"
-      echo "  make -C wrapper/        Build the compiler wrapper"
-      echo "  make -C wrapper/ clean  Clean wrapper build artifacts"
-      echo ""
-      echo "Testing:"
-      echo "  cd wrapper/unittests && ./run.bats"
-      echo ""
-      echo "Nix formatting (Alejandra):"
-      echo "  alejandra .             Format all Nix files"
-      echo "  alejandra --check .     Check formatting without changes"
-      echo ""
-    '';
-  }
+  shellHook = ''
+    echo "OSXCross Development Environment"
+    echo ""
+    echo "Build commands:"
+    echo "  ./build.sh              Build toolchain (SDK required in ./tarballs/)"
+    echo "  make -C wrapper/        Build the compiler wrapper"
+    echo "  make -C wrapper/ clean  Clean wrapper build artifacts"
+    echo ""
+    echo "Testing:"
+    echo "  cd wrapper/unittests && ./run.bats"
+    echo ""
+    echo "Nix formatting (Alejandra):"
+    echo "  alejandra .             Format all Nix files"
+    echo "  alejandra --check .     Check formatting without changes"
+  '';
+}
