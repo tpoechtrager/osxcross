@@ -21,16 +21,28 @@
         # Import the helper library
         osxcrossLib = import ./nix/lib.nix {inherit (pkgs) lib;};
 
+        # Get SDK path from env var as fallback
+        envSdkPath = builtins.getEnv "MACOS_SDK";
+
         # Function to build osxcross with configuration
         mkOsxcross = {
-          sdkPath,
+          sdkPath ? null,
           sdkVersion ? null,
           osxVersionMin ? null,
           enableArchs ? null,
           enableLTO ? true,
-        }:
+        }: let
+          # Manual config (sdkPath argument) takes precedence over env var
+          effectiveSdkPath =
+            if sdkPath != null
+            then sdkPath
+            else if envSdkPath != ""
+            then envSdkPath
+            else throw "SDK path required: either pass sdkPath argument or set MACOS_SDK environment variable (requires --impure flag)";
+        in
           pkgs.callPackage ./nix/osxcross.nix {
-            inherit osxcrossLib sdkPath sdkVersion osxVersionMin enableArchs enableLTO;
+            inherit osxcrossLib sdkVersion osxVersionMin enableArchs enableLTO;
+            sdkPath = effectiveSdkPath;
             src = self;
           };
 
@@ -50,7 +62,7 @@
             ==================
 
             OSXCross requires a macOS SDK tarball due to Apple licensing.
-            You must provide the SDK path when building.
+            You can provide the SDK path via argument or environment variable.
 
             Usage in a flake:
             -----------------
@@ -66,9 +78,15 @@
               };
             }
 
+            Using MACOS_SDK environment variable:
+            -------------------------------------
+            export MACOS_SDK=/path/to/MacOSX14.5.sdk.tar.xz
+            nix build --impure  # --impure required for env var access
+
             Available options for mkOsxcross:
             ---------------------------------
-            - sdkPath      (required) Path to macOS SDK tarball
+            - sdkPath      (optional) Path to macOS SDK tarball
+                           Falls back to MACOS_SDK env var if not provided
             - sdkVersion   (optional) SDK version, auto-detected from filename
             - osxVersionMin(optional) Minimum deployment target
             - enableArchs  (optional) List of architectures: ["arm64" "x86_64"]
@@ -109,18 +127,28 @@
     )
     // {
       # Overlay for use with nixpkgs overlays
-      overlays.default = final: prev: {
+      overlays.default = final: prev: let
+        envSdkPath = builtins.getEnv "MACOS_SDK";
+      in {
         osxcross = {
           mkOsxcross = {
-            sdkPath,
+            sdkPath ? null,
             sdkVersion ? null,
             osxVersionMin ? null,
             enableArchs ? null,
             enableLTO ? true,
-          }:
+          }: let
+            effectiveSdkPath =
+              if sdkPath != null
+              then sdkPath
+              else if envSdkPath != ""
+              then envSdkPath
+              else throw "SDK path required: either pass sdkPath argument or set MACOS_SDK environment variable (requires --impure flag)";
+          in
             final.callPackage ./nix/osxcross.nix {
               osxcrossLib = import ./nix/lib.nix {inherit (final) lib;};
-              inherit sdkPath sdkVersion osxVersionMin enableArchs enableLTO;
+              inherit sdkVersion osxVersionMin enableArchs enableLTO;
+              sdkPath = effectiveSdkPath;
               src = self;
             };
 
