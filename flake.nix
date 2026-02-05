@@ -33,11 +33,12 @@
           enableLTO ? true,
         }: let
           # Manual config (sdkPath argument) takes precedence over env var
+          # Convert env var string to a Nix path so the file gets copied into the store
           effectiveSdkPath =
             if sdkPath != null
             then sdkPath
             else if envSdkPath != ""
-            then envSdkPath
+            then /. + envSdkPath
             else throw "SDK path required: either pass sdkPath argument or set MACOS_SDK environment variable (requires --impure flag)";
         in
           pkgs.callPackage ./nix/osxcross.nix {
@@ -151,7 +152,7 @@
               if sdkPath != null
               then sdkPath
               else if envSdkPath != ""
-              then envSdkPath
+              then /. + envSdkPath
               else throw "SDK path required: either pass sdkPath argument or set MACOS_SDK environment variable (requires --impure flag)";
           in
             final.callPackage ./nix/osxcross.nix {
