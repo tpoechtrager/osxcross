@@ -21,7 +21,10 @@
 #
 #   Alejandra docs: https://github.com/kamadorueda/alejandra
 #
-{pkgs}:
+{
+  pkgs,
+  sdkShellHook ? "",
+}:
 pkgs.mkShell {
   name = "osxcross-dev";
 
@@ -64,6 +67,8 @@ pkgs.mkShell {
 
   shellHook = ''
     echo "OSXCross Development Environment"
+    echo ""
+    ${sdkShellHook}
     echo ""
     echo "Build commands:"
     echo "  ./build.sh              Build toolchain (SDK required in ./tarballs/)"

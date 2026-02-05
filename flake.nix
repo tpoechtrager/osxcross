@@ -52,6 +52,15 @@
             inherit (pkgs) lib;
             inherit pkgs osxcross;
           };
+
+        # Shell hook snippet for SDK detection (reusable by consumers)
+        sdkShellHook = ''
+          if [ -n "''${MACOS_SDK:-}" ]; then
+            echo "SDK: $MACOS_SDK (from MACOS_SDK env var)"
+          else
+            echo "SDK: not found (set MACOS_SDK env var or pass sdkPath to mkOsxcross)"
+          fi
+        '';
       in {
         # Package outputs
         packages = {
@@ -108,11 +117,11 @@
         };
 
         # Development shell for working on osxcross itself
-        devShells.default = import ./nix/devshell.nix {inherit pkgs;};
+        devShells.default = import ./nix/devshell.nix {inherit pkgs sdkShellHook;};
 
         # Library outputs for use in other flakes
         lib = {
-          inherit mkOsxcross mkRustHelpers osxcrossLib;
+          inherit mkOsxcross mkRustHelpers osxcrossLib sdkShellHook;
 
           # Convenience: get Rust targets for an SDK version
           getRustTargets = osxcrossLib.getRustTargets;
