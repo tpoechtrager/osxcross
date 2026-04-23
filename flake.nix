@@ -24,26 +24,86 @@
         # Get SDK path from env var as fallback
         envSdkPath = builtins.getEnv "MACOS_SDK";
 
+        isMacosSdkRef = value:
+          builtins.isAttrs value
+          && value ? _type
+          && value._type == "osxcross-macos-sdk"
+          && value ? sdk
+          && value ? sdkRoot
+          && value ? sdkVersion;
+
+        mkMacosSdkRef = {
+          sdk,
+          sdkVersion,
+          sdkRoot ? "${sdk}/MacOSX${sdkVersion}.sdk",
+        }:
+          assert sdkVersion != null && builtins.isString sdkVersion
+            || throw "osxcross: mkMacosSdkRef 'sdkVersion' must be a string";
+          assert builtins.stringLength sdkVersion > 0
+            || throw "osxcross: mkMacosSdkRef 'sdkVersion' must not be empty";
+          {
+            _type = "osxcross-macos-sdk";
+            inherit sdk sdkVersion;
+            sdkRoot = toString sdkRoot;
+          };
+
+        mkMacosSdk = {
+          sdkArchive,
+          sdkVersion ? null,
+          outputHash ? null,
+        }: let
+          detectedSdkVersion =
+            if sdkVersion != null
+            then sdkVersion
+            else osxcrossLib.detectSdkVersion (builtins.baseNameOf (toString sdkArchive));
+          sdk = pkgs.callPackage ./nix/sdk.nix {
+            sdkTarball = sdkArchive;
+            sdkVersion = detectedSdkVersion;
+            inherit outputHash;
+          };
+        in
+          mkMacosSdkRef {
+            inherit sdk;
+            sdkVersion = detectedSdkVersion;
+          };
+
+        normalizeMacosSdk = macosSdk:
+          if isMacosSdkRef macosSdk
+          then macosSdk
+          else throw "osxcross: expected a macOS SDK ref from mkMacosSdk or mkMacosSdkRef";
+
         # Function to build osxcross with configuration
         mkOsxcross = {
+          macosSdk ? null,
           sdkPath ? null,
           sdkVersion ? null,
           osxVersionMin ? null,
           enableArchs ? null,
           enableLTO ? true,
         }: let
-          # Manual config (sdkPath argument) takes precedence over env var
-          # Convert env var string to a Nix path so the file gets copied into the store
+          # macosSdk is preferred. Legacy sdkPath takes precedence over env var.
+          # Convert env var string to a Nix path so the file gets copied into the store.
           effectiveSdkPath =
             if sdkPath != null
             then sdkPath
             else if envSdkPath != ""
             then /. + envSdkPath
-            else throw "SDK path required: either pass sdkPath argument or set MACOS_SDK environment variable (requires --impure flag)";
+            else null;
+
+          effectiveMacosSdk =
+            if macosSdk != null
+            then normalizeMacosSdk macosSdk
+            else if effectiveSdkPath != null
+            then
+              mkMacosSdk {
+                sdkArchive = effectiveSdkPath;
+                inherit sdkVersion;
+              }
+            else throw "SDK required: pass macosSdk, pass sdkPath, or set MACOS_SDK (legacy impure fallback)";
         in
           pkgs.callPackage ./nix/osxcross.nix {
             inherit osxcrossLib sdkVersion osxVersionMin enableArchs enableLTO;
-            sdkPath = effectiveSdkPath;
+            macosSdk = effectiveMacosSdk;
             src = self;
           };
 
@@ -59,9 +119,30 @@
           if [ -n "''${MACOS_SDK:-}" ]; then
             echo "SDK: $MACOS_SDK (from MACOS_SDK env var)"
           else
-            echo "SDK: not found (set MACOS_SDK env var or pass sdkPath to mkOsxcross)"
+            echo "SDK: not found (pass macosSdk, pass sdkPath, or set MACOS_SDK for legacy impure fallback)"
           fi
         '';
+
+        fakeSdkArchive = pkgs.runCommand "MacOSX26.1.sdk.tar" {
+          nativeBuildInputs = [pkgs.gnutar];
+        } ''
+          mkdir -p MacOSX26.1.sdk/usr/include/c++/v1
+          cat > MacOSX26.1.sdk/SDKSettings.json <<'JSON'
+          {"Version":"26.1"}
+          JSON
+          tar cf "$out" MacOSX26.1.sdk
+        '';
+
+        fakeMacosSdk = mkMacosSdk {
+          sdkArchive = fakeSdkArchive;
+          sdkVersion = "26.1";
+        };
+
+        fakeToolchain = mkOsxcross {
+          macosSdk = fakeMacosSdk;
+          enableArchs = ["x86_64"];
+          enableLTO = false;
+        };
       in {
         # Package outputs
         packages = {
@@ -72,17 +153,26 @@
             ==================
 
             OSXCross requires a macOS SDK tarball due to Apple licensing.
-            You can provide the SDK path via argument or environment variable.
+            Prefer a shared macOS SDK ref. Legacy sdkPath and MACOS_SDK are still supported.
 
             Usage in a flake:
             -----------------
             {
               inputs.osxcross.url = "github:tpoechtrager/osxcross";
+              inputs.macos-sdk-archive = {
+                url = "file:///path/to/MacOSX14.5.sdk.tar.xz";
+                flake = false;
+              };
 
-              outputs = { osxcross, ... }: {
+              outputs = { osxcross, macos-sdk-archive, ... }: {
                 packages.x86_64-linux.myApp = let
+                  macosSdk = osxcross.lib.x86_64-linux.mkMacosSdk {
+                    sdkArchive = macos-sdk-archive;
+                    sdkVersion = "14.5";
+                    # outputHash = "sha256-...";
+                  };
                   toolchain = osxcross.lib.x86_64-linux.mkOsxcross {
-                    sdkPath = ./MacOSX14.5.sdk.tar.xz;
+                    inherit macosSdk;
                   };
                 in ...;
               };
@@ -95,6 +185,7 @@
 
             Available options for mkOsxcross:
             ---------------------------------
+            - macosSdk     (preferred) SDK ref from mkMacosSdk or mkMacosSdkRef
             - sdkPath      (optional) Path to macOS SDK tarball
                            Falls back to MACOS_SDK env var if not provided
             - sdkVersion   (optional) SDK version, auto-detected from filename
@@ -120,9 +211,42 @@
         # Development shell for working on osxcross itself
         devShells.default = import ./nix/devshell.nix {inherit pkgs sdkShellHook;};
 
+        checks =
+          {
+            macos-sdk-no-aliases = pkgs.runCommand "check-macos-sdk-no-aliases" {} ''
+              test -d "${fakeMacosSdk.sdkRoot}"
+              for path in \
+                "${fakeMacosSdk.sdk}/MacOSX.sdk" \
+                "${fakeMacosSdk.sdk}/MacOSX26.sdk" \
+                "${fakeMacosSdk.sdk}/default"
+              do
+                test ! -e "$path"
+                test ! -L "$path"
+              done
+              touch "$out"
+            '';
+          }
+          // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+            osxcross-direct-sdk-root = pkgs.runCommand "check-osxcross-direct-sdk-root" {} ''
+              test ! -e "${fakeToolchain}/SDK"
+              test ! -L "${fakeToolchain}/SDK"
+              test "$("${fakeToolchain}/bin/xcrun" -show-sdk-path)" = "${fakeMacosSdk.sdkRoot}"
+              "${fakeToolchain}/bin/osxcross-conf" | grep 'export OSXCROSS_SDK="${fakeMacosSdk.sdkRoot}"'
+              touch "$out"
+            '';
+          };
+
         # Library outputs for use in other flakes
         lib = {
-          inherit mkOsxcross mkRustHelpers osxcrossLib sdkShellHook;
+          inherit
+            mkMacosSdk
+            mkMacosSdkRef
+            isMacosSdkRef
+            mkOsxcross
+            mkRustHelpers
+            osxcrossLib
+            sdkShellHook
+            ;
 
           # Convenience: get Rust targets for an SDK version
           getRustTargets = osxcrossLib.getRustTargets;
@@ -139,9 +263,61 @@
       # Overlay for use with nixpkgs overlays
       overlays.default = final: prev: let
         envSdkPath = builtins.getEnv "MACOS_SDK";
+        osxcrossLib = import ./nix/lib.nix {inherit (final) lib;};
+
+        isMacosSdkRef = value:
+          builtins.isAttrs value
+          && value ? _type
+          && value._type == "osxcross-macos-sdk"
+          && value ? sdk
+          && value ? sdkRoot
+          && value ? sdkVersion;
+
+        mkMacosSdkRef = {
+          sdk,
+          sdkVersion,
+          sdkRoot ? "${sdk}/MacOSX${sdkVersion}.sdk",
+        }:
+          assert sdkVersion != null && builtins.isString sdkVersion
+            || throw "osxcross: mkMacosSdkRef 'sdkVersion' must be a string";
+          assert builtins.stringLength sdkVersion > 0
+            || throw "osxcross: mkMacosSdkRef 'sdkVersion' must not be empty";
+          {
+            _type = "osxcross-macos-sdk";
+            inherit sdk sdkVersion;
+            sdkRoot = toString sdkRoot;
+          };
+
+        mkMacosSdk = {
+          sdkArchive,
+          sdkVersion ? null,
+          outputHash ? null,
+        }: let
+          detectedSdkVersion =
+            if sdkVersion != null
+            then sdkVersion
+            else osxcrossLib.detectSdkVersion (builtins.baseNameOf (toString sdkArchive));
+          sdk = final.callPackage ./nix/sdk.nix {
+            sdkTarball = sdkArchive;
+            sdkVersion = detectedSdkVersion;
+            inherit outputHash;
+          };
+        in
+          mkMacosSdkRef {
+            inherit sdk;
+            sdkVersion = detectedSdkVersion;
+          };
+
+        normalizeMacosSdk = macosSdk:
+          if isMacosSdkRef macosSdk
+          then macosSdk
+          else throw "osxcross: expected a macOS SDK ref from mkMacosSdk or mkMacosSdkRef";
       in {
         osxcross = {
+          inherit mkMacosSdk mkMacosSdkRef isMacosSdkRef;
+
           mkOsxcross = {
+            macosSdk ? null,
             sdkPath ? null,
             sdkVersion ? null,
             osxVersionMin ? null,
@@ -153,12 +329,23 @@
               then sdkPath
               else if envSdkPath != ""
               then /. + envSdkPath
-              else throw "SDK path required: either pass sdkPath argument or set MACOS_SDK environment variable (requires --impure flag)";
+              else null;
+
+            effectiveMacosSdk =
+              if macosSdk != null
+              then normalizeMacosSdk macosSdk
+              else if effectiveSdkPath != null
+              then
+                mkMacosSdk {
+                  sdkArchive = effectiveSdkPath;
+                  inherit sdkVersion;
+                }
+              else throw "SDK required: pass macosSdk, pass sdkPath, or set MACOS_SDK (legacy impure fallback)";
           in
             final.callPackage ./nix/osxcross.nix {
-              osxcrossLib = import ./nix/lib.nix {inherit (final) lib;};
+              inherit osxcrossLib;
               inherit sdkVersion osxVersionMin enableArchs enableLTO;
-              sdkPath = effectiveSdkPath;
+              macosSdk = effectiveMacosSdk;
               src = self;
             };
 
@@ -169,7 +356,7 @@
               inherit osxcross;
             };
 
-          lib = import ./nix/lib.nix {inherit (final) lib;};
+          lib = osxcrossLib;
         };
       };
     };

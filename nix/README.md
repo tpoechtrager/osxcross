@@ -12,17 +12,27 @@ A Nix flake for building macOS cross-compilation toolchains on Linux.
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     osxcross.url = "github:tpoechtrager/osxcross";
+    macos-sdk-archive = {
+      url = "file:///path/to/MacOSX14.5.sdk.tar.xz";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, osxcross }: let
+  outputs = { self, nixpkgs, osxcross, macos-sdk-archive }: let
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
 
-    # Build the toolchain with your SDK
+    # Realize the SDK once, then share this ref across toolchains.
+    macosSdk = osxcross.lib.${system}.mkMacosSdk {
+      sdkArchive = macos-sdk-archive;
+      sdkVersion = "14.5";
+      # Optional but recommended once known:
+      # outputHash = "sha256-...";
+    };
+
+    # Build the toolchain with a pure SDK ref.
     toolchain = osxcross.lib.${system}.mkOsxcross {
-      sdkPath = ./path/to/MacOSX14.5.sdk.tar.xz;
-      # Optional: explicitly set version if filename doesn't include it
-      # sdkVersion = "14.5";
+      inherit macosSdk;
     };
   in {
     # Use the toolchain in your builds
@@ -37,7 +47,7 @@ A Nix flake for building macOS cross-compilation toolchains on Linux.
 ### Command Line Usage
 
 ```bash
-# Build with explicit SDK path and version
+# Legacy local host path usage, for bootstrapping only.
 nix build --impure --expr '
   let
     flake = builtins.getFlake (toString ./.);
@@ -55,12 +65,31 @@ nix build --impure --expr '
 
 ## Configuration Options
 
+### `mkMacosSdk` Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sdkArchive` | path | Yes | Path/store object for a packaged macOS SDK archive (`.tar`, `.tar.xz`, `.tar.gz`, `.tar.bz2`) |
+| `sdkVersion` | string | No | SDK version (auto-detected from archive filename if not provided) |
+| `outputHash` | string | No | Optional fixed-output hash for stable SDK sharing across flakes/checkouts |
+
+Returns a macOS SDK ref: `{ sdk, sdkRoot, sdkVersion, _type = "osxcross-macos-sdk"; }`.
+
+### `mkMacosSdkRef` Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `sdk` | path/derivation | Yes | Already-realized SDK parent output |
+| `sdkVersion` | string | Yes | SDK version |
+| `sdkRoot` | path/string | No | Defaults to `"${sdk}/MacOSX${sdkVersion}.sdk"` |
+
 ### `mkOsxcross` Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `sdkPath` | path | Yes | Path to macOS SDK tarball (`.tar`, `.tar.xz`, `.tar.gz`, `.tar.bz2`) |
-| `sdkVersion` | string | No | SDK version (auto-detected from filename if not provided) |
+| `macosSdk` | attrset | Preferred | SDK ref from `mkMacosSdk` or `mkMacosSdkRef` |
+| `sdkPath` | path | No | Legacy path to macOS SDK archive; builds an SDK ref internally |
+| `sdkVersion` | string | No | SDK version override; must match `macosSdk.sdkVersion` when `macosSdk` is provided |
 | `osxVersionMin` | string | No | Minimum macOS deployment target (default: SDK's minimum) |
 | `enableArchs` | list | No | Architectures to enable (default: all supported by SDK) |
 | `enableLTO` | bool | No | Enable LTO support (default: `true`) |
@@ -68,32 +97,38 @@ nix build --impure --expr '
 ### Example Configurations
 
 ```nix
-# Minimal - auto-detect everything from SDK filename
-toolchain = mkOsxcross {
-  sdkPath = ./MacOSX14.5.sdk.tar.xz;
+# Preferred: realize the SDK once and pass the ref to every toolchain.
+macosSdk = mkMacosSdk {
+  sdkArchive = inputs.macos-sdk-archive;
+  sdkVersion = "14.5";
+  outputHash = "sha256-...";
 };
 
-# Explicit version (useful if filename doesn't include version)
 toolchain = mkOsxcross {
-  sdkPath = ./MacOSX.sdk.tar;
+  inherit macosSdk;
+};
+
+# Already-realized SDK parent output.
+macosSdk = mkMacosSdkRef {
+  sdk = inputs.macos-sdk;
   sdkVersion = "14.5";
 };
 
 # Restrict to specific architectures
 toolchain = mkOsxcross {
-  sdkPath = ./MacOSX14.5.sdk.tar.xz;
+  inherit macosSdk;
   enableArchs = [ "arm64" "x86_64" ];  # Exclude arm64e, x86_64h
 };
 
 # Set minimum deployment target
 toolchain = mkOsxcross {
-  sdkPath = ./MacOSX14.5.sdk.tar.xz;
+  inherit macosSdk;
   osxVersionMin = "11.0";  # Require macOS 11+
 };
 
 # Disable LTO (faster builds, larger binaries)
 toolchain = mkOsxcross {
-  sdkPath = ./MacOSX14.5.sdk.tar.xz;
+  inherit macosSdk;
   enableLTO = false;
 };
 ```
@@ -157,18 +192,27 @@ The flake includes helpers for Rust cross-compilation with [rust-overlay](https:
     osxcross.url = "github:tpoechtrager/osxcross";
     rust-overlay.url = "github:oxalica/rust-overlay";
     crane.url = "github:ipetkov/crane";
+    macos-sdk-archive = {
+      url = "file:///path/to/MacOSX14.5.sdk.tar.xz";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, osxcross, rust-overlay, crane }: let
+  outputs = { self, nixpkgs, osxcross, rust-overlay, crane, macos-sdk-archive }: let
     system = "x86_64-linux";
     pkgs = import nixpkgs {
       inherit system;
       overlays = [ rust-overlay.overlays.default ];
     };
 
+    macosSdk = osxcross.lib.${system}.mkMacosSdk {
+      sdkArchive = macos-sdk-archive;
+      sdkVersion = "14.5";
+    };
+
     # Build osxcross toolchain
     toolchain = osxcross.lib.${system}.mkOsxcross {
-      sdkPath = ./MacOSX14.5.sdk.tar.xz;
+      inherit macosSdk;
     };
 
     # Get Rust helpers
@@ -217,7 +261,8 @@ Common environment variables for cross-compilation.
 rustHelpers.commonEnv
 # => {
 #   OSXCROSS_TARGET_DIR = "/nix/store/...";
-#   OSXCROSS_SDK = "/nix/store/.../SDK/MacOSX.sdk";
+#   OSXCROSS_SDK = "/nix/store/...-macosx-sdk-14.5/MacOSX14.5.sdk";
+#   OSXCROSS_SDKROOT = "/nix/store/...-macosx-sdk-14.5/MacOSX14.5.sdk";
 #   MACOSX_DEPLOYMENT_TARGET = "10.13";
 # }
 ```
@@ -363,6 +408,8 @@ cmake -DCMAKE_TOOLCHAIN_FILE=./result/share/osxcross/toolchain.cmake ...
 - `packages.<system>.default` - Help message (SDK required for full toolchain)
 
 ### Library Functions
+- `lib.<system>.mkMacosSdk` - Realize a canonical SDK store output from an SDK archive
+- `lib.<system>.mkMacosSdkRef` - Reference an already-realized SDK store output
 - `lib.<system>.mkOsxcross` - Build complete toolchain
 - `lib.<system>.mkRustHelpers` - Get Rust cross-compilation helpers
 - `lib.<system>.osxcrossLib` - Low-level helper functions
@@ -371,7 +418,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=./result/share/osxcross/toolchain.cmake ...
 - `devShells.<system>.default` - Development environment for working on osxcross
 
 ### Overlays
-- `overlays.default` - Nixpkgs overlay adding `mkOsxcross` and `mkRustHelpers`
+- `overlays.default` - Nixpkgs overlay adding the osxcross SDK, toolchain, and Rust helper APIs
 
 ## Toolchain Passthru Attributes
 
@@ -385,7 +432,8 @@ toolchain.primaryArch         # "arm64"
 toolchain.effectiveOsxVersionMin  # "10.13"
 
 # Sub-derivations
-toolchain.sdk          # The extracted SDK
+toolchain.sdk          # The shared SDK parent output
+toolchain.sdkRoot      # The canonical SDK root, e.g. /nix/store/.../MacOSX14.5.sdk
 toolchain.cctools-port # Apple cctools
 toolchain.wrapper      # Compiler wrapper
 toolchain.xar          # XAR tool

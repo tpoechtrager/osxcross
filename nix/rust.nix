@@ -6,6 +6,7 @@
   osxcross, # The built osxcross toolchain
 }: let
   inherit (osxcross) darwinTarget supportedArchs;
+  sdkRoot = osxcross.sdkRoot or "${osxcross.sdk}/MacOSX${osxcross.detectedSdkVersion}.sdk";
 
   # Map osxcross arch to Rust target triple
   archToRustTarget = arch:
@@ -58,7 +59,8 @@
   # Common environment variables
   commonEnv = {
     OSXCROSS_TARGET_DIR = "${osxcross}";
-    OSXCROSS_SDK = "${osxcross}/SDK/MacOSX.sdk";
+    OSXCROSS_SDK = sdkRoot;
+    OSXCROSS_SDKROOT = sdkRoot;
     MACOSX_DEPLOYMENT_TARGET = osxcross.effectiveOsxVersionMin;
   };
 

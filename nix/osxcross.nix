@@ -8,17 +8,26 @@
   llvmPackages,
   src, # osxcross source
   osxcrossLib,
-  sdkPath,
+  macosSdk,
   sdkVersion ? null,
   osxVersionMin ? null,
   enableArchs ? null,
   enableLTO ? true,
 }: let
+  macosSdkVersion =
+    macosSdk.sdkVersion or (throw "osxcross: macosSdk.sdkVersion is required");
+
   # Auto-detect SDK version if not provided
   detectedSdkVersion =
     if sdkVersion != null
-    then sdkVersion
-    else osxcrossLib.detectSdkVersion (builtins.baseNameOf (toString sdkPath));
+    then
+      if sdkVersion == macosSdkVersion
+      then sdkVersion
+      else throw "osxcross: sdkVersion (${sdkVersion}) does not match macosSdk.sdkVersion (${macosSdkVersion})"
+    else macosSdkVersion;
+
+  sdk = macosSdk.sdk or (throw "osxcross: macosSdk.sdk is required");
+  sdkRoot = macosSdk.sdkRoot or "${sdk}/MacOSX${detectedSdkVersion}.sdk";
 
   # Get target info from SDK version
   targetInfo = osxcrossLib.getTargetInfo detectedSdkVersion;
@@ -72,16 +81,6 @@
     osxVersionMin = effectiveOsxVersionMin;
   };
 
-  # Extract SDK
-  sdk = callPackage ./sdk.nix {
-    sdkTarball = sdkPath;
-    sdkVersion = detectedSdkVersion;
-  };
-
-  # Major version for SDK symlink (e.g., "26" from "26.1")
-  majorVersion = builtins.head (lib.splitString "." detectedSdkVersion);
-  needsMajorVersionSymlink = majorVersion != detectedSdkVersion;
-
   # Get symlink definitions from lib
   wrapperSymlinks = osxcrossLib.getWrapperSymlinks {inherit supportedArchs darwinTarget;};
   cctoolsSymlinks = osxcrossLib.getCctoolsSymlinks {inherit supportedArchs darwinTarget primaryArch;};
@@ -92,25 +91,6 @@
     lib.mapAttrsToList (name: target: "ln -sf \"${target}\" \"$out/bin/${name}\"") allSymlinks
   );
 
-  # SDK symlinks to create
-  sdkSymlinks =
-    [
-      {
-        name = "MacOSX.sdk";
-        target = "${sdk}/MacOSX.sdk";
-      }
-      {
-        name = "MacOSX${detectedSdkVersion}.sdk";
-        target = "${sdk}/MacOSX.sdk";
-      }
-    ]
-    ++ lib.optional needsMajorVersionSymlink {
-      name = "MacOSX${majorVersion}.sdk";
-      target = "${sdk}/MacOSX.sdk";
-    };
-
-  sdkSymlinkCommands = lib.concatMapStringsSep "\n" (s: ''ln -sf "${s.target}" "$out/SDK/${s.name}"'') sdkSymlinks;
-
   # Script contents defined in Nix
   osxcrossCmakeScript = ''
     #!/usr/bin/env bash
@@ -118,9 +98,10 @@
     OSXCROSS_TARGET_DIR="$(cd "$(dirname "$0")/.." && pwd)"
     OSXCROSS_HOST="${primaryArch}-apple-${darwinTarget}"
     OSXCROSS_TARGET="${darwinTarget}"
-    OSXCROSS_SDK="$OSXCROSS_TARGET_DIR/SDK/MacOSX.sdk"
+    OSXCROSS_SDK="${sdkRoot}"
+    OSXCROSS_SDKROOT="${sdkRoot}"
 
-    export OSXCROSS_TARGET_DIR OSXCROSS_HOST OSXCROSS_TARGET OSXCROSS_SDK
+    export OSXCROSS_TARGET_DIR OSXCROSS_HOST OSXCROSS_TARGET OSXCROSS_SDK OSXCROSS_SDKROOT
 
     exec cmake \
       -DCMAKE_TOOLCHAIN_FILE="$OSXCROSS_TARGET_DIR/share/osxcross/toolchain.cmake" \
@@ -141,7 +122,8 @@
     OSXCROSS_TARGET_DIR="$(cd "$(dirname "''${BASH_SOURCE[0]}")/.." && pwd)"
     export PATH="$OSXCROSS_TARGET_DIR/bin:$PATH"
     export OSXCROSS_TARGET_DIR
-    export OSXCROSS_SDK="$OSXCROSS_TARGET_DIR/SDK/MacOSX.sdk"
+    export OSXCROSS_SDK="${sdkRoot}"
+    export OSXCROSS_SDKROOT="${sdkRoot}"
     export MACOSX_DEPLOYMENT_TARGET="${effectiveOsxVersionMin}"
   '';
 
@@ -218,7 +200,7 @@ in
       runHook preInstall
 
       # Create directory structure
-      mkdir -p "$out"/{bin,lib,SDK,share/osxcross}
+      mkdir -p "$out"/{bin,lib,share/osxcross}
 
       # Copy cctools binaries
       cp -r "${cctools-port}"/bin/* "$out/bin/"
@@ -232,11 +214,10 @@ in
         binName=$(basename "$wrapperBin")
         cp "$wrapperBin" "$out/bin/$binName"
         wrapProgram "$out/bin/$binName" \
+          --set-default OSXCROSS_SDK "${sdkRoot}" \
+          --set-default OSXCROSS_SDKROOT "${sdkRoot}" \
           --prefix PATH : "${llvmPackages.clang-unwrapped}/bin:$out/bin"
       done
-
-      # Create SDK symlinks
-      ${sdkSymlinkCommands}
 
       # Create tool symlinks
       ${symlinkCommands}
@@ -283,6 +264,8 @@ in
         primaryArch
         effectiveOsxVersionMin
         sdk
+        sdkRoot
+        macosSdk
         cctools-port
         wrapper
         xar

@@ -12,6 +12,7 @@
   pbzx ? null, # Optional: for .xip extraction
   sdkTarball,
   sdkVersion,
+  outputHash ? null,
 }: let
   # Determine archive type and extraction command based on file extension
   tarballName = builtins.baseNameOf (toString sdkTarball);
@@ -51,7 +52,7 @@
     "Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk"
   ];
 in
-  stdenv.mkDerivation {
+  stdenv.mkDerivation ({
     pname = "macosx-sdk";
     version = sdkVersion;
 
@@ -109,7 +110,7 @@ in
       fi
 
       echo "Found SDK at: $sdkSource"
-      sdkName=$(basename "$sdkSource")
+      canonicalSdkName="${expectedSdkName}"
 
       # Validate SDK version from SDKSettings.json
       settingsFile="$sdkSource/SDKSettings.json"
@@ -123,7 +124,7 @@ in
           echo "  Actual (from SDKSettings.json): $actualVersion"
           echo ""
           echo "If the tarball was renamed, pass the correct version:"
-          echo "  mkOsxcross { sdkPath = ...; sdkVersion = \"$actualVersion\"; }"
+          echo "  mkMacosSdk { sdkArchive = ...; sdkVersion = \"$actualVersion\"; }"
           exit 1
         fi
         echo "SDK version verified: $actualVersion"
@@ -132,23 +133,18 @@ in
         actualVersion="${sdkVersion}"
       fi
 
-      # Move SDK to output
-      mv "$sdkSource" "$out/$sdkName"
+      # Move SDK to its canonical, versioned location.
+      mv "$sdkSource" "$out/$canonicalSdkName"
 
       # Write the verified version to output for reference
       echo "$actualVersion" > "$out/sdk-version"
 
       # Apply SDK fixups (from build.sh)
       # Remove problematic libcxx.imp file that can cause build issues
-      rm -f "$out/$sdkName/usr/include/c++/v1/libcxx.imp" || true
+      rm -f "$out/$canonicalSdkName/usr/include/c++/v1/libcxx.imp" || true
 
       # Fix permissions
-      chmod -R u+w "$out/$sdkName" || true
-
-      # Create version symlinks for convenience
-      ln -sf "$sdkName" "$out/${expectedSdkName}" || true
-      ln -sf "$sdkName" "$out/MacOSX.sdk"
-      ln -sf "$sdkName" "$out/default"
+      chmod -R u+w "$out/$canonicalSdkName" || true
 
       runHook postInstall
     '';
@@ -163,3 +159,8 @@ in
       maintainers = [];
     };
   }
+  // lib.optionalAttrs (outputHash != null) {
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
+    inherit outputHash;
+  })
