@@ -123,6 +123,11 @@
           fi
         '';
 
+        realizeMacosSdk = import ./nix/realize-macos-sdk.nix {
+          inherit pkgs;
+          osxcross = self;
+        };
+
         fakeSdkArchive = pkgs.runCommand "MacOSX26.1.sdk.tar" {
           nativeBuildInputs = [pkgs.gnutar];
         } ''
@@ -154,6 +159,10 @@
 
             OSXCross requires a macOS SDK tarball due to Apple licensing.
             Prefer a shared macOS SDK ref. Legacy sdkPath and MACOS_SDK are still supported.
+
+            One-time SDK realization:
+            -------------------------
+            nix run .#realize-macos-sdk -- /path/to/MacOSX14.5.sdk.tar.xz 14.5
 
             Usage in a flake:
             -----------------
@@ -206,6 +215,14 @@
 
           # Standalone Apple TAPI library
           apple-libtapi = pkgs.callPackage ./nix/apple-libtapi.nix {};
+
+          # Realize a stable macOS SDK store path from a local archive
+          realize-macos-sdk = realizeMacosSdk;
+        };
+
+        apps.realize-macos-sdk = {
+          type = "app";
+          program = "${realizeMacosSdk}/bin/realize-macos-sdk";
         };
 
         # Development shell for working on osxcross itself
@@ -223,6 +240,14 @@
                 test ! -e "$path"
                 test ! -L "$path"
               done
+              touch "$out"
+            '';
+
+            realize-macos-sdk-help = pkgs.runCommand "check-realize-macos-sdk-help" {} ''
+              "${realizeMacosSdk}/bin/realize-macos-sdk" --help > help
+              grep 'realize-macos-sdk \[--env\]' help
+              grep 'Recursive hash' help
+              grep -- '--env' help
               touch "$out"
             '';
           }

@@ -4,6 +4,21 @@ A Nix flake for building macOS cross-compilation toolchains on Linux.
 
 ## Quick Start
 
+### One-Time SDK Realization
+
+To bootstrap a stable SDK store path from a host-local archive:
+
+```bash
+nix run .#realize-macos-sdk -- /path/to/MacOSX14.5.sdk.tar.xz 14.5
+```
+
+For scripting, use shell-friendly output:
+
+```bash
+eval "$(nix run .#realize-macos-sdk -- --env /path/to/MacOSX14.5.sdk.tar.xz 14.5)"
+echo "$STORE_PATH"
+```
+
 ### Building the Toolchain
 
 ```nix
