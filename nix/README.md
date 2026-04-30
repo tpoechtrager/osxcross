@@ -4,7 +4,12 @@ A Nix flake for building macOS cross-compilation toolchains on Linux.
 
 ## Quick Start
 
-### One-Time SDK Realization
+### SDK Utilities
+
+osxcross is intentionally policy-light: `mkOsxcross` accepts an already
+resolved SDK ref. The archive realization helper is available for consumers
+that want to build that ref from an archive, but higher-level flakes may choose
+their own SDK discovery and validation workflow.
 
 To bootstrap a stable SDK store path from a host-local archive:
 
@@ -59,25 +64,6 @@ echo "$STORE_PATH"
 }
 ```
 
-### Command Line Usage
-
-```bash
-# Legacy local host path usage, for bootstrapping only.
-nix build --impure --expr '
-  let
-    flake = builtins.getFlake (toString ./.);
-    toolchain = flake.lib.x86_64-linux.mkOsxcross {
-      sdkPath = /path/to/MacOSX14.5.sdk.tar.xz;
-      sdkVersion = "14.5";
-    };
-  in toolchain
-'
-
-# Use the toolchain
-./result/bin/arm64-apple-darwin23-clang -o hello hello.c
-./result/bin/x86_64-apple-darwin23-clang -o hello_x86 hello.c
-```
-
 ## Configuration Options
 
 ### `mkMacosSdk` Parameters
@@ -94,16 +80,15 @@ Returns a macOS SDK ref: `{ sdk, sdkRoot, sdkVersion, _type = "osxcross-macos-sd
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `sdk` | path/derivation | Yes | Already-realized SDK parent output |
+| `sdk` | path/derivation | Yes | Already-realized SDK parent output, or the SDK root itself when `sdkRoot` is also provided |
 | `sdkVersion` | string | Yes | SDK version |
-| `sdkRoot` | path/string | No | Defaults to `"${sdk}/MacOSX${sdkVersion}.sdk"` |
+| `sdkRoot` | path/string | No | Defaults to `"${sdk}/MacOSX${sdkVersion}.sdk"`; may point directly at `/path/to/MacOSX${sdkVersion}.sdk` |
 
 ### `mkOsxcross` Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `macosSdk` | attrset | Preferred | SDK ref from `mkMacosSdk` or `mkMacosSdkRef` |
-| `sdkPath` | path | No | Legacy path to macOS SDK archive; builds an SDK ref internally |
+| `macosSdk` | attrset | Yes | SDK ref from `mkMacosSdk` or `mkMacosSdkRef` |
 | `sdkVersion` | string | No | SDK version override; must match `macosSdk.sdkVersion` when `macosSdk` is provided |
 | `osxVersionMin` | string | No | Minimum macOS deployment target (default: SDK's minimum) |
 | `enableArchs` | list | No | Architectures to enable (default: all supported by SDK) |
@@ -126,6 +111,13 @@ toolchain = mkOsxcross {
 # Already-realized SDK parent output.
 macosSdk = mkMacosSdkRef {
   sdk = inputs.macos-sdk;
+  sdkVersion = "14.5";
+};
+
+# Direct SDK root.
+macosSdk = mkMacosSdkRef {
+  sdk = /nix/store/...-MacOSX14.5.sdk;
+  sdkRoot = /nix/store/...-MacOSX14.5.sdk;
   sdkVersion = "14.5";
 };
 
@@ -423,8 +415,8 @@ cmake -DCMAKE_TOOLCHAIN_FILE=./result/share/osxcross/toolchain.cmake ...
 - `packages.<system>.default` - Help message (SDK required for full toolchain)
 
 ### Library Functions
-- `lib.<system>.mkMacosSdk` - Realize a canonical SDK store output from an SDK archive
-- `lib.<system>.mkMacosSdkRef` - Reference an already-realized SDK store output
+- `lib.<system>.mkMacosSdk` - Utility to realize a canonical SDK store output from an SDK archive
+- `lib.<system>.mkMacosSdkRef` - Reference an already-realized SDK store output or direct SDK root
 - `lib.<system>.mkOsxcross` - Build complete toolchain
 - `lib.<system>.mkRustHelpers` - Get Rust cross-compilation helpers
 - `lib.<system>.osxcrossLib` - Low-level helper functions

@@ -44,6 +44,15 @@ stdenv.mkDerivation rec {
 
   # Patches for compatibility with modern LLVM and libtapi 1600+
   postPatch = ''
+        # Newer libtool no longer infers a tag for Objective-C sources here.
+        # cctools builds them with clang as C-family objects, so tag them as CC.
+        substituteInPlace libobjc2/Makefile.am \
+          --replace-fail \
+            'libobjc_la_CPPFLAGS=' \
+            'AM_LIBTOOLFLAGS = --tag=CC
+
+    libobjc_la_CPPFLAGS='
+
         # Add clone() method to BlobCore class (missing in newer LLVM)
         substituteInPlace ld64/src/ld/code-sign-blobs/blob.h \
           --replace-fail \
@@ -95,6 +104,7 @@ stdenv.mkDerivation rec {
   preConfigure = ''
     export CC="${llvmPackages.clang}/bin/clang"
     export CXX="${llvmPackages.clang}/bin/clang++"
+    export CFLAGS="-std=gnu17"
   '';
 
   # Ensure we can find LLVM headers
