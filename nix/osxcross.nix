@@ -222,6 +222,13 @@ in
       # Create tool symlinks
       ${symlinkCommands}
 
+      # Provide an unprefixed `codesign_allocate` (as macOS ships it at
+      # /usr/bin/codesign_allocate). Tools that ad-hoc sign Mach-O binaries —
+      # e.g. sigtool's `codesign` — spawn `codesign_allocate` by bare name via
+      # PATH and fail otherwise unless the caller exports $CODESIGN_ALLOCATE by
+      # hand. All arch variants are the same binary, so alias the primary one.
+      ln -sf "${primaryArch}-apple-${darwinTarget}-codesign_allocate" "$out/bin/codesign_allocate"
+
       # Install CMake toolchain file
       cp "$src/tools/toolchain.cmake" "$out/share/osxcross/"
       ln -sf "$out/share/osxcross/toolchain.cmake" "$out/toolchain.cmake"
