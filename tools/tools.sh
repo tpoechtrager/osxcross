@@ -506,8 +506,8 @@ function test_compiler_cxx11()
 function test_compiler_cxx2b()
 {
   set +e
-  echo -ne "testing $1 -std=c++20 -mmacos-version-min=10.15 ... "
-  $1 $2 -O2 -std=c++20 -mmacos-version-min=10.15 -Wall -o test &>/dev/null
+  echo -ne "testing $1 -std=c++20 -mmacos-version-min=$OSX_VERSION_MIN ... "
+  $1 $2 -O2 -std=c++20 -mmacos-version-min=$OSX_VERSION_MIN -Wall -o test &>/dev/null
   if [ $? -eq 0 ]; then
     rm test
     echo "works"

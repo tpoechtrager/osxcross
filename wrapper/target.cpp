@@ -74,10 +74,18 @@ OSVersion Target::getSDKOSNum() const {
 
     double n = atof(target.c_str() + 6);
 
-    if (n >= 25.0f) {
-      // MacOS 26.0 or later
+    if (n >= 27.0f) {
+      // Darwin 27 and later correspond directly to macOS 27 and later.
 
-      int major = 21 + ((int)n % 20);
+      int major = (int)n;
+      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
+
+      return OSVersion(major, minor);
+    } else if (n >= 25.0f) {
+      // Darwin 25 corresponds to macOS 26.
+      // Darwin 26 was skipped.
+
+      int major = (int)n + 1;
       int minor = (int)(((n - (int)n) * 10.0) + 0.1);
 
       return OSVersion(major, minor);

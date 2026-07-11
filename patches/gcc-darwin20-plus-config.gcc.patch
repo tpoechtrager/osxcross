@@ -1,0 +1,20 @@
+--- gcc/config.gcc
++++ gcc/config.gcc
+@@ -807,8 +807,16 @@
+         macos_min=`expr $darwin_maj - 4`
+         ;;
+       *-*-darwin2*)
+-        # Darwin 20 corresponds to macOS 11, Darwin 21 to macOS 12.
+-        macos_maj=`expr $darwin_maj - 9`
++        # Darwin 20 to 24 correspond to macOS 11 to 15.
++        # Darwin 25 corresponds to macOS 26.
++        # Darwin 27 and later correspond directly to macOS 27 and later.
++        if test $darwin_maj -ge 27; then
++          macos_maj=$darwin_maj
++        elif test $darwin_maj -ge 25; then
++          macos_maj=`expr $darwin_maj + 1`
++        else
++          macos_maj=`expr $darwin_maj - 9`
++        fi
+         def_ld64=609.0
+         ;;
