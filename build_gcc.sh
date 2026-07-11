@@ -17,9 +17,10 @@ source tools/tools.sh
 # GCC version to build
 # (<4.7 will not work properly with libc++)
 if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=15.2.0
+  GCC_VERSION=16.1.0
   #GCC_VERSION=5-20200228 # snapshot
 fi
+
 
 if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
   echo "You must build OSXCross with OSX_VERSION_MIN >= 10.6" 2>&1
@@ -108,6 +109,14 @@ if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
 
   echo ""
 fi
+
+if [ $(osxcross-cmp "$GCC_VERSION" '>=' 15.3.0) -eq 1 ]; then
+if [ $(osxcross-cmp "$SDK_VERSION" '>=' 27) -eq 1 ]; then
+  patch -p0 < "$PATCH_DIR/gcc-darwin20-plus-config.gcc.patch"
+  patch -p1 < "$PATCH_DIR/gcc-darwin20-plus-driver.patch"
+fi
+fi
+
 
 # Fix LLD build
 $SED -i 's/-r -keep_private_externs/-lSystem -lemutls_w -Wl,-weak-liconv -Wl,-dylib/g' libstdc++-v3/configure
