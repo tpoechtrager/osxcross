@@ -74,10 +74,18 @@ OSVersion Target::getSDKOSNum() const {
 
     double n = atof(target.c_str() + 6);
 
-    if (n >= 25.0f) {
-      // MacOS 26.0 or later
+    if (n >= 27.0f) {
+      // Darwin 27 and later correspond directly to macOS 27 and later.
 
-      int major = 21 + ((int)n % 20);
+      int major = (int)n;
+      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
+
+      return OSVersion(major, minor);
+    } else if (n >= 25.0f) {
+      // Darwin 25 corresponds to macOS 26.
+      // Darwin 26 was skipped.
+
+      int major = (int)n + 1;
       int minor = (int)(((n - (int)n) * 10.0) + 0.1);
 
       return OSVersion(major, minor);
@@ -894,15 +902,13 @@ bool Target::setup() {
       is32bit = true;
       // falls through
     case Arch::arm64:
-      isArm = true;
-      // falls through
     case Arch::arm64e:
-      isArm = true;
-      // falls through
     case Arch::x86_64:
     case Arch::x86_64h:
+      isArm = arch == Arch::arm64 || arch == Arch::arm64e;
       if (isGCC()) {
-        if (arch != Arch::x86_64 && arch != Arch::i386) {
+        if (arch != Arch::x86_64 && arch != Arch::i386 &&
+            arch != Arch::arm64) {
           err << "gcc does not support architecture '" << getArchName(arch)
               << "'" << err.endl();
           return false;
