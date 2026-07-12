@@ -59,8 +59,44 @@ if [[ $PLATFORM == Darwin ]]; then
   export LIBRARY_PATH=${LDFLAGS_OPENSSL:2}
 fi
 
+# Check whether an architecture is included in a space-separated list.
+#
+# Usage:
+#   arch_supported "<arch>"
+#     Uses SUPPORTED_ARCHS, falling back to OSXCROSS_SUPPORTED_ARCHS.
+#
+#   arch_supported "<supported archs>" "<arch>"
+#     Uses the explicitly provided list instead of the global variables.
+#
+# GCC calls arm64 "aarch64", so aarch64 is normalized to arm64 in both the
+# list and the architecture being checked. Returns 0 when supported, 1 when
+# unsupported and 2 when called with an invalid number of arguments.
 function arch_supported() {
-  [[ " $SUPPORTED_ARCHS " == *" $1 "* ]]
+  local supported_archs
+  local arch
+
+  case $# in
+    1)
+      arch=$1
+      supported_archs=${SUPPORTED_ARCHS:-$OSXCROSS_SUPPORTED_ARCHS}
+      ;;
+    2)
+      supported_archs=$1
+      arch=$2
+      ;;
+    *)
+      echo "Usage: arch_supported [<supported archs>] <arch to check>" 1>&2
+      return 2
+      ;;
+  esac
+
+  if [ "$arch" = "aarch64" ]; then
+    arch=arm64
+  fi
+
+  supported_archs=${supported_archs//aarch64/arm64}
+
+  [[ " $supported_archs " == *" $arch "* ]]
 }
 
 function first_supported_arch() {
@@ -84,6 +120,7 @@ else
 fi
 
 if [ -z "$USESYSTEMCOMPILER" ]; then
+
   if [ -z "$CC" ]; then
     export CC="clang"
   fi
@@ -425,7 +462,7 @@ function download()
 
   if command -v curl &>/dev/null; then
     ## cURL ##
-    local curl_opts="-L -C - "
+    local curl_opts="-fL -C - "
     curl $curl_opts -o $filename $uri
   elif command -v wget &>/dev/null; then
     ## wget ##

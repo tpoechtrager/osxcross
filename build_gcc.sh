@@ -14,12 +14,37 @@ DESC=gcc
 USESYSTEMCOMPILER=1
 source tools/tools.sh
 
-# GCC version to build
-# (<4.7 will not work properly with libc++)
-if [ -z "$GCC_VERSION" ]; then
-  GCC_VERSION=16.1.0
-  #GCC_VERSION=5-20200228 # snapshot
+GCC_SOURCE_DIR=""
+
+if [ "${0##*/}" = "build_gcc_with_arm64_support.sh" ]; then
+  # Build a patched GCC that supports both x86_64 and arm64 targets.
+  # https://github.com/iains/gcc-darwin-arm64
+
+  if [ -z "$ARM64_GCC_BRANCH" ]; then
+    # Build the master branch by default.
+    ARM64_GCC_BRANCH="master-wip-apple-si"
+  fi
+
+  BUILD_ARM64_GCC=1
+  GCC_TARGET_ARCHS="aarch64 x86_64"
+else
+  # GCC version to build
+  # (<4.7 will not work properly with libc++)
+  if [ -z "$GCC_VERSION" ]; then
+    GCC_VERSION=16.1.0
+    #GCC_VERSION=5-20200228 # snapshot
+  fi
+
+  # GCC mirror
+  # Official GNU "ftp" doesn't have GCC snapshots
+  GCC_MIRROR="https://ftp.fu-berlin.de/unix/languages/gcc/releases/"
+  GCC_MIRROR_WITH_SNAPSHOTS="https://mirror.koddos.net/gcc"
+
+  GCC_TARGET_ARCHS="x86_64"
 fi
+
+# Export the GCC target list for wrapper/build_wrapper.sh.
+export GCC_TARGET_ARCHS
 
 
 if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
@@ -27,19 +52,74 @@ if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
   exit 1
 fi
 
-if [ -z "$SUPPORTED_ARCHS" ]; then
-  SUPPORTED_ARCHS=$OSXCROSS_SUPPORTED_ARCHS
+# Remove unsupported target architectures from the list of GCC target architectures.
+function filter_supported_gcc_target_archs()
+{
+  local supported_gcc_target_archs=""
+  local gcc_target_arch
+
+  for gcc_target_arch in $GCC_TARGET_ARCHS; do
+    if ! arch_supported "$gcc_target_arch"; then
+      # Do not warn about i386 on SDKs that no longer support it.
+      if [ "$gcc_target_arch" = "i386" ] &&
+         [ "$(osxcross-cmp "$SDK_VERSION" '>' 10.13)" -eq 1 ]; then
+        continue
+      fi
+
+      echo "Warning target $gcc_target_arch is not supported or not enabled; skipping $gcc_target_arch." 1>&2
+      sleep 2
+      continue
+    fi
+
+    supported_gcc_target_archs="${supported_gcc_target_archs:+$supported_gcc_target_archs }$gcc_target_arch"
+  done
+
+  GCC_TARGET_ARCHS=$supported_gcc_target_archs
+
+  if [ -z "$GCC_TARGET_ARCHS" ]; then
+    echo "No supported GCC target architectures found." 1>&2
+    exit 1
+  fi
+}
+
+filter_supported_gcc_target_archs
+
+GCC_BUILD_ARCHS=${GCC_TARGET_ARCHS//aarch64/arm64}
+GCC_BUILD_ARCHS=${GCC_BUILD_ARCHS// /_}
+
+if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
+  # Ensure that the ARM64 GCC tools are available for use by GCC.
+  function ensure_arm64_gcc_tools()
+  {
+    local arm64_ranlib="arm64-apple-$TARGET-ranlib"
+    local aarch64_ranlib="aarch64-apple-$TARGET-ranlib"
+    local aarch64_dsymutil="aarch64-apple-$TARGET-dsymutil"
+    local dsymutil_path
+
+    pushd "$TARGET_DIR/bin" &>/dev/null
+
+    if [ ! -e "$aarch64_ranlib" ]; then
+      if [ ! -e "$arm64_ranlib" ]; then
+        echo "Missing ARM64 ranlib: '$arm64_ranlib'" 1>&2
+        exit 1
+      fi
+      create_symlink "./$arm64_ranlib" "$aarch64_ranlib"
+    fi
+
+    if [ ! -e "$aarch64_dsymutil" ]; then
+      dsymutil_path=$(which dsymutil) || {
+        echo "Required dependency 'dsymutil' not installed or not in PATH" 1>&2
+        exit 1
+      }
+      create_symlink "$dsymutil_path" "$aarch64_dsymutil"
+    fi
+
+    popd &>/dev/null
+  }
+
+  ensure_arm64_gcc_tools
 fi
 
-if ! arch_supported x86_64; then
-  echo "x86_64 is not supported or not enabled! GCC is x86-only." 1>&2
-  exit 1
-fi
-
-# GCC mirror
-# Official GNU "ftp" doesn't have GCC snapshots
-GCC_MIRROR="https://ftp.fu-berlin.de/unix/languages/gcc/releases/"
-GCC_MIRROR_WITH_SNAPSHOTS="https://mirror.koddos.net/gcc"
 
 pushd $BUILD_DIR &>/dev/null
 
@@ -48,10 +128,36 @@ function remove_locks()
   rm -rf $BUILD_DIR/have_gcc*
 }
 
+
 source $BASE_DIR/tools/trap_exit.sh
 
-if [ ! -f "have_gcc_${GCC_VERSION}_${TARGET}" ]; then
+if [ -n "$BUILD_ARM64_GCC" ]; then
+  get_sources \
+    https://github.com/iains/gcc-darwin-arm64.git \
+    $ARM64_GCC_BRANCH
 
+  GCC_SOURCE_DIR=$CURRENT_BUILD_PROJECT_NAME
+  GCC_VERSION=$(cat "$GCC_SOURCE_DIR/gcc/BASE-VER")
+  echo "GCC version: ${GCC_VERSION}"
+  GCC_BUILD_MARKER="have_gcc_${GCC_BUILD_ARCHS}_${GCC_VERSION}_${TARGET}"
+
+  # get_sources tracks source updates. The target-specific marker also forces a
+  # build when this checkout has not yet been installed for the selected SDK.
+  if [ ! -f "$GCC_BUILD_MARKER" ]; then
+    f_res=1
+  fi
+else
+  GCC_BUILD_MARKER="have_gcc_${GCC_BUILD_ARCHS}_${GCC_VERSION}_${TARGET}"
+  if [ ! -f "$GCC_BUILD_MARKER" ]; then
+    f_res=1
+  else
+    f_res=0
+  fi
+fi
+
+if [ $f_res -eq 1 ]; then
+
+if [ -z "$BUILD_ARM64_GCC" ]; then
 pushd $TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
   download "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
@@ -61,15 +167,39 @@ fi
 popd &>/dev/null
 
 echo "cleaning up ..."
-rm -rf gcc* 2>/dev/null
+rm -rf "gcc-$GCC_VERSION" 2>/dev/null
 
 extract "$TARBALL_DIR/gcc-$GCC_VERSION.tar.xz"
 echo ""
 
-pushd gcc*$GCC_VERSION* &>/dev/null
+GCC_SOURCE_DIR=gcc-$GCC_VERSION
+fi
 
-rm -f $TARGET_DIR/bin/*-gcc*
-rm -f $TARGET_DIR/bin/*-g++*
+pushd "$GCC_SOURCE_DIR" &>/dev/null
+
+if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
+  rm -f $TARGET_DIR/bin/aarch64-apple-$TARGET-*gcc*
+  rm -f $TARGET_DIR/bin/aarch64-apple-$TARGET-*g++*
+  rm -f $TARGET_DIR/bin/arm64-apple-$TARGET-*gcc*
+  rm -f $TARGET_DIR/bin/arm64-apple-$TARGET-*g++*
+  rm -f $TARGET_DIR/bin/oa64-gcc*
+  rm -f $TARGET_DIR/bin/oa64-g++*
+fi
+
+if arch_supported "$GCC_TARGET_ARCHS" x86_64; then
+  rm -f $TARGET_DIR/bin/x86_64-apple-$TARGET-*gcc*
+  rm -f $TARGET_DIR/bin/x86_64-apple-$TARGET-*g++*
+  rm -f $TARGET_DIR/bin/o64-gcc*
+  rm -f $TARGET_DIR/bin/o64-g++*
+fi
+
+if arch_supported "$GCC_TARGET_ARCHS" i386; then
+  rm -f $TARGET_DIR/bin/i386-apple-$TARGET-*gcc*
+  rm -f $TARGET_DIR/bin/i386-apple-$TARGET-*g++*
+  rm -f $TARGET_DIR/bin/o32-gcc*
+  rm -f $TARGET_DIR/bin/o32-g++*
+fi
+
 
 if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) -eq 1 ] &&
    [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) -eq 1 ]; then
@@ -112,19 +242,47 @@ fi
 
 if [ $(osxcross-cmp "$GCC_VERSION" '>=' 15.3.0) -eq 1 ]; then
 if [ $(osxcross-cmp "$SDK_VERSION" '>=' 27) -eq 1 ]; then
-  patch -p0 < "$PATCH_DIR/gcc-darwin20-plus-config.gcc.patch"
-  patch -p1 < "$PATCH_DIR/gcc-darwin20-plus-driver.patch"
+  patch -N -f -p0 < "$PATCH_DIR/gcc-darwin20-plus-config.gcc.patch" || true
+  patch -N -f -p1 < "$PATCH_DIR/gcc-darwin20-plus-driver.patch" || true
 fi
 fi
 
+# LLD compatibility fixes for GCC's Darwin toolchain.
 
-# Fix LLD build
+# LLD does not implement Darwin relocatable links (-r), so use a dylib link
+# for libtool's intermediate master object instead.
 $SED -i 's/-r -keep_private_externs/-lSystem -lemutls_w -Wl,-weak-liconv -Wl,-dylib/g' libstdc++-v3/configure
-$SED -i 's/ %:version-compare(>= 10\.6 mmacosx-version-min= -no_compact_unwind) //' gcc/config/darwin.h
 
+# The intermediate link uses -nostdlib, which prevents GCC from adding its
+# runtime automatically. Keep -lgcc after the objects so static archive
+# extraction resolves ARM64 helpers such as ___lshrti3.
+$SED -i 's/libobjs~\(.*-dynamiclib\)/libobjs -lgcc~\1/g' libstdc++-v3/configure
 
-mkdir -p build
-pushd build &>/dev/null
+# LLD does not implement -no_compact_unwind and emits a warning for it.
+# Older GCC versions include the option inline, while newer versions use the
+# DARWIN_NOCOMPACT_UNWIND macro in LINK_SPEC; disable both forms.
+$SED -i \
+  -e 's/ %:version-compare(>= 10\.6 mmacosx-version-min= -no_compact_unwind) //' \
+  -e '/^[[:space:]]*DARWIN_NOCOMPACT_UNWIND/d' \
+  gcc/config/darwin.h
+
+# Fix GCC builds of the optional libstdc++ C++ standard modules
+# by ensuring Apple SDKs define rsize_t outside Clang's stddef.h path.
+if [ $(osxcross-cmp $GCC_VERSION '>=' 15) -eq 1 ]; then
+if [ -n "$SDK" ]; then
+  RSIZE_HEADER="$SDK/usr/include/sys/_types/_rsize_t.h"
+
+  if [ -f "$RSIZE_HEADER" ] &&
+     grep -Fqx '#if defined(__has_feature) && __has_feature(modules)' "$RSIZE_HEADER"; then
+    echo "Patching rsize_t header in '$SDK' ..."
+
+    $SED -i \
+      's/^#if defined(__has_feature) && __has_feature(modules)$/#if defined(__clang__) \&\& defined(__has_feature) \&\& __has_feature(modules)/' \
+      "$RSIZE_HEADER"
+  fi
+fi
+fi
+
 
 if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
@@ -136,53 +294,74 @@ elif [ "$PLATFORM" == "Darwin" ]; then
   export LD_LIBRARY_PATH="/opt/local/lib:$LD_LIBRARY_PATH"
 fi
 
-EXTRACONFFLAGS=""
-
-if [ "$PLATFORM" != "Darwin" ]; then
-  EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/x86_64-apple-$TARGET-ld "
-  EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/x86_64-apple-$TARGET-as "
-fi
-
 LANGS="c,c++,objc,obj-c++"
 
 if [ -n "$ENABLE_FORTRAN" ]; then
   LANGS+=",fortran"
 fi
 
-../configure \
-  --target=x86_64-apple-$TARGET \
-  --with-sysroot=$SDK \
-  --disable-multilib \
-  --disable-libsanitizer \
-  --disable-nls \
-  --enable-languages=$LANGS \
-  --without-headers \
-  --enable-lto \
-  --enable-checking=release \
-  --disable-libstdcxx-pch \
-  --prefix=$TARGET_DIR \
-  --with-system-zlib \
-  $EXTRACONFFLAGS
+GCC_INSTALL_VERSION=$(echo $GCC_VERSION | tr '-' ' ' | awk '{print $1}')
 
-$MAKE -j$JOBS
-$MAKE install
+for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
 
-GCC_VERSION=`echo $GCC_VERSION | tr '-' ' ' |  awk '{print $1}'`
+  GCC_TARGET_TRIPLE=$GCC_TARGET_ARCH-apple-$TARGET
+  GCC_BUILD_SUBDIR=build-$GCC_TARGET_ARCH
 
-pushd $TARGET_DIR/x86_64-apple-$TARGET/include &>/dev/null
-pushd c++/${GCC_VERSION}* &>/dev/null
+  mkdir -p "$GCC_BUILD_SUBDIR"
+  pushd "$GCC_BUILD_SUBDIR" &>/dev/null
 
-cat $PATCH_DIR/libstdcxx.patch | \
-  $SED "s/darwin13/$TARGET/g" | \
-  patch -p0 -l &>/dev/null || true
+  EXTRACONFFLAGS=""
 
-popd &>/dev/null
-popd &>/dev/null
+  if [ "$PLATFORM" != "Darwin" ]; then
+    EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/$GCC_TARGET_TRIPLE-ld "
+    EXTRACONFFLAGS+="--with-as=$TARGET_DIR/bin/$GCC_TARGET_TRIPLE-as "
+  fi
 
-popd &>/dev/null # build
+  # Enable multilib support for x86_64 builds if i386 is supported and enabled.
+  if [ "$GCC_TARGET_ARCH" = "x86_64" ] &&
+     arch_supported "$GCC_TARGET_ARCHS" i386; then
+    EXTRACONFFLAGS+="--with-multilib-list=m32,m64 --enable-multilib "
+  else
+    EXTRACONFFLAGS+="--disable-multilib "
+  fi
+
+  ../configure \
+    --target=$GCC_TARGET_TRIPLE \
+    --with-sysroot=$SDK \
+    --disable-libsanitizer \
+    --disable-nls \
+    --enable-languages=$LANGS \
+    --without-headers \
+    --enable-lto \
+    --enable-checking=release \
+    --disable-libstdcxx-pch \
+    --prefix=$TARGET_DIR \
+    --with-system-zlib \
+    $EXTRACONFFLAGS
+
+  $MAKE -j$JOBS
+  $MAKE install
+
+  popd &>/dev/null # build
+
+  pushd $TARGET_DIR/$GCC_TARGET_TRIPLE/include &>/dev/null
+  pushd c++/${GCC_INSTALL_VERSION}* &>/dev/null
+
+  cat $PATCH_DIR/libstdcxx.patch | \
+    $SED "s/darwin13/$TARGET/g" | \
+    patch -p0 -l &>/dev/null || true
+
+  popd &>/dev/null
+  popd &>/dev/null
+done
+
 popd &>/dev/null # gcc
 
-touch "have_gcc_${GCC_VERSION}_${TARGET}"
+touch "$GCC_BUILD_MARKER"
+
+if [ -n "$BUILD_ARM64_GCC" ]; then
+  build_success
+fi
 
 fi # have gcc
 
@@ -193,8 +372,38 @@ source tools/tools.sh
 
 pushd $TARGET_DIR/bin &>/dev/null
 
-mv x86_64-apple-$TARGET-gcc  x86_64-apple-$TARGET-base-gcc
-mv x86_64-apple-$TARGET-g++ x86_64-apple-$TARGET-base-g++
+if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
+  if [ ! -f aarch64-apple-$TARGET-base-gcc ]; then
+    mv aarch64-apple-$TARGET-gcc \
+      aarch64-apple-$TARGET-base-gcc
+
+    mv aarch64-apple-$TARGET-g++ \
+      aarch64-apple-$TARGET-base-g++
+  fi
+
+  create_symlink aarch64-apple-$TARGET-base-gcc \
+                 arm64-apple-$TARGET-base-gcc
+  create_symlink aarch64-apple-$TARGET-base-g++ \
+                 arm64-apple-$TARGET-base-g++
+fi
+
+if arch_supported "$GCC_TARGET_ARCHS" x86_64; then
+  if [ ! -f x86_64-apple-$TARGET-base-gcc ]; then
+    mv x86_64-apple-$TARGET-gcc \
+      x86_64-apple-$TARGET-base-gcc
+
+    mv x86_64-apple-$TARGET-g++ \
+      x86_64-apple-$TARGET-base-g++
+  fi
+
+  if arch_supported "$GCC_TARGET_ARCHS" i386; then
+    create_symlink x86_64-apple-$TARGET-base-gcc \
+                   i386-apple-$TARGET-base-gcc
+
+    create_symlink x86_64-apple-$TARGET-base-g++ \
+                   i386-apple-$TARGET-base-g++
+  fi
+fi
 
 echo "compiling wrapper ..."
 
@@ -205,17 +414,43 @@ popd &>/dev/null # wrapper dir
 
 echo ""
 
-test_compiler o64-gcc $BASE_DIR/oclang/test.c
-test_compiler o64-g++ $BASE_DIR/oclang/test.cpp
+for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
+  GCC_TARGET_TRIPLE=$GCC_TARGET_ARCH-apple-$TARGET
+  GCC_TEST_ARCH=$GCC_TARGET_ARCH
+  if [ "$GCC_TEST_ARCH" = "aarch64" ]; then
+    GCC_TEST_ARCH=arm64
+  fi
+  GCC_TEST_TRIPLE=$GCC_TEST_ARCH-apple-$TARGET
+  test_compiler $GCC_TEST_TRIPLE-gcc $BASE_DIR/oclang/test.c
+  test_compiler $GCC_TEST_TRIPLE-g++ $BASE_DIR/oclang/test.cpp
+done
 
 echo ""
 
-echo "Done! Now you can use o64-gcc/o64-g++ as compiler"
+echo "Done! GCC was built for: $GCC_TARGET_ARCHS"
+
+if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
+  echo ""
+  echo "!!! When dealing with Automake projects make sure to use aarch64-apple-$TARGET-* instead of arm64-* !!!"
+  echo "!!! CC=aarch64-apple-$TARGET-gcc ./configure --host=aarch64-apple-$TARGET !!!"
+fi
+
 echo ""
 echo "Example usage:"
 echo ""
-echo "Example 1: CC=o64-gcc ./configure --host=x86_64-apple-$TARGET"
-echo "Example 2: CC=x86_64-apple-$TARGET-gcc ./configure --host=x86_64-apple-$TARGET"
-echo "Example 3: o64-gcc -Wall test.c -o test"
-echo "Example 4: x86_64-apple-$TARGET-strip -x test"
+
+if arch_supported "$GCC_TARGET_ARCHS" i386; then
+  echo "CC=i386-apple-$TARGET-gcc ./configure --host=i386-apple-$TARGET"
+fi
+
+if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
+  echo "CC=aarch64-apple-$TARGET-gcc ./configure --host=aarch64-apple-$TARGET"
+  echo "arm64-apple-$TARGET-gcc -Wall test.c -o test-arm64"
+fi
+
+if arch_supported "$GCC_TARGET_ARCHS" x86_64; then
+  echo "CC=x86_64-apple-$TARGET-gcc ./configure --host=x86_64-apple-$TARGET"
+  echo "x86_64-apple-$TARGET-gcc -Wall test.c -o test-x86_64"
+  echo "x86_64-apple-$TARGET-strip -x test-x86_64"
+fi
 echo ""

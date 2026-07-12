@@ -53,6 +53,11 @@ int ld(int argc, char **argv, target::Target &target) {
       continue;
     }
 
+    // GCC passes this Apple ld64 option for Darwin targets, but LLD does not
+    // implement it and emits a warning. Drop it before invoking ld64.lld.
+    if (strcmp(argv[i], "-no_compact_unwind") == 0)
+      continue;
+
     // Already contains -platform_version?
     if (strcmp(argv[i], "-platform_version") == 0)
       seenPlatformVersion = true;

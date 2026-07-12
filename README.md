@@ -42,7 +42,8 @@ OSXCross provides scripts for preparing the macOS SDK and setting up the compile
 It also includes scripts for optionally building:
 
 - Up-to-date LLVM tools and clang (`./build_clang.sh`, `./build_apple_clang.sh`)
-- Vanilla GCC as a cross-compiler for target macOS (`./build_gcc.sh`
+- Vanilla GCC as a cross-compiler for target macOS x86_64 (`./build_gcc.sh`)
+- The experimental ARM64-capable Darwin GCC fork for ARM64 and x86_64 targets (`./build_gcc_with_arm64_support.sh`)
 - The "compiler-rt" runtime library (`./build_compiler_rt.sh`)
 
 ---
@@ -92,7 +93,18 @@ Add `<target>/bin` to your `PATH` after installation.
 ```sh
 ./build_gcc.sh
 [GCC_VERSION=14.2.0] [ENABLE_FORTRAN=1] ./build_gcc.sh
+./build_gcc_with_arm64_support.sh
+[ARM64_GCC_BRANCH='<branch>'] ./build_gcc_with_arm64_support.sh
 ```
+
+Run `./build_gcc_with_arm64_support.sh` to build the experimental ARM64 Darwin GCC fork from
+[`iains/gcc-darwin-arm64`](https://github.com/iains/gcc-darwin-arm64). This
+uses separate build directories to build both AArch64 and x86_64 from the same
+source checkout. It requires an SDK/toolchain produced by `build.sh` with both
+architectures enabled and installs the full-triplet compiler families
+`aarch64-apple-<darwin>-gcc` and `x86_64-apple-<darwin>-gcc`. Set
+`ARM64_GCC_BRANCH` to build a different fork branch; it defaults to
+`master-wip-apple-si`.
 
 Install GCC dependencies:
 

@@ -65,14 +65,14 @@ case $SDK_VERSION in
   15.3*)   TARGET=darwin24.3; SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
   15.4*)   TARGET=darwin24.4; SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
   15.5*)   TARGET=darwin24.5; SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
-  26|26.0*) TARGET=darwin25;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  26.1*) TARGET=darwin25.1;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  26.2*) TARGET=darwin25.2;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  26.3*) TARGET=darwin25.3;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  26.4*) TARGET=darwin25.4;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  26.5*) TARGET=darwin25.5;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  26.6*) TARGET=darwin25.6;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=10.13 ;;
-  27|27.0*) TARGET=darwin27;   SUPPORTED_ARCHS="arm64 arm64e x86_64 x86_64h"; OSX_VERSION_MIN_INT=11.0 ;;
+  26|26.0*) TARGET=darwin25;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.1*) TARGET=darwin25.1;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.2*) TARGET=darwin25.2;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.3*) TARGET=darwin25.3;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.4*) TARGET=darwin25.4;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.5*) TARGET=darwin25.5;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  26.6*) TARGET=darwin25.6;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=10.13 ;;
+  27|27.0*) TARGET=darwin27;   SUPPORTED_ARCHS="arm64 arm64e x86_64"; OSX_VERSION_MIN_INT=11.0 ;;
   *) echo "Unsupported SDK"; exit 1 ;;
 esac
 
@@ -328,7 +328,9 @@ echo -e "\x1B[32m${TARGET_DIR}/bin\x1B[0m"
 echo ""
 echo "to your PATH variable."
 echo ""
-echo "All done! OSXCross is set up now."
+echo "OSXCross was built for: $SUPPORTED_ARCHS"
+echo "Done! OSXCross is set up now."
+echo ""
 echo "Make sure to check out the README \"Usage Examples\" section for further instructions."
 echo ""
 
@@ -340,7 +342,7 @@ fi
 
 #if ! arch_supported x86_64; then
 #  echo "x86_64 is not supported by this SDK."
-#  echo "Use SDK version 26 or earlier if you need x86_64."
+#  echo "Use SDK version 27 or earlier if you need x86_64."
 #  echo ""
 #fi
 
