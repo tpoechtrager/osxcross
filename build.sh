@@ -394,7 +394,9 @@ echo -e "\x1B[32m${TARGET_DIR}/bin\x1B[0m"
 echo ""
 echo "to your PATH variable."
 echo ""
-echo "All done! OSXCross is set up now."
+echo "OSXCross was built for: $SUPPORTED_ARCHS"
+echo "Done! OSXCross is set up now."
+echo ""
 echo "Make sure to check out the README \"Usage Examples\" section for further instructions."
 echo ""
 
@@ -412,7 +414,7 @@ fi
 
 #if ! arch_supported x86_64; then
 #  echo "x86_64 is not supported by this SDK."
-#  echo "Use SDK version 26 or earlier if you need x86_64."
+#  echo "Use SDK version 27 or earlier if you need x86_64."
 #  echo ""
 #fi
 

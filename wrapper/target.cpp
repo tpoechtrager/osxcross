@@ -902,15 +902,13 @@ bool Target::setup() {
       is32bit = true;
       // falls through
     case Arch::arm64:
-      isArm = true;
-      // falls through
     case Arch::arm64e:
-      isArm = true;
-      // falls through
     case Arch::x86_64:
     case Arch::x86_64h:
+      isArm = arch == Arch::arm64 || arch == Arch::arm64e;
       if (isGCC()) {
-        if (arch != Arch::x86_64 && arch != Arch::i386) {
+        if (arch != Arch::x86_64 && arch != Arch::i386 &&
+            arch != Arch::arm64) {
           err << "gcc does not support architecture '" << getArchName(arch)
               << "'" << err.endl();
           return false;
