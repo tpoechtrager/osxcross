@@ -317,9 +317,6 @@ function create_tmp_dir()
   popd &>/dev/null
 }
 
-# f_res=1 = something has changed upstream
-# f_res=0 = nothing has changed
-
 function git_clone_repository
 {
   local url=$1
@@ -335,7 +332,6 @@ function git_clone_repository
       git clean -fdx &>/dev/null
       popd &>/dev/null
     fi
-    f_res=1
     return
   fi
 
@@ -363,22 +359,6 @@ function git_clone_repository
   git checkout $branch
   git pull origin $branch
 
-  local new_hash=$(git rev-parse HEAD)
-  local old_hash=""
-  local hash_file="$BUILD_DIR/.${project_name}_git_hash"
-
-  if [ -f $hash_file ]; then
-    old_hash=$(cat $hash_file)
-  fi
-
-  echo -n $new_hash > $hash_file
-
-  if [ "$old_hash" != "$new_hash" ]; then
-    f_res=1
-  else
-    f_res=0
-  fi
-
   popd &>/dev/null
 }
 
@@ -389,13 +369,6 @@ function get_project_name_from_url()
   project_name=$(basename $url)
   project_name=${project_name/\.git/}
   echo -n $project_name
-}
-
-function build_success()
-{
-  local project_name=$1
-  touch "$BUILD_DIR/.${CURRENT_BUILD_PROJECT_NAME}_build_complete"
-  unset CURRENT_BUILD_PROJECT_NAME
 }
 
 function build_msg()
@@ -412,20 +385,17 @@ function build_msg()
 }
 
 # f_res=1 = build the project
-# f_res=0 = nothing to do
+# f_res=0 = skip the project
 
 function get_sources()
 {
   local url="$1"
   local branch="$2"
   local project_name="$3"
-  local build_complete_file
 
   if [[ -z "${project_name}" ]]; then
     project_name=$(get_project_name_from_url "${url}")
   fi
-  build_complete_file="${BUILD_DIR}/.${project_name}_build_complete"
-
   CURRENT_BUILD_PROJECT_NAME="${project_name}"
 
   build_msg "${project_name}" "${branch}"
@@ -436,23 +406,7 @@ function get_sources()
   fi
 
   git_clone_repository "${url}" "${branch}" "${project_name}"
-
-  if [[ $f_res -eq 1 ]]; then
-    rm -f "${build_complete_file}"
-    f_res=1
-  else
-    # nothing has changed upstream
-
-    if [[ -f "${build_complete_file}" ]]; then
-      echo ""
-      echo "## Nothing to do ##"
-      echo ""
-      f_res=0
-    else
-      rm -f "${build_complete_file}"
-      f_res=1
-    fi
-  fi
+  f_res=1
 }
 
 function download()
@@ -571,7 +525,6 @@ function build_xar()
     $MAKE -j$JOBS
     $MAKE install -j$JOBS
     popd &>/dev/null
-    build_success
   fi
 
   popd &>/dev/null
@@ -596,7 +549,6 @@ function build_p7zip()
     find $TARGET_DIR_SDK_TOOLS/share -type f -exec chmod 0664 {} \;
     find $TARGET_DIR_SDK_TOOLS/share -type d -exec chmod 0775 {} \;
     popd &>/dev/null
-    build_success
   fi
 }
 
@@ -611,7 +563,6 @@ function build_pbxz()
                 -I $TARGET_DIR/include -L $TARGET_DIR/lib pbzx.c \
                 -o $TARGET_DIR_SDK_TOOLS/bin/pbzx -llzma -lxar \
                 -Wl,-rpath,$TARGET_DIR/lib
-    build_success
     popd &>/dev/null
   fi
 }
