@@ -261,7 +261,11 @@ if [ $f_res -eq 1 ]; then
 
       arch1=$(echo $ARCHS | awk '{print $1}')
 
-      for file in $(ls build_$arch1/lib/darwin/); do
+      # Recent LLVM also emits *.sources.txt build metadata in this directory.
+      # Only runtime libraries should be lipo'd.
+      for path in build_$arch1/lib/darwin/*.a build_$arch1/lib/darwin/*.dylib; do
+        [ -e "$path" ] || continue
+        file=${path##*/}
         libs=""
 
         for arch in $ARCHS; do
@@ -314,12 +318,7 @@ if [ $f_res -eq 1 ]; then
 
   fi
 
-  build_success
 fi
-
-# We must re-build every time. git clean -fdx
-# removes the libraries.
-rm -f $BUILD_DIR/.compiler-rt_build_complete
 
 
 # Installation. Can be either automated (ENABLE_COMPILER_RT_INSTALL) or will

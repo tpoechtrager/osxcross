@@ -123,11 +123,6 @@ fi
 
 pushd $BUILD_DIR &>/dev/null
 
-function remove_locks()
-{
-  rm -rf $BUILD_DIR/have_gcc*
-}
-
 
 source $BASE_DIR/tools/trap_exit.sh
 
@@ -139,20 +134,8 @@ if [ -n "$BUILD_ARM64_GCC" ]; then
   GCC_SOURCE_DIR=$CURRENT_BUILD_PROJECT_NAME
   GCC_VERSION=$(cat "$GCC_SOURCE_DIR/gcc/BASE-VER")
   echo "GCC version: ${GCC_VERSION}"
-  GCC_BUILD_MARKER="have_gcc_${GCC_BUILD_ARCHS}_${GCC_VERSION}_${TARGET}"
-
-  # get_sources tracks source updates. The target-specific marker also forces a
-  # build when this checkout has not yet been installed for the selected SDK.
-  if [ ! -f "$GCC_BUILD_MARKER" ]; then
-    f_res=1
-  fi
 else
-  GCC_BUILD_MARKER="have_gcc_${GCC_BUILD_ARCHS}_${GCC_VERSION}_${TARGET}"
-  if [ ! -f "$GCC_BUILD_MARKER" ]; then
-    f_res=1
-  else
-    f_res=0
-  fi
+  f_res=1
 fi
 
 if [ $f_res -eq 1 ]; then
@@ -341,13 +324,7 @@ done
 
 popd &>/dev/null # gcc
 
-touch "$GCC_BUILD_MARKER"
-
-if [ -n "$BUILD_ARM64_GCC" ]; then
-  build_success
-fi
-
-fi # have gcc
+fi # build required
 
 popd &>/dev/null # build dir
 

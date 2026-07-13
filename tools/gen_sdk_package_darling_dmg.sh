@@ -68,7 +68,6 @@ if [ $f_res -eq 1 ]; then
   $MAKE -j $JOBS install
   popd &>/dev/null
   popd &>/dev/null
-  build_success
 fi
 
 popd &>/dev/null # build dir

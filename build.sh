@@ -123,14 +123,6 @@ pushd $BUILD_DIR &>/dev/null
 
 
 
-OLD_SDK_VERSION=$(cat .oc_sdk_version 2>/dev/null || echo "")
-echo -n "$SDK_VERSION" > .oc_sdk_version
-
-if [ "$SDK_VERSION" != "$OLD_SDK_VERSION" ]; then
-  # SDK Version has changed. -> Rebuild everything.
-  rm -f .*_build_complete
-fi
-
 # XAR
 
 build_xar
@@ -171,7 +163,6 @@ if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     INSTALLPREFIX=$TARGET_DIR ./build.sh
     ./install.sh
     popd &>/dev/null
-    build_success
   fi
 fi
 
@@ -206,7 +197,12 @@ fi
 ## Create Arch Symlinks ##
 
 pushd $TARGET_DIR/bin &>/dev/null
-TOOLS=($(find . -name "$(first_supported_arch)-apple-${TARGET}*"))
+# GCC installs a separate backend for each target architecture. In particular,
+# arm64 base-gcc/base-g++ already point to GCC's aarch64 backends; creating the
+# reverse aliases here would form a symlink loop.
+TOOLS=($(find . -name "$(first_supported_arch)-apple-${TARGET}*" \
+  ! -name "*-base-gcc" ! -name "*-base-g++"))
+
 function create_arch_symlinks()
 {
   local arch=$1
