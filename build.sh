@@ -257,6 +257,14 @@ for file in $files; do
     cp $file usr/include
   fi
 done
+
+if [ $(osxcross-cmp $SDK_VERSION ">=" 27) -eq 1 ]; then
+  # SDK 27 libc++ may miss NAN and INFINITY with Clang < 22.
+  # The patch is a no-op for newer Clang versions.
+  echo "SDK needs patching for libc++ math.h issue ..."
+  patch -N -p1 -r /dev/null < $PATCH_DIR/libcxx_math_h.patch || true
+fi
+
 set -e
 popd &>/dev/null
 
