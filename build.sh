@@ -171,7 +171,12 @@ fi
 ## Create Arch Symlinks ##
 
 pushd $TARGET_DIR/bin &>/dev/null
-TOOLS=($(find . -name "$(first_supported_arch)-apple-${TARGET}*"))
+# GCC installs a separate backend for each target architecture. In particular,
+# arm64 base-gcc/base-g++ already point to GCC's aarch64 backends; creating the
+# reverse aliases here would form a symlink loop.
+TOOLS=($(find . -name "$(first_supported_arch)-apple-${TARGET}*" \
+  ! -name "*-base-gcc" ! -name "*-base-g++"))
+
 function create_arch_symlinks()
 {
   local arch=$1
