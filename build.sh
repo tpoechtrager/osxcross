@@ -123,14 +123,6 @@ pushd $BUILD_DIR &>/dev/null
 
 
 
-OLD_SDK_VERSION=$(cat .oc_sdk_version 2>/dev/null || echo "")
-echo -n "$SDK_VERSION" > .oc_sdk_version
-
-if [ "$SDK_VERSION" != "$OLD_SDK_VERSION" ]; then
-  # SDK Version has changed. -> Rebuild everything.
-  rm -f .*_build_complete
-fi
-
 # XAR
 
 build_xar
@@ -147,7 +139,6 @@ if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     INSTALLPREFIX=$TARGET_DIR ./build.sh
     ./install.sh
     popd &>/dev/null
-    build_success
   fi
 fi
 

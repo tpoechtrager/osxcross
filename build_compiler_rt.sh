@@ -314,12 +314,7 @@ if [ $f_res -eq 1 ]; then
 
   fi
 
-  build_success
 fi
-
-# We must re-build every time. git clean -fdx
-# removes the libraries.
-rm -f $BUILD_DIR/.compiler-rt_build_complete
 
 
 # Installation. Can be either automated (ENABLE_COMPILER_RT_INSTALL) or will
