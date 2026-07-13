@@ -1,0 +1,13 @@
+--- a/usr/include/math.h
++++ b/usr/include/math.h
+@@ -838 +838,10 @@
++#if defined(__cplusplus) && defined(__clang_major__) && __clang_major__ < 22
++#ifndef NAN
++#define NAN __builtin_nanf("0x7fc00000")
++#endif
++#ifndef INFINITY
++#define INFINITY __builtin_huge_valf()
++#endif
++#endif
++
+ #endif /* __MATH_H__ */
