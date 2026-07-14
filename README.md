@@ -107,19 +107,18 @@ Add `<target>/bin` to your `PATH` after installation.
 
 ```sh
 ./build_gcc.sh
-GCC_VERSION=5.2.0 ENABLE_FORTRAN=1 ./build_gcc.sh
+GCC_VERSION=15.1.0 ENABLE_FORTRAN=1 ./build_gcc.sh # Builds 15.1.0, and enables Fortran
 ./build_gcc_with_arm64_support.sh
-ARM64_GCC_BRANCH='<branch>' ./build_gcc_with_arm64_support.sh
+ARM64_GCC_REPO="gcc-darwin-arm64" ./build_gcc_with_arm64_support.sh # Builds trunk
 ```
 
 Run `./build_gcc_with_arm64_support.sh` to build the experimental ARM64 Darwin GCC fork from
-[`iains/gcc-darwin-arm64`](https://github.com/iains/gcc-darwin-arm64). This
+the [`iains`](https://github.com/iains) GitHub account. This
 uses separate build directories to build both AArch64 and x86_64 from the same
-source checkout. It requires an SDK/toolchain produced by `build.sh` with both
-architectures enabled and installs the full-triplet compiler families
+source checkout and installs the full-triplet compiler families
 `aarch64-apple-<darwin>-gcc` and `x86_64-apple-<darwin>-gcc`. Set
-`ARM64_GCC_BRANCH` to build a different fork branch; it defaults to
-`master-wip-apple-si`.
+`ARM64_GCC_REPO` to build a different repository from this account; it defaults
+to [`gcc-16-branch`](https://github.com/iains/gcc-16-branch).
 
 Install GCC dependencies:
 
