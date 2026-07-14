@@ -20,9 +20,9 @@ if [ "${0##*/}" = "build_gcc_with_arm64_support.sh" ]; then
   # Build a patched GCC that supports both x86_64 and arm64 targets.
   # https://github.com/iains/gcc-darwin-arm64
 
-  if [ -z "$ARM64_GCC_BRANCH" ]; then
-    # Build the master branch by default.
-    ARM64_GCC_BRANCH="master-wip-apple-si"
+  if [ -z "$ARM64_GCC_REPO" ]; then
+    # Build the 16 branch by default.
+    ARM64_GCC_REPO="gcc-16-branch"
   fi
 
   BUILD_ARM64_GCC=1
@@ -36,10 +36,7 @@ else
   fi
 
   # GCC mirror
-  # Official GNU "ftp" doesn't have GCC snapshots
-  GCC_MIRROR="https://ftp.fu-berlin.de/unix/languages/gcc/releases/"
-  GCC_MIRROR_WITH_SNAPSHOTS="https://mirror.koddos.net/gcc"
-
+  GCC_MIRROR="https://mirrorservice.org/sites/sourceware.org/pub/gcc"
   GCC_TARGET_ARCHS="x86_64 i386"
 fi
 
@@ -127,13 +124,12 @@ pushd $BUILD_DIR &>/dev/null
 source $BASE_DIR/tools/trap_exit.sh
 
 if [ -n "$BUILD_ARM64_GCC" ]; then
-  get_sources \
-    https://github.com/iains/gcc-darwin-arm64.git \
-    $ARM64_GCC_BRANCH
-
+  get_sources https://github.com/iains/$ARM64_GCC_REPO.git
   GCC_SOURCE_DIR=$CURRENT_BUILD_PROJECT_NAME
   GCC_VERSION=$(cat "$GCC_SOURCE_DIR/gcc/BASE-VER")
+  echo ""
   echo "GCC version: ${GCC_VERSION}"
+  echo ""
 else
   f_res=1
 fi
@@ -143,9 +139,9 @@ if [ $f_res -eq 1 ]; then
 if [ -z "$BUILD_ARM64_GCC" ]; then
 pushd $TARBALL_DIR &>/dev/null
 if [[ $GCC_VERSION != *-* ]]; then
-  download "$GCC_MIRROR/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  download "$GCC_MIRROR/releases/gcc-$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 else
-  download "$GCC_MIRROR_WITH_SNAPSHOTS/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
+  download "$GCC_MIRROR/snapshots/$GCC_VERSION/gcc-$GCC_VERSION.tar.xz"
 fi
 popd &>/dev/null
 
@@ -223,11 +219,13 @@ if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
   echo ""
 fi
 
-if [ $(osxcross-cmp "$GCC_VERSION" '>=' 15.3.0) -eq 1 ]; then
-if [ $(osxcross-cmp "$SDK_VERSION" '>=' 27) -eq 1 ]; then
+if [ "$(osxcross-cmp "$GCC_VERSION" '>=' 15.3.0)" -eq 1 ] &&
+   [ "$(osxcross-cmp "$SDK_VERSION" '>=' 27)" -eq 1 ]; then
   patch -p0 -N -f < "$PATCH_DIR/gcc-darwin20-plus-config.gcc.patch" || true
-  patch -p1 -N -f < "$PATCH_DIR/gcc-darwin20-plus-driver.patch" || true
-fi
+
+  if [ -z "$BUILD_ARM64_GCC" ] && [ "$(osxcross-cmp "$GCC_VERSION" '<' 17.0.0)" -eq 1 ]; then
+    patch -p1 -N -f < "$PATCH_DIR/gcc-darwin20-plus-driver.patch" || true
+  fi
 fi
 
 # Fix GCC builds of the optional libstdc++ C++ standard modules

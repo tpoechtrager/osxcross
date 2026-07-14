@@ -315,11 +315,18 @@ function create_tmp_dir()
   popd &>/dev/null
 }
 
+# Clone or update a source repository and check out the requested branch.
+#
+# Usage:
+#   git_clone_repository "<url>" ["<branch>"] "<project name>"
+#
+# When no branch is supplied, the repository's default branch is used.
+# A shallow clone is used unless FULL_CLONE is set.
 function git_clone_repository
 {
-  local url=$1
-  local branch=$2
-  local project_name=$3
+  local url="$1"
+  local branch="${2:-}"
+  local project_name="$3"
 
   if [ -n "$TP_OSXCROSS_DEV" ] && [ -d "$TP_OSXCROSS_DEV/$project_name" ] ; then
     # copy files from local working directory
@@ -339,23 +346,38 @@ function git_clone_repository
     git_extra_opts="--depth 1 "
   fi
 
-  if [ ! -d $project_name ]; then
-    git clone $url $project_name $git_extra_opts
+  if [ ! -d "$project_name" ]; then
+    if [ -n "$branch" ]; then
+      git clone $git_extra_opts --branch "$branch" "$url" "$project_name"
+    else
+      git clone $git_extra_opts "$url" "$project_name"
+    fi
   fi
 
-  pushd $project_name &>/dev/null
+  pushd "$project_name" &>/dev/null
 
   git reset --hard &>/dev/null
   git clean -fdx &>/dev/null
 
-  if git show-ref refs/heads/$branch &>/dev/null; then
-    git fetch origin $branch
+  if [ -z "$branch" ]; then
+    branch=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)
+    branch=${branch#origin/}
+  fi
+
+  if [ -z "$branch" ]; then
+    echo "Unable to determine the default branch for $url" 1>&2
+    popd &>/dev/null
+    return 1
+  fi
+
+  if git show-ref "refs/heads/$branch" &>/dev/null; then
+    git fetch origin "$branch"
   else
-    git fetch origin $branch:$branch $git_extra_opts
+    git fetch origin "$branch:$branch" $git_extra_opts
   fi
   
-  git checkout $branch
-  git pull origin $branch
+  git checkout "$branch"
+  git pull origin "$branch"
 
   popd &>/dev/null
 }
@@ -382,21 +404,32 @@ function build_msg()
   echo "" 
 }
 
+# Get the sources for a build project.
+#
+# Usage:
+#   get_sources "<url>" ["<branch>"] ["<project name>"]
+#
+# The project name defaults to the repository name. When no branch is
+# supplied, the repository's default branch is used.
+#
 # f_res=1 = build the project
 # f_res=0 = skip the project
-
 function get_sources()
 {
   local url="$1"
-  local branch="$2"
-  local project_name="$3"
+  local branch="${2:-}"
+  local project_name="${3:-}"
 
   if [[ -z "${project_name}" ]]; then
     project_name=$(get_project_name_from_url "${url}")
   fi
   CURRENT_BUILD_PROJECT_NAME="${project_name}"
 
-  build_msg "${project_name}" "${branch}"
+  if [ -n "${branch}" ]; then
+    build_msg "${project_name}" "${branch}"
+  else
+    build_msg "${project_name}"
+  fi
 
   if [[ "${SKIP_BUILD}" == *${project_name}* ]]; then
     f_res=0
