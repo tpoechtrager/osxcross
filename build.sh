@@ -142,7 +142,6 @@ if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
     $MAKE install -j$JOBS
     popd &>/dev/null
     popd &>/dev/null
-    build_success
   fi
 fi
 
