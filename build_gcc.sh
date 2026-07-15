@@ -157,26 +157,34 @@ fi
 pushd "$GCC_SOURCE_DIR" &>/dev/null
 
 if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
-  rm -f $TARGET_DIR/bin/aarch64-apple-$TARGET-*gcc*
-  rm -f $TARGET_DIR/bin/aarch64-apple-$TARGET-*g++*
-  rm -f $TARGET_DIR/bin/arm64-apple-$TARGET-*gcc*
-  rm -f $TARGET_DIR/bin/arm64-apple-$TARGET-*g++*
-  rm -f $TARGET_DIR/bin/oa64-gcc*
-  rm -f $TARGET_DIR/bin/oa64-g++*
+  rm -f "$TARGET_DIR/bin/aarch64-apple-$TARGET-gcc"*
+  rm -f "$TARGET_DIR/bin/aarch64-apple-$TARGET-g++"*
+  rm -f "$TARGET_DIR/bin/aarch64-apple-$TARGET-base-gcc"*
+  rm -f "$TARGET_DIR/bin/aarch64-apple-$TARGET-base-g++"*
+  rm -f "$TARGET_DIR/bin/arm64-apple-$TARGET-gcc"*
+  rm -f "$TARGET_DIR/bin/arm64-apple-$TARGET-g++"*
+  rm -f "$TARGET_DIR/bin/arm64-apple-$TARGET-base-gcc"*
+  rm -f "$TARGET_DIR/bin/arm64-apple-$TARGET-base-g++"*
+  rm -f "$TARGET_DIR/bin/oa64-gcc"*
+  rm -f "$TARGET_DIR/bin/oa64-g++"*
 fi
 
 if arch_supported "$GCC_TARGET_ARCHS" x86_64; then
-  rm -f $TARGET_DIR/bin/x86_64-apple-$TARGET-*gcc*
-  rm -f $TARGET_DIR/bin/x86_64-apple-$TARGET-*g++*
-  rm -f $TARGET_DIR/bin/o64-gcc*
-  rm -f $TARGET_DIR/bin/o64-g++*
+  rm -f "$TARGET_DIR/bin/x86_64-apple-$TARGET-gcc"*
+  rm -f "$TARGET_DIR/bin/x86_64-apple-$TARGET-g++"*
+  rm -f "$TARGET_DIR/bin/x86_64-apple-$TARGET-base-gcc"*
+  rm -f "$TARGET_DIR/bin/x86_64-apple-$TARGET-base-g++"*
+  rm -f "$TARGET_DIR/bin/o64-gcc"*
+  rm -f "$TARGET_DIR/bin/o64-g++"*
 fi
 
 if arch_supported "$GCC_TARGET_ARCHS" i386; then
-  rm -f $TARGET_DIR/bin/i386-apple-$TARGET-*gcc*
-  rm -f $TARGET_DIR/bin/i386-apple-$TARGET-*g++*
-  rm -f $TARGET_DIR/bin/o32-gcc*
-  rm -f $TARGET_DIR/bin/o32-g++*
+  rm -f "$TARGET_DIR/bin/i386-apple-$TARGET-gcc"*
+  rm -f "$TARGET_DIR/bin/i386-apple-$TARGET-g++"*
+  rm -f "$TARGET_DIR/bin/i386-apple-$TARGET-base-gcc"*
+  rm -f "$TARGET_DIR/bin/i386-apple-$TARGET-base-g++"*
+  rm -f "$TARGET_DIR/bin/o32-gcc"*
+  rm -f "$TARGET_DIR/bin/o32-g++"*
 fi
 
 
