@@ -196,7 +196,7 @@ for file in $files; do
   fi
 done
 
-if [ $(osxcross-cmp $SDK_VERSION ">=" 27) -eq 1 ]; then
+if [ $(cmp-version $SDK_VERSION ">=" 27) -eq 1 ]; then
   # SDK 27 libc++ may miss NAN and INFINITY with Clang < 22.
   # The patch is a no-op for newer Clang versions.
   echo "SDK needs patching for libc++ math.h issue ..."
@@ -237,11 +237,11 @@ $BASE_DIR/wrapper/build_wrapper.sh
 
 echo ""
 
-if [ $(osxcross-cmp $SDK_VERSION "<" $OSX_VERSION_MIN) -eq 1 ]; then
+if [ $(cmp-version $SDK_VERSION "<" $OSX_VERSION_MIN) -eq 1 ]; then
   echo "OSX_VERSION_MIN must be <= SDK_VERSION"
   trap "" EXIT
   exit 1
-elif [ $(osxcross-cmp $OSX_VERSION_MIN "<" 10.6) -eq 1  ]; then
+elif [ $(cmp-version $OSX_VERSION_MIN "<" 10.6) -eq 1  ]; then
   echo "OSX_VERSION_MIN must be >= 10.6"
   trap "" EXIT
   exit 1
@@ -262,7 +262,7 @@ done
 
 unset MACOSX_DEPLOYMENT_TARGET
 
-if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
+if [ $(cmp-version $SDK_VERSION ">=" 10.7) -eq 1 ]; then
   pushd $SDK_DIR/MacOSX$SDK_VERSION.sdk &>/dev/null
   if [ ! -f "usr/include/c++/v1/vector" ]; then
     echo ""
@@ -272,8 +272,8 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
     echo "'tools/gen_sdk_package.sh' on macOS"
   fi
   if [ -f "usr/include/c++/v1/__hash_table" ]; then
-    if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
-    if [ $(osxcross-cmp $SDK_VERSION "<=" 10.12) -eq 1 ]; then
+    if [ $(cmp-version $SDK_VERSION ">=" 10.7) -eq 1 ]; then
+    if [ $(cmp-version $SDK_VERSION "<=" 10.12) -eq 1 ]; then
       # https://github.com/tpoechtrager/osxcross/issues/171
       echo "SDK needs patching for libc++ hash table issue ..."
       patch -N -p1 -r /dev/null < $PATCH_DIR/libcxx__hash_table.patch || true
@@ -281,8 +281,8 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
     fi
   fi
   if [ -f "usr/include/c++/v1/typeinfo" ]; then
-    if [ $(osxcross-cmp "$SDK_VERSION" ">=" 10.7) -eq 1 ]; then
-    if [ $(osxcross-cmp "$SDK_VERSION" "<=" 10.8) -eq 1 ]; then
+    if [ $(cmp-version "$SDK_VERSION" ">=" 10.7) -eq 1 ]; then
+    if [ $(cmp-version "$SDK_VERSION" "<=" 10.8) -eq 1 ]; then
       echo "SDK needs patching for libc++ typeinfo issue ..."
       sed_expr='s/_ATTRIBUTE(noreturn) friend void rethrow_exception(exception_ptr);/'
       sed_expr+='friend void rethrow_exception(exception_ptr);/g'
@@ -291,7 +291,7 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
     fi
   fi
   if [ -f "usr/include/Availability.h" ]; then
-    if [ $(osxcross-cmp $SDK_VERSION "==" 10.15) -eq 1 ]; then
+    if [ $(cmp-version $SDK_VERSION "==" 10.15) -eq 1 ]; then
       # 10.15 comes with a broken Availability.h header file
       # which breaks building GCC
       cat $PATCH_DIR/gcc_availability.h >> usr/include/Availability.h || true
@@ -303,11 +303,11 @@ if [ $(osxcross-cmp $SDK_VERSION ">=" 10.7) -eq 1 ]; then
   done
 fi
 
-if [ $(osxcross-cmp $SDK_VERSION ">=" 13.3) -eq 1 ]; then
+if [ $(cmp-version $SDK_VERSION ">=" 13.3) -eq 1 ]; then
   CLANG_VERSION=$(echo "__clang_major__ __clang_minor__ __clang_patchlevel__" | \
                   xcrun clang -xc -E - | tail -n1 | tr ' ' '.')
 
-  if [ $(osxcross-cmp $CLANG_VERSION ">=" 13.0) -eq 1 ]; then
+  if [ $(cmp-version $CLANG_VERSION ">=" 13.0) -eq 1 ]; then
     for ARCH in $SUPPORTED_ARCHS; do
       test_compiler_cxx2b $ARCH-apple-$TARGET-clang++ $BASE_DIR/oclang/test_libcxx_complex.cpp
     done
@@ -354,7 +354,7 @@ fi
 #  echo ""
 #fi
 
-if [ $(osxcross-cmp $SDK_VERSION ">=" 10.14) -eq 1 ]; then
+if [ $(cmp-version $SDK_VERSION ">=" 10.14) -eq 1 ]; then
   echo "libstdc++ is not supported by this SDK."
   echo "Use SDK version 10.13 or earlier if you need libstdc++."
   echo ""

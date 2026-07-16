@@ -224,7 +224,6 @@ install_program_links bitcode-strip "$SUPPORTED_ARCHS"
 install_program_links osxcross "$SUPPORTED_ARCHS" enable_standalone
 install_program_links osxcross-conf "$SUPPORTED_ARCHS" enable_standalone
 install_program_links osxcross-env "$SUPPORTED_ARCHS" enable_standalone
-install_program_links osxcross-cmp "$SUPPORTED_ARCHS" enable_standalone
 install_program_links osxcross-man "$SUPPORTED_ARCHS" enable_standalone
 install_program_links pkg-config "$SUPPORTED_ARCHS"
 
