@@ -495,17 +495,22 @@ void Target::setupGCCLibs(Arch arch) {
   fargs.push_back("-nodefaultlibs");
 
   std::string SDKPath;
+  std::stringstream GCCTriple;
   std::stringstream GCCLibSTDCXXPath;
   std::stringstream GCCLibPath;
 
   const bool dynamic = !!getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
+  // The i386 runtime is a multilib of the x86_64 GCC installation.
+  const char *GCCArch = arch == Arch::arm64 ? "aarch64" : "x86_64";
 
   getSDKPath(SDKPath);
 
-  GCCLibPath << SDKPath << "/../../lib/gcc/" << otriple << "/"
+  GCCTriple << GCCArch << "-" << vendor << "-" << target;
+
+  GCCLibPath << SDKPath << "/../../lib/gcc/" << GCCTriple.str() << "/"
              << gccversion.Str();
 
-  GCCLibSTDCXXPath << SDKPath << "/../../" << otriple << "/lib";
+  GCCLibSTDCXXPath << SDKPath << "/../../" << GCCTriple.str() << "/lib";
 
   switch (arch) {
   case Arch::i386:
@@ -570,12 +575,6 @@ bool Target::setup() {
   triple += vendor;
   triple += "-";
   triple += target;
-
-  otriple = getArchName(Arch::x86_64);
-  otriple += "-";
-  otriple += vendor;
-  otriple += "-";
-  otriple += target;
 
   setCompilerPath();
 
@@ -705,7 +704,40 @@ bool Target::setup() {
       // Use libs from './build_gcc.sh' installation
 
       CXXHeaderPath += "/../../";
-      CXXHeaderPath += otriple;
+
+      // Build the target triple name we BUILD for - not what triple has been invoked.
+      // i.e. x86_64-apple-darwin27-clang++-gstdc++ -arch arm64
+      //      -> results in aarch64-apple-darwin27
+
+      std::string CXXBuildTriple;
+
+      if (targetarchs.size() > 1) { // TODO: should probably check earlier for this
+        err << "clang++-gstdc++ does not support multiple architectures in "
+              "one invocation"
+            << err.endl();
+        return false;
+      }
+
+      switch (targetarchs[0]) {
+      case Arch::arm64:
+        CXXBuildTriple += getArchName(Arch::aarch64);
+        break;
+      case Arch::i386:
+      case Arch::x86_64:
+        // i386 is a multilib of the x86_64 GCC installation;
+        CXXBuildTriple += getArchName(Arch::x86_64);
+        break;
+      default:
+        err << "clang++-gstdc++ does not support architecture '"
+            << getArchName(targetarchs[0]) << "'" << err.endl();
+        return false;
+      }
+      CXXBuildTriple += "-";
+      CXXBuildTriple += vendor;
+      CXXBuildTriple += "-";
+      CXXBuildTriple += target;
+
+      CXXHeaderPath += CXXBuildTriple;
       CXXHeaderPath += "/include/c++";
 
       static std::vector<GCCVersion> v;
@@ -729,7 +761,7 @@ bool Target::setup() {
       CXXHeaderPath += "/";
       CXXHeaderPath += gccversion.Str();
 
-      addCXXPath(otriple);
+      addCXXPath(CXXBuildTriple);
     } else {
       // Use SDK libs
       std::string tmp;

@@ -103,6 +103,65 @@ function first_supported_arch() {
   echo "${SUPPORTED_ARCHS%% *}"
 }
 
+# Compare two dotted versions without external tools; this replaces the old
+# osxcross-cmp wrapper program and prints 1 when the comparison is true, else 0.
+function cmp-version() {
+  (( $# >= 3 )) || return 1
+
+  local lhs=$1 op=$2 rhs=$3
+  local -a parts values av=(0 0 0) bv=(0 0 0)
+  local version part sign digits n i operand
+
+  operand=0
+  for version in "$lhs" "$rhs"; do
+    parts=()
+    values=(0 0 0)
+    IFS='.' read -r -a parts <<< "$version"
+
+    for i in 0 1 2; do
+      part=${parts[i]:-0}
+      n=0
+
+      if [[ $part =~ ^[[:space:]]*([+-]?)([0-9]+) ]]; then
+        sign=${BASH_REMATCH[1]}
+        digits=${BASH_REMATCH[2]}
+
+        while [[ $digits == 0* && $digits != 0 ]]; do
+          digits=${digits#0}
+        done
+
+        n=$((10#$digits))
+        [[ $sign == "-" ]] && n=$((-n))
+      fi
+
+      values[i]=$n
+    done
+
+    if (( operand == 0 )); then
+      av=("${values[@]}")
+    else
+      bv=("${values[@]}")
+    fi
+    ((operand += 1))
+  done
+
+  local a=$((av[0] * 10000 + av[1] * 100 + av[2]))
+  local b=$((bv[0] * 10000 + bv[1] * 100 + bv[2]))
+  local result
+
+  case "$op" in
+    '>')  result=$((a > b)) ;;
+    '<')  result=$((a < b)) ;;
+    '>=') result=$((a >= b)) ;;
+    '<=') result=$((a <= b)) ;;
+    '==') result=$((a == b)) ;;
+    '!=') result=$((a != b)) ;;
+    *) return 1 ;;
+  esac
+
+  printf '%d' "$result"
+}
+
 function require()
 {
   if ! command -v $1 &>/dev/null; then
@@ -164,6 +223,8 @@ if [ $SCRIPT != "build.sh" ]; then
   if [ -z "$res" ] &&
       [[ $SCRIPT != gen_sdk_package*.sh ]] &&
       [ $SCRIPT != "build_wrapper.sh" ] &&
+      [ $SCRIPT != "build_wrapper_new.sh" ] &&
+      [ $SCRIPT != "build_wrapper_new_2.sh" ] &&
       [[ $SCRIPT != build*_clang.sh ]] &&
       [ $SCRIPT != "mount_xcode_image.sh" ]; then
     echo "you must run ./build.sh first before you can start building $DESC"
@@ -470,6 +531,52 @@ function create_symlink()
     exit 1
   fi
   ln -sf "$1" "$2"
+}
+
+function install_cmake_toolchain_files()
+{
+  local compiler=$1
+  local arch
+  local variants_cmake_suffix
+  local cmake_suffix
+
+  if [ -z "$compiler" ]; then
+    echo "Usage: install_cmake_toolchain_files <compiler> [arch ...]" 1>&2
+    return 1
+  fi
+
+  shift
+
+  case "$compiler" in
+    clang)
+      variants_cmake_suffix=("" "-clang" "-clang-libc++" "-clang-gstdc++")
+      ;;
+    gcc)
+      variants_cmake_suffix=("-gcc" "-gcc-libc++")
+      ;;
+    *)
+      echo "Unsupported CMake compiler: '$compiler'" 1>&2
+      return 1
+      ;;
+  esac
+
+  cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
+  cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
+  chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
+
+  for arch in "$@"; do
+    for cmake_suffix in "${variants_cmake_suffix[@]}"; do
+      create_symlink osxcross-cmake \
+                     "$TARGET_DIR/bin/$arch-apple-$TARGET-cmake$cmake_suffix"
+
+      # GCC also exposes an aarch64 -> arm64 alias because GCC itself
+      # is built using the aarch64-apple-darwin-* triple.
+      if [ "$compiler" = "gcc" ] && [ "$arch" = "aarch64" ]; then
+        create_symlink osxcross-cmake \
+                       "$TARGET_DIR/bin/arm64-apple-$TARGET-cmake$cmake_suffix"
+      fi
+    done
+  done
 }
 
 function verbose_cmd()

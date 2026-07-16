@@ -44,7 +44,7 @@ fi
 export GCC_TARGET_ARCHS
 
 
-if [ $(osxcross-cmp $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
+if [ $(cmp-version $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
   echo "You must build OSXCross with OSX_VERSION_MIN >= 10.6" 2>&1
   exit 1
 fi
@@ -59,7 +59,7 @@ function filter_supported_gcc_target_archs()
     if ! arch_supported "$gcc_target_arch"; then
       # Do not warn about i386 on SDKs that no longer support it.
       if [ "$gcc_target_arch" = "i386" ] &&
-         [ "$(osxcross-cmp "$SDK_VERSION" '>' 10.13)" -eq 1 ]; then
+         [ "$(cmp-version "$SDK_VERSION" '>' 10.13)" -eq 1 ]; then
         continue
       fi
 
@@ -188,25 +188,25 @@ if arch_supported "$GCC_TARGET_ARCHS" i386; then
 fi
 
 
-if [ $(osxcross-cmp $GCC_VERSION '>' 5.0.0) -eq 1 ] &&
-   [ $(osxcross-cmp $GCC_VERSION '<' 5.3.0) -eq 1 ]; then
+if [ $(cmp-version $GCC_VERSION '>' 5.0.0) -eq 1 ] &&
+   [ $(cmp-version $GCC_VERSION '<' 5.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66035
   patch -p1 < $PATCH_DIR/gcc-pr66035.patch
 fi
 
-if [ $(osxcross-cmp $GCC_VERSION '>=' 6.1.0) -eq 1 ] &&
-   [ $(osxcross-cmp $GCC_VERSION '<=' 6.3.0) -eq 1 ]; then
+if [ $(cmp-version $GCC_VERSION '>=' 6.1.0) -eq 1 ] &&
+   [ $(cmp-version $GCC_VERSION '<=' 6.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/ml/gcc-patches/2016-09/msg00129.html
   patch -p1 < $PATCH_DIR/gcc-6-buildfix.patch
 fi
 
-if [ $(osxcross-cmp $GCC_VERSION '==' 6.3.0) -eq 1 ]; then
+if [ $(cmp-version $GCC_VERSION '==' 6.3.0) -eq 1 ]; then
   # https://gcc.gnu.org/viewcvs/gcc/trunk/gcc/config/darwin-driver.c?r1=244010&r2=244009&pathrev=244010
   patch -p1 < $PATCH_DIR/darwin-driver.c.patch
 fi
 
-if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
-   [ $(osxcross-cmp $GCC_VERSION '<' 9.0.0) -eq 1 ]; then
+if [ $(cmp-version $SDK_VERSION '>=' 10.14) -eq 1 ] &&
+   [ $(cmp-version $GCC_VERSION '<' 9.0.0) -eq 1 ]; then
   files_to_patch=(
     libsanitizer/asan/asan_mac.cc
     libsanitizer/sanitizer_common/sanitizer_platform_limits_posix.cc
@@ -227,18 +227,18 @@ if [ $(osxcross-cmp $SDK_VERSION '>=' 10.14) -eq 1 ] &&
   echo ""
 fi
 
-if [ "$(osxcross-cmp "$GCC_VERSION" '>=' 15.3.0)" -eq 1 ] &&
-   [ "$(osxcross-cmp "$SDK_VERSION" '>=' 27)" -eq 1 ]; then
+if [ "$(cmp-version "$GCC_VERSION" '>=' 15.3.0)" -eq 1 ] &&
+   [ "$(cmp-version "$SDK_VERSION" '>=' 27)" -eq 1 ]; then
   patch -p0 -N -f < "$PATCH_DIR/gcc-darwin20-plus-config.gcc.patch" || true
 
-  if [ -z "$BUILD_ARM64_GCC" ] && [ "$(osxcross-cmp "$GCC_VERSION" '<' 17.0.0)" -eq 1 ]; then
+  if [ -z "$BUILD_ARM64_GCC" ] && [ "$(cmp-version "$GCC_VERSION" '<' 17.0.0)" -eq 1 ]; then
     patch -p1 -N -f < "$PATCH_DIR/gcc-darwin20-plus-driver.patch" || true
   fi
 fi
 
 # Fix GCC builds of the optional libstdc++ C++ standard modules
 # by ensuring Apple SDKs define rsize_t outside Clang's stddef.h path.
-if [ $(osxcross-cmp $GCC_VERSION '>=' 15) -eq 1 ]; then
+if [ $(cmp-version $GCC_VERSION '>=' 15) -eq 1 ]; then
 if [ -n "$SDK" ]; then
   RSIZE_HEADER="$SDK/usr/include/sys/_types/_rsize_t.h"
 
@@ -376,6 +376,8 @@ echo "compiling wrapper ..."
 
 TARGETCOMPILER=gcc \
   $BASE_DIR/wrapper/build_wrapper.sh
+
+install_cmake_toolchain_files gcc $GCC_TARGET_ARCHS
 
 popd &>/dev/null # wrapper dir
 

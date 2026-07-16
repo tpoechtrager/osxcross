@@ -20,7 +20,7 @@ CLANG_VERSION=$(echo "__clang_major__ __clang_minor__ __clang_patchlevel__" | \
  xcrun clang -xc -E - | tail -n1 | tr ' ' '.')
 
 # Drop patch level for <= 3.3.
-if [ $(osxcross-cmp $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
+if [ $(cmp-version $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
   CLANG_VERSION=$(echo $CLANG_VERSION | tr '.' ' ' |
                   awk '{print $1, $2}' | tr ' ' '.')
 fi
@@ -66,13 +66,13 @@ case $CLANG_VERSION in
      * ) echo "Unsupported Clang version, must be >= 3.2 and <= 22.x" 1>&2; exit 1;
 esac
 
-if [ $(osxcross-cmp $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
+if [ $(cmp-version $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
   export MACOSX_DEPLOYMENT_TARGET=10.8 # x86_64h
 else
   export MACOSX_DEPLOYMENT_TARGET=10.4
 fi
 
-if [ $(osxcross-cmp $MACOSX_DEPLOYMENT_TARGET ">" \
+if [ $(cmp-version $MACOSX_DEPLOYMENT_TARGET ">" \
                     $SDK_VERSION) -eq 1 ];
 then
   echo ">= $MACOSX_DEPLOYMENT_TARGET SDK required" 1>&2
@@ -102,7 +102,7 @@ get_sources https://github.com/llvm/llvm-project.git $BRANCH "compiler-rt"
 if [ $f_res -eq 1 ]; then
   pushd "$CURRENT_BUILD_PROJECT_NAME/compiler-rt" &>/dev/null
 
-  if [ $(osxcross-cmp $SDK_VERSION "<=" 10.11) -eq 1 ]; then
+  if [ $(cmp-version $SDK_VERSION "<=" 10.11) -eq 1 ]; then
     # https://github.com/tpoechtrager/osxcross/issues/178
     patch -p1 < $PATCH_DIR/compiler-rt_clock-gettime.patch
   fi
@@ -200,8 +200,8 @@ if [ $f_res -eq 1 ]; then
       popd &>/dev/null
     }
 
-    if [ $(osxcross-cmp $SDK_VERSION ">=" 11.0) -eq 1 ] &&
-       [ $(osxcross-cmp $CLANG_VERSION ">=" 4.0) -eq 1 ]; then
+    if [ $(cmp-version $SDK_VERSION ">=" 11.0) -eq 1 ] &&
+       [ $(cmp-version $CLANG_VERSION ">=" 4.0) -eq 1 ]; then
       # https://github.com/tpoechtrager/osxcross/issues/258
       # https://github.com/tpoechtrager/osxcross/issues/286
 
@@ -305,7 +305,7 @@ if [ $f_res -eq 1 ]; then
 
     EXTRA_MAKE_FLAGS+="LIPO=\"$(xcrun -f lipo)\""
 
-    if [ $(osxcross-cmp $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
+    if [ $(cmp-version $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
       EXTRA_MAKE_FLAGS+=" AR=\"$(xcrun -f ar)\""
       EXTRA_MAKE_FLAGS+=" RANLIB=\"$(xcrun -f ranlib)\""
       EXTRA_MAKE_FLAGS+=" CC=\"$(xcrun -f clang)\""
