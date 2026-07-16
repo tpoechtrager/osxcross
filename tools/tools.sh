@@ -103,6 +103,65 @@ function first_supported_arch() {
   echo "${SUPPORTED_ARCHS%% *}"
 }
 
+# Compare two dotted versions without external tools; this replaces the old
+# osxcross-cmp wrapper program and prints 1 when the comparison is true, else 0.
+function cmp-version() {
+  (( $# >= 3 )) || return 1
+
+  local lhs=$1 op=$2 rhs=$3
+  local -a parts values av=(0 0 0) bv=(0 0 0)
+  local version part sign digits n i operand
+
+  operand=0
+  for version in "$lhs" "$rhs"; do
+    parts=()
+    values=(0 0 0)
+    IFS='.' read -r -a parts <<< "$version"
+
+    for i in 0 1 2; do
+      part=${parts[i]:-0}
+      n=0
+
+      if [[ $part =~ ^[[:space:]]*([+-]?)([0-9]+) ]]; then
+        sign=${BASH_REMATCH[1]}
+        digits=${BASH_REMATCH[2]}
+
+        while [[ $digits == 0* && $digits != 0 ]]; do
+          digits=${digits#0}
+        done
+
+        n=$((10#$digits))
+        [[ $sign == "-" ]] && n=$((-n))
+      fi
+
+      values[i]=$n
+    done
+
+    if (( operand == 0 )); then
+      av=("${values[@]}")
+    else
+      bv=("${values[@]}")
+    fi
+    ((operand += 1))
+  done
+
+  local a=$((av[0] * 10000 + av[1] * 100 + av[2]))
+  local b=$((bv[0] * 10000 + bv[1] * 100 + bv[2]))
+  local result
+
+  case "$op" in
+    '>')  result=$((a > b)) ;;
+    '<')  result=$((a < b)) ;;
+    '>=') result=$((a >= b)) ;;
+    '<=') result=$((a <= b)) ;;
+    '==') result=$((a == b)) ;;
+    '!=') result=$((a != b)) ;;
+    *) return 1 ;;
+  esac
+
+  printf '%d' "$result"
+}
+
 function require()
 {
   if ! command -v $1 &>/dev/null; then

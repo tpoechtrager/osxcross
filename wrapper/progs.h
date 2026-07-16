@@ -85,7 +85,6 @@ namespace osxcross {
 int version();
 int env(int argc, char **argv);
 int conf(Target &target);
-int cmp(int argc, char **argv);
 int man(int argc, char **argv, Target &target);
 int pkg_config(int argc, char **argv, Target &target);
 } // namespace osxcross
@@ -100,7 +99,6 @@ constexpr prog programs[] = {
   { "osxcross", osxcross::version },
   { "osxcross-env", osxcross::env },
   { "osxcross-conf", osxcross::conf },
-  { "osxcross-cmp", osxcross::cmp },
   { "osxcross-man", osxcross::man },
   { "pkg-config", osxcross::pkg_config },
   { "wrapper", dummy }
