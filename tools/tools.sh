@@ -223,6 +223,8 @@ if [ $SCRIPT != "build.sh" ]; then
   if [ -z "$res" ] &&
       [[ $SCRIPT != gen_sdk_package*.sh ]] &&
       [ $SCRIPT != "build_wrapper.sh" ] &&
+      [ $SCRIPT != "build_wrapper_new.sh" ] &&
+      [ $SCRIPT != "build_wrapper_new_2.sh" ] &&
       [[ $SCRIPT != build*_clang.sh ]] &&
       [ $SCRIPT != "mount_xcode_image.sh" ]; then
     echo "you must run ./build.sh first before you can start building $DESC"
@@ -529,6 +531,52 @@ function create_symlink()
     exit 1
   fi
   ln -sf "$1" "$2"
+}
+
+function install_cmake_toolchain_files()
+{
+  local compiler=$1
+  local arch
+  local variants_cmake_suffix
+  local cmake_suffix
+
+  if [ -z "$compiler" ]; then
+    echo "Usage: install_cmake_toolchain_files <compiler> [arch ...]" 1>&2
+    return 1
+  fi
+
+  shift
+
+  case "$compiler" in
+    clang)
+      variants_cmake_suffix=("" "-clang" "-clang-libc++" "-clang-gstdc++")
+      ;;
+    gcc)
+      variants_cmake_suffix=("-gcc" "-gcc-libc++")
+      ;;
+    *)
+      echo "Unsupported CMake compiler: '$compiler'" 1>&2
+      return 1
+      ;;
+  esac
+
+  cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
+  cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
+  chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
+
+  for arch in "$@"; do
+    for cmake_suffix in "${variants_cmake_suffix[@]}"; do
+      create_symlink osxcross-cmake \
+                     "$TARGET_DIR/bin/$arch-apple-$TARGET-cmake$cmake_suffix"
+
+      # GCC also exposes an aarch64 -> arm64 alias because GCC itself
+      # is built using the aarch64-apple-darwin-* triple.
+      if [ "$compiler" = "gcc" ] && [ "$arch" = "aarch64" ]; then
+        create_symlink osxcross-cmake \
+                       "$TARGET_DIR/bin/arm64-apple-$TARGET-cmake$cmake_suffix"
+      fi
+    done
+  done
 }
 
 function verbose_cmd()

@@ -377,6 +377,8 @@ echo "compiling wrapper ..."
 TARGETCOMPILER=gcc \
   $BASE_DIR/wrapper/build_wrapper.sh
 
+install_cmake_toolchain_files gcc $GCC_TARGET_ARCHS
+
 popd &>/dev/null # wrapper dir
 
 echo ""

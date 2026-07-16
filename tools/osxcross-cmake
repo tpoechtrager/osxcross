@@ -4,9 +4,68 @@ set -e
 dir=`dirname "$0"`
 progname=`basename "$0"`
 
-host=${progname%-cmake}
+# Match the longest suffixes first so that explicit C++ library variants are
+# not accidentally captured by the "-cmake-clang" or "-cmake" cases below.
+# (The cmake symlink is named without the compiler's "++" since "cmake" is
+# implicitly a C++ build tool, but the underlying compiler is still the
+# corresponding C++ wrapper exposed by osxcross.)
+#
+# We just pick the C / C++ wrapper names that osxcross already exposes
+# (clang, clang++, clang++-gstdc++, gcc, g++, ...). The wrapper itself
+# takes care of selecting libc++ vs. libstdc++ based on its invocation
+# name, so we do NOT set any extra "stdlib" env variable here.
+case "$progname" in
+   *-cmake-gcc-libc++)
+      host=${progname%-cmake-gcc-libc++}
+      export OSXCROSS_C_COMPILER=gcc
+      export OSXCROSS_CXX_COMPILER=g++-libc++
+      ;;
+   *-cmake-gcc)
+      host=${progname%-cmake-gcc}
+      export OSXCROSS_C_COMPILER=gcc
+      export OSXCROSS_CXX_COMPILER=g++
+      ;;
+   *-cmake-clang-gstdc++)
+      host=${progname%-cmake-clang-gstdc++}
+      export OSXCROSS_C_COMPILER=clang
+      export OSXCROSS_CXX_COMPILER=clang++-gstdc++
+      ;;
+   *-cmake-clang-libc++)
+      host=${progname%-cmake-clang-libc++}
+      export OSXCROSS_C_COMPILER=clang
+      export OSXCROSS_CXX_COMPILER=clang++-libc++
+      ;;
+   *-cmake-clang)
+      host=${progname%-cmake-clang}
+      export OSXCROSS_C_COMPILER=clang
+      export OSXCROSS_CXX_COMPILER=clang++
+      ;;
+   *-cmake)
+      host=${progname%-cmake}
+      export OSXCROSS_C_COMPILER=clang
+      export OSXCROSS_CXX_COMPILER=clang++
+      ;;
+   *)
+      echo "Unsupported invocation name: $progname"
+      exit 1
+      ;;
+esac
+
 if test "$host" = "osxcross" ; then
-   echo "Do not invoke this script directly."
+   if test -x "$dir/osxcross-conf"; then
+      eval "$("$dir/osxcross-conf")"
+      arch=${OSXCROSS_SUPPORTED_ARCHS%% *}
+   fi
+
+   echo "Do not invoke $progname directly." 1>&2
+   echo "Use an architecture-specific CMake launcher instead, for example:" 1>&2
+
+   if test -n "$arch" && test -n "$OSXCROSS_TARGET"; then
+      echo "  $arch-apple-$OSXCROSS_TARGET-cmake" 1>&2
+   else
+      echo "  <arch>-apple-<darwin-target>-cmake" 1>&2
+   fi
+
    exit 1
 fi
 

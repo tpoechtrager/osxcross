@@ -311,14 +311,7 @@ fi
 
 ## CMake ##
 
-cp -f "$BASE_DIR/tools/toolchain.cmake" "$TARGET_DIR/"
-cp -f "$BASE_DIR/tools/osxcross-cmake" "$TARGET_DIR/bin/"
-
-chmod 755 "$TARGET_DIR/bin/osxcross-cmake"
-
-for ARCH in $SUPPORTED_ARCHS; do
-  create_symlink osxcross-cmake "$TARGET_DIR/bin/$ARCH-apple-$TARGET-cmake"
-done
+install_cmake_toolchain_files clang $SUPPORTED_ARCHS
 
 ## Compiler test ##
 

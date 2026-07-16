@@ -20,11 +20,28 @@ osxcross_getconf(OSXCROSS_SDK)
 set(CMAKE_SYSTEM_NAME "Darwin")
 string(REGEX REPLACE "-.*" "" CMAKE_SYSTEM_PROCESSOR "${OSXCROSS_HOST}")
 
-# specify the cross compiler
-set(CMAKE_C_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang")
-set(CMAKE_CXX_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang++")
-set(CMAKE_OBJC_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang")
-set(CMAKE_OBJCXX_COMPILER "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-clang++")
+# specify the cross compiler. The osxcross-cmake dispatcher script picks
+# the right osxcross wrapper names (clang, clang++, clang++-gstdc++, gcc,
+# g++, ...) and exports them via OSXCROSS_C_COMPILER / OSXCROSS_CXX_COMPILER.
+# We do not invent stdlib flags here -- the wrappers take care of that
+# internally based on their own invocation name.
+set(OSXCROSS_C_COMPILER   "$ENV{OSXCROSS_C_COMPILER}")
+set(OSXCROSS_CXX_COMPILER "$ENV{OSXCROSS_CXX_COMPILER}")
+if(NOT OSXCROSS_C_COMPILER OR NOT OSXCROSS_CXX_COMPILER)
+  message(FATAL_ERROR
+    "OSXCROSS_C_COMPILER and OSXCROSS_CXX_COMPILER must be set by the "
+    "osxcross-cmake dispatcher (got C='${OSXCROSS_C_COMPILER}', "
+    "CXX='${OSXCROSS_CXX_COMPILER}')")
+endif()
+
+set(CMAKE_C_COMPILER
+  "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-${OSXCROSS_C_COMPILER}")
+set(CMAKE_CXX_COMPILER
+  "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-${OSXCROSS_CXX_COMPILER}")
+set(CMAKE_OBJC_COMPILER
+  "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-${OSXCROSS_C_COMPILER}")
+set(CMAKE_OBJCXX_COMPILER
+  "${OSXCROSS_TARGET_DIR}/bin/${OSXCROSS_HOST}-${OSXCROSS_CXX_COMPILER}")
 
 # where is the target environment
 set(CMAKE_FIND_ROOT_PATH
