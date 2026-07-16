@@ -165,7 +165,6 @@ struct Target {
   std::string compilername;     // clang | gcc
   std::string compilerexecname; // clang | *-apple-darwin-gcc
   std::string triple;
-  std::string otriple;
   string_vector fargs;
   string_vector args;
   const char *language;

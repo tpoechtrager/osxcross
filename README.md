@@ -53,6 +53,13 @@ It also includes scripts for optionally building:
 A minimal MacPorts package manager is included.
 See [README.MACPORTS.md](README.MACPORTS.md).
 
+### CMake
+
+For CMake projects, OSXCross provides architecture- and compiler-specific
+launchers together with an installed toolchain file.
+See [README.CMAKE.md](README.CMAKE.md) for setup, compiler selection, universal
+binaries, package discovery, and complete examples.
+
 ---
 
 ### Installation

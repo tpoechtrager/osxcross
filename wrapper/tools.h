@@ -392,6 +392,7 @@ inline Compiler getCompilerIdentifier(const char *compilername) {
 
 enum Arch {
   arm64,
+  aarch64,
   arm64e,
   i386,
   i486,
@@ -403,6 +404,7 @@ enum Arch {
 
 constexpr const char *ArchNames[] = {
   "arm64",
+  "aarch64",
   "arm64e",
   "i386",
   "i486",
