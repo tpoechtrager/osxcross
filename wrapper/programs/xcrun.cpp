@@ -27,13 +27,14 @@ using namespace target;
 namespace program {
 namespace {
 
+bool isStandaloneXcrun = false;
 bool showCommand = false;
 
 bool isXcodeTool(const char *tool) {
   constexpr const char *XcodeTools[] = {
     "ar", "as", "c89", "c99", "c11", "c++", "cc", "checksyms", "clang",
-    "dsymutil", "codesign_allocate", "dyldinfo", "gcc", "g++", "gcov",
-    "gprof", "indr", "install_name_tool", "ld", "libtool", "lipo",
+    "clang++", "dsymutil", "codesign_allocate", "dyldinfo", "gcc", "g++",
+    "gcov", "gprof", "indr", "install_name_tool", "ld", "libtool", "lipo",
     "machocheck", "nm", "nmedit", "ObjectDump", "objdump", "otool",
     "pagestuff", "pkg-config", "ranlib", "redo_prebinding",
     "seg_addr_table", "seg_hack", "size", "strings", "strip", "sw_vers",
@@ -42,13 +43,13 @@ bool isXcodeTool(const char *tool) {
   };
 
   for (const char *xctool : XcodeTools)
-    if (!strncmp(tool, xctool, strlen(xctool)))
+    if (!strcmp(tool, xctool))
       return true;
 
   return false;
 }
 
-bool getToolPath(Target *target, std::string &toolpath, const char *tool) {
+bool getToolPath(Target *target, std::string &toolpath, std::string tool) {
   const char *filename = getFileName(tool);
   bool isxcodetool = isXcodeTool(filename);
 
@@ -62,20 +63,34 @@ bool getToolPath(Target *target, std::string &toolpath, const char *tool) {
   }
 
   if (toolpath.empty()) {
+    std::string defaultTriple;
+
     toolpath = target->execpath;
     toolpath += PATHDIV;
-    toolpath += getArchName(target->arch);
-    toolpath += "-";
-    toolpath += getDefaultVendor();
-    toolpath += "-";
-    toolpath += getDefaultTarget();
+
+    if (isStandaloneXcrun) {
+      // Standalone xcrun uses the default target architecture.
+      // For GCC tools, prefer the default GCC architecture so xcrun can find
+      // GCC even when it is not available for the Clang default architecture.
+      bool isGCC = (tool.rfind("gcc", 0) == 0 || tool.rfind("g++", 0) == 0);
+      toolpath += target->buildDefaultTriple(defaultTriple, isGCC);
+    } else {
+      // A target-prefixed xcrun must resolve tools for that exact target.
+      // For example, arm64-apple-darwin27-xcrun -f gcc must fail when
+      // no ARM64 GCC installation exists.
+      target->setTriple();
+      toolpath += target->getTriple();
+    }
+  
     toolpath += "-";
     toolpath += tool;
   }
 
   if (!fileExists(toolpath.c_str())) {
     // Fall back to system executables so 'xcrun git status' etc. works.
-    if (!isxcodetool && realPath(tool, toolpath, nullptr, nullptr, 0))
+    // Call findExecutableInPath() with lookupSymlinks=false to avoid 
+    // 'xcrun -f sh' print /usr/bin/bash instead of /usr/bin/sh.
+    if (!isxcodetool && findExecutableInPath(tool.c_str(), toolpath, nullptr, nullptr, false))
       return true;
 
     err << "xcrun: cannot find '" << tool << "' executable" << err.endl();
@@ -142,8 +157,9 @@ int log(Target*, char**) {
 int find(Target *target, char **argv) {
   if (argv[1])
     return 1;
+  const std::string toolname = argv[0];
   std::string toolpath;
-  if (!getToolPath(target, toolpath, argv[0]))
+  if (!getToolPath(target, toolpath, toolname))
     return 1;
   std::cout << toolpath << std::endl;
   return 0;
@@ -155,17 +171,7 @@ int run(Target *target, char **argv) {
 
   const std::string toolname = argv[0];
 
-  // GCC is x86-only.
-  // If the default Architecture is not i386 and also not x86_64, GCC may not be found.
-  // Therefore set the architecture to x86_64 to ensure GCC is found.
-
-  if ((toolname.rfind("gcc", 0) == 0 || toolname.rfind("g++", 0) == 0) &&
-      (target->arch != Arch::i386 && target->arch != Arch::x86_64) && 
-      target->archSupported(Arch::x86_64)) {
-    target->arch = Arch::x86_64;
-  }
-
-  if (!getToolPath(target, toolpath, toolname.c_str()))
+  if (!getToolPath(target, toolpath, toolname))
     exit(1);
 
   std::vector<char *> args;
@@ -215,6 +221,8 @@ int showPlatformPath(Target *target, char**) {
 } // anonymous namespace
 
 int xcrun(int argc, char **argv, Target &target) {
+  isStandaloneXcrun = !endsWith(argv[0], "-xcrun");
+
   if (getenv("xcrun_log"))
     showCommand = true;
 
@@ -233,8 +241,10 @@ int xcrun(int argc, char **argv, Target &target) {
 
   if (char *SDK = getenv("SDKROOT")) {
     unsetenv("OSXCROSS_SDKROOT");
-    char *argv[1] = { SDK };
-    sdk(&target, argv);
+    char *sdkArgs[1] = { SDK };
+    int retVal = sdk(&target, sdkArgs);
+    if (retVal != 0)
+      return retVal;
   }
 
   auto dummy = [](Target*, char**) { return 0; };

@@ -69,6 +69,7 @@ int conf(Target &target) {
   print("LIBLTO_PATH", ltopath);
   print("LINKER_VERSION", getLinkerVersion());
   print("SUPPORTED_ARCHS", getSupportedArchsString());
+  print("GCC_TARGET_ARCHS", getSupportedArchsString(true));
   print("DEFAULT_ARCH", getArchName(getDefaultArch()));
 
   return 0;

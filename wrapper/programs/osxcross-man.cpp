@@ -28,6 +28,7 @@ namespace program {
 namespace osxcross {
 
 int man(int argc, char **argv, Target &target) {
+  bool isStandaloneOSXCrossMan = !endsWith(argv[0], "-osxcross-man");
   std::string SDKPath;
 
   if (!target.getSDKPath(SDKPath))
@@ -67,7 +68,14 @@ int man(int argc, char **argv, Target &target) {
     for (const char *mp : GCCManPages) {
       if (!strcmp(mp, arg)) {
         std::string *str = new std::string; // Intentionally "leaked"
-        target.getDefaultTriple(*str);
+        if (isStandaloneOSXCrossMan) {
+          // osxcross-man -> use default GCC architecture for triple
+          target.buildDefaultTriple(*str, /* GCC */ true, /* useAarch64InsteadOfArm64 */ true);
+        } else {
+          // <triple>-osxcross-man -> use the triple architecture for triple
+          target.setTriple(/* useAarch64InsteadOfArm64 */ true);
+          *str = target.getTriple();
+        }
         str->append("-");
         str->append(arg);
         arg = const_cast<char *>(str->c_str());

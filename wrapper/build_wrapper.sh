@@ -22,6 +22,10 @@ if [ -z "$SUPPORTED_ARCHS" ]; then
   export SUPPORTED_ARCHS=$OSXCROSS_SUPPORTED_ARCHS
 fi
 
+if [ -z "$GCC_TARGET_ARCHS" ]; then
+  export GCC_TARGET_ARCHS=$OSXCROSS_GCC_TARGET_ARCHS
+fi
+
 if [ -z "$SUPPORTED_ARCHS" ]; then
   echo "SUPPORTED_ARCHS not set. Rebuild from scratch." 1>&2
   exit 1
@@ -167,6 +171,52 @@ function install_program_links
   done
 }
 
+function install_dsymutil_links()
+{
+  # LLVM <= 6 had llvm-dsymutil instead of dsymutil.
+  # If neither is found, echo dsymutil. So the echo below is not showing an empty string.
+  dsymutil=$(which dsymutil 2>/dev/null || which llvm-dsymutil 2>/dev/null || echo dsymutil)
+
+  # Determine the dsymutil version.
+  dsymutil_version=$($dsymutil --version 2>/dev/null | \
+    awk '/LLVM version/ {
+      sub(/^.*LLVM version[[:space:]]+/, "")
+      print $1
+      exit
+    }')
+  dsymutil_version=${dsymutil_version:-0.0.0}
+
+  if [[ $dsymutil == *llvm-dsymutil ]]; then
+    is_llvm_prefixed_dsymutil=1
+  else
+    is_llvm_prefixed_dsymutil=0
+  fi
+
+  # dsymutil 3.7 and earlier are broken and have crash issues.
+  if [ $(cmp-version "$dsymutil_version" "<" 3.8) -eq 1 ]; then
+    # Make dsymutil a no-op to avoid build failures.
+    echo "Old/broken $dsymutil version $dsymutil_version detected. Making dsymutil a no-op." 1>&2
+    dsymutil=$(which true)
+  fi
+
+  if [ $is_llvm_prefixed_dsymutil -eq 1 ]; then
+    # This is llvm-dsymutil (with llvm- prefix).
+    # -> Install a standalone dsymutil symlink, so dsymutil
+    #    without the llvm- prefix is available as command.
+    verbose_cmd create_symlink $dsymutil "dsymutil"
+  fi
+
+  for ARCH in $SUPPORTED_ARCHS; do
+    case "$ARCH" in
+      arm64)
+        verbose_cmd create_symlink $dsymutil "aarch64-apple-$TARGET-dsymutil"
+        ;;
+    esac
+
+    verbose_cmd create_symlink $dsymutil "$ARCH-apple-$TARGET-dsymutil"
+  done
+}
+
 # ---------------------------------------------------------------------------
 # Symlink installation
 # ---------------------------------------------------------------------------
@@ -196,20 +246,8 @@ install_program_links pkg-config "$SUPPORTED_ARCHS"
 
 # Darwin provides these tools itself. Other hosts need wrapper links.
 if [ "$PLATFORM" != "Darwin" ]; then
-  if which dsymutil &>/dev/null; then
-    # If dsymutil is in PATH then it's most likely a recent
-    # LLVM dsymutil version. In this case don't wrap it.
-    # Just create target symlinks.
-
-    for ARCH in $SUPPORTED_ARCHS; do
-      verbose_cmd create_symlink "$(which dsymutil)" "$ARCH-apple-$TARGET-dsymutil"
-    done
-  else
-    install_program_links dsymutil enable_standalone
-  fi
-
+  install_dsymutil_links
   install_program_links sw_vers "$SUPPORTED_ARCHS" enable_standalone
-
   install_program_links xcrun "$SUPPORTED_ARCHS" enable_standalone
   install_program_links xcodebuild "$SUPPORTED_ARCHS" enable_standalone
 fi

@@ -32,6 +32,7 @@ override CXXFLAGS+=-DOSXCROSS_LINKER_VERSION="\"$(LINKER_VERSION)\""
 override CXXFLAGS+=-DOSXCROSS_LIBLTO_PATH="\"$(LIBLTO_PATH)\""
 override CXXFLAGS+=-DOSXCROSS_BUILD_DIR="\"$(BUILD_DIR)\""
 override CXXFLAGS+=-DOSXCROSS_SUPPORTED_ARCHS="\"$(SUPPORTED_ARCHS)\""
+override CXXFLAGS+=-DOSXCROSS_GCC_TARGET_ARCHS="\"$(GCC_TARGET_ARCHS)\""
 
 override CXXFLAGS+= $(ADDITIONAL_CXXFLAGS)
 
@@ -66,8 +67,7 @@ SRCS= \
  programs/sw_vers.cpp \
  programs/pkg-config.cpp \
  programs/xcrun.cpp \
- programs/xcodebuild.cpp \
- programs/dsymutil.cpp
+ programs/xcodebuild.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
 

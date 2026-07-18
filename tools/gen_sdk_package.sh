@@ -51,7 +51,7 @@ function compress()
     "zip")
       $SDK_COMPRESSOR -q -5 -r - $1 > $2 ;;
     *)
-      tar cf - $1 | $SDK_COMPRESSOR -5 - > $2 ;;
+      $TAR cf - $1 | $SDK_COMPRESSOR -5 - > $2 ;;
   esac
 }
 
