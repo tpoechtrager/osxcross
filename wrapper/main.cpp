@@ -237,46 +237,43 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
   return true;
 }
 
-constexpr struct Opt {
-  const char *name;
-  const size_t namelen;
-  const optFun fun;
-  const bool valrequired;
-  const bool pusharg;
-  const char *valseparator;
-  const size_t valseparatorlen;
-  constexpr Opt(const char *name, optFun fun, const bool valrequired = false,
-                const bool pusharg = false, const char *valseparator = nullptr)
-      :  name(name), namelen(constexprStrLen(name)), fun(fun),
-         valrequired(valrequired), pusharg(pusharg),
-         valseparator(valseparator),
-         valseparatorlen(valseparator ? constexprStrLen(valseparator) : 0) {}
-} opts[] = {
-  {"-mmacos-version-min", versionmin, true, false, "="},
-  {"-mmacosx-version-min", versionmin, true, false, "="},
-  {"-stdlib", stdlib, true, false, "="},
-  {"-arch", arch, true},
+typedef OptParser<optFun, 19> Parser;
+typedef Parser::ValueMode ValueMode;
+typedef Parser::Forwarding Forwarding;
+
+const Parser parser = {{
+  {"-mmacos-version-min", versionmin, ValueMode::joinedWithEquals},
+  {"-mmacosx-version-min", versionmin, ValueMode::joinedWithEquals},
+  {"-stdlib", stdlib, ValueMode::joinedWithEquals},
+  {"-arch", arch, ValueMode::separate},
   {"-m16", arch},
   {"-m32", arch},
   {"-mx32", arch},
   {"-m64", arch},
-  {"-x", language, true, true},
+  {"-x", language, ValueMode::joinedOrSeparate, Forwarding::keep},
   {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
-  {"-foc-run-prog", runprog, true, false, "="}, // for internal use only
-  {"-Wliblto", liblto, false, true},
-  {"-Wno-liblto", liblto, false, true},
-  {"-isystem", checkincludepath, true, true},
-  {"-icxx-isystem", checkincludepath, true, true},
-  {"-cxx-isystem", checkincludepath, true, true},
-  {"-I", checkincludepath, true, true},
+  // for internal use only
+  {"-foc-run-prog", runprog, ValueMode::joinedWithEquals},
+  {"-Wliblto", liblto, ValueMode::none, Forwarding::keep},
+  {"-Wno-liblto", liblto, ValueMode::none, Forwarding::keep},
+  {"-isystem", checkincludepath, ValueMode::joinedOrSeparate,
+   Forwarding::keep},
+  {"-icxx-isystem", checkincludepath, ValueMode::joinedOrSeparate,
+   Forwarding::keep},
+  {"-cxx-isystem", checkincludepath, ValueMode::joinedOrSeparate,
+   Forwarding::keep},
+  {"-I", checkincludepath, ValueMode::joinedOrSeparate, Forwarding::keep},
 
-  // sets a custom path for the compiler
-  {"-foc-compiler-path", compilerpath, true, false, "="},
+  // sets a custom path for the compile
+  {"-foc-compiler-path", compilerpath, ValueMode::joinedWithEquals},
 
   // specifies an additional directory to search when looking for clang's
   // intrinsic paths
-  {"-foc-intrinsic-path", intrinsicpath, true, false, "="}
-};
+  {"-foc-intrinsic-path", intrinsicpath, ValueMode::joinedWithEquals}
+}, []() {
+  const char *value = getenv("OCDEBUG");
+  return value && atoi(value) != 0;
+}()};
 
 bool parse(int argc, char **argv, Target &target) {
   target.args.reserve(argc);
@@ -294,46 +291,47 @@ bool parse(int argc, char **argv, Target &target) {
       continue;
     }
 
-    bool pusharg = true;
-    int j = i;
+    const Parser::Option *opt = parser.parse(arg);
 
-    for (const Opt &opt : opts) {
-      if (strncmp(arg, opt.name, opt.namelen))
-        continue;
-
-      pusharg = opt.pusharg;
-
-      const char *val = nullptr;
-
-      if (opt.valrequired) {
-        val = arg + opt.namelen;
-
-        if (opt.valseparator &&
-            strncmp(val, opt.valseparator, opt.valseparatorlen)) {
-          err << "expected '" << opt.name << opt.valseparator << "<val>' "
-              << "instead of '" << arg << "'" << err.endl();
-          return false;
-        } else {
-          val += opt.valseparatorlen;
-        }
-
-        if (!opt.valseparator && !*val && i < argc - 1)
-          val = argv[++i];
-
-        if (!*val) {
-          err << "missing argument for '" << opt.name << "'" << err.endl();
-          return false;
-        }
-      }
-
-      if (opt.fun && !opt.fun(target, opt.name, val, &argv[i + 1]))
-        return false;
-
-      break;
+    if (!opt) {
+      target.args.push_back(arg);
+      continue;
     }
 
+    const bool pusharg = opt->forwarding == Forwarding::keep;
+    const int firstArg = i;
+    const char *val = nullptr;
+
+    if (opt->valueMode != ValueMode::none) {
+      val = arg + opt->namelen;
+
+      if (opt->valueMode == ValueMode::joinedWithEquals) {
+        if (*val != '=') {
+          err << "expected '" << opt->name << "=<val>' "
+              << "instead of '" << arg << "'" << err.endl();
+          return false;
+        }
+
+        ++val;
+      }
+
+      if (opt->valueMode != ValueMode::joinedWithEquals &&
+          !*val && i < argc - 1)
+        val = argv[++i];
+
+      if (!*val) {
+        err << "missing argument for '" << opt->name << "'" << err.endl();
+        return false;
+      }
+    }
+
+    parser.printDebug(*opt, arg, val);
+
+    if (opt->fun && !opt->fun(target, opt->name, val, &argv[i + 1]))
+      return false;
+
     if (pusharg) {
-      for (; j <= i; ++j)
+      for (int j = firstArg; j <= i; ++j)
         target.args.push_back(argv[j]);
     }
   }

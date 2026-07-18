@@ -66,19 +66,6 @@ case $CLANG_VERSION in
      * ) echo "Unsupported Clang version, must be >= 3.2 and <= 22.x" 1>&2; exit 1;
 esac
 
-if [ $(cmp-version $CLANG_VERSION ">=" 3.5) -eq 1 ]; then
-  export MACOSX_DEPLOYMENT_TARGET=10.8 # x86_64h
-else
-  export MACOSX_DEPLOYMENT_TARGET=10.4
-fi
-
-if [ $(cmp-version $MACOSX_DEPLOYMENT_TARGET ">" \
-                    $SDK_VERSION) -eq 1 ];
-then
-  echo ">= $MACOSX_DEPLOYMENT_TARGET SDK required" 1>&2
-  exit 1
-fi
-
 HAVE_OS_LOCK=0
 
 if echo "#include <os/lock.h>" | xcrun clang -E - &>/dev/null; then
@@ -93,7 +80,7 @@ pushd $BUILD_DIR &>/dev/null
 
 # Check if a build project for compiler-rt already exists.
 # Delete any directory that is called compiler-rt, but is not a build project.
-if [ -d "$BUILD_DIR/compiler-rt" ] && [ ! -d "$BUILD_DIR/compiler_rt/compiler-rt" ]; then
+if [ -d "$BUILD_DIR/compiler-rt" ] && [ ! -d "$BUILD_DIR/compiler-rt/compiler-rt" ]; then
     rm -rf "$BUILD_DIR/compiler-rt"
 fi
 
@@ -128,7 +115,7 @@ if [ $f_res -eq 1 ]; then
 \ \ \ \ \ \ \ 'COMMAND xcrun -sdk ${sdk_name}.internal --show-sdk-version/g' \
       cmake/Modules/CompilerRTDarwinUtils.cmake
 
-    $SED -i 's/COMMAND xcodebuild -version -sdk ${sdk_name}.internal SDKVersion/'\
+    $SED -i 's/COMMAND xcodebuild -version -sdk ${sdk_name} SDKVersion/'\
 \ \ \ \ \ \ \ 'COMMAND xcrun -sdk ${sdk_name} --show-sdk-version/g' \
       cmake/Modules/CompilerRTDarwinUtils.cmake
 
@@ -172,10 +159,15 @@ if [ $f_res -eq 1 ]; then
         extra_cmake_flags+="-DDARWIN_osx_ARCHS=$arch "
         extra_cmake_flags+="-DDARWIN_osx_BUILTIN_ARCHS=$arch "
 
-        if [ $arch == "arm64" ] || [ $arch == "arm64e" ]; then
+        if [[ "$arch" = "arm64" || "$arch" = "arm64e" ]] &&
+           [ "$(cmp-version "$CLANG_VERSION" "<=" 11.0)" -eq 1 ]; then
           # https://github.com/tpoechtrager/osxcross/issues/259
           extra_cmake_flags+="-DCOMPILER_RT_BUILD_SANITIZERS=OFF "
           extra_cmake_flags+="-DCOMPILER_RT_BUILD_XRAY=OFF "
+        elif [ "$arch" = "x86_64h" ]; then
+          if [ $(cmp-version $OSXCROSS_OSX_VERSION_MIN "<" 10.8) -eq 1 ]; then
+            export MACOSX_DEPLOYMENT_TARGET=10.8
+          fi
         fi
 
         echo ""
@@ -186,7 +178,8 @@ if [ $f_res -eq 1 ]; then
       mkdir $build_dir
       pushd $build_dir &>/dev/null
 
-      CC=$(xcrun -f clang) CXX=$(xcrun -f clang++) $CMAKE .. \
+      CC=$arch-apple-$OSXCROSS_TARGET-clang CXX=$arch-apple-$OSXCROSS_TARGET-clang++ \
+       $CMAKE .. \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_SYSTEM_NAME=Darwin \
         -DCOMPILER_RT_ENABLE_IOS=OFF \
@@ -200,98 +193,114 @@ if [ $f_res -eq 1 ]; then
       popd &>/dev/null
     }
 
-    if [ $(cmp-version $SDK_VERSION ">=" 11.0) -eq 1 ] &&
-       [ $(cmp-version $CLANG_VERSION ">=" 4.0) -eq 1 ]; then
-      # https://github.com/tpoechtrager/osxcross/issues/258
-      # https://github.com/tpoechtrager/osxcross/issues/286
+    # We build every architecture own its own. See these issues why:
+    # https://github.com/tpoechtrager/osxcross/issues/258
+    # https://github.com/tpoechtrager/osxcross/issues/286
 
-      function check_archs
-      {
-        tmp=$(mktemp -d)
-        [ -z "$tmp" ] && exit 1
-        pushd $tmp &>/dev/null
+    function check_archs
+    {
+      local tmp
+      local arch
 
-        for arch in $*; do
-          if echo "int main(){}" | xcrun clang -arch $arch -xc -o test - &>/dev/null; then
-            rm test
-            [ -n "$ARCHS" ] && ARCHS+=" "
-            ARCHS+="$arch"
-          fi
-        done
+      tmp=$(mktemp -d)
+      [ -z "$tmp" ] && exit 1
+      pushd $tmp &>/dev/null
 
-        popd &>/dev/null
-        rmdir $tmp
-      }
-
-      ARCHS=""
-      check_archs i386 x86_64 x86_64h arm64 arm64e
-
-      if [ -z "$ARCHS" ]; then
-        echo "Compiler does not seem to work"
-        exit 1
-      fi
-
-      echo ""
-      echo "Building for archs $ARCHS ..."
-      echo ""
-
-      if [ -z "$DISABLE_PARALLEL_ARCH_BUILD" ] && [ $JOBS -gt 2 ]; then
-        build_pids="";
-        jobs_per_build_job=$(awk "BEGIN{print int($JOBS/$(echo $ARCHS | wc -w)+0.5)}")
-        ((jobs_per_build_job=jobs_per_build_job+1))
-
-        for arch in $ARCHS; do
-          JOBS=$jobs_per_build_job build $arch &
-          build_pids+=" $!"
-        done
-
-        for pid in $build_pids; do
-          wait $pid || {
-            echo ""
-            echo "Build failed!"
-            echo "Use DISABLE_PARALLEL_ARCH_BUILD=1 to disable parallel building of architectures"
-            echo ""
-            exit 1
-          }
-        done
-      else
-        for arch in $ARCHS; do
-          build $arch
-        done
-      fi
-
-      arch1=$(echo $ARCHS | awk '{print $1}')
-
-      # Recent LLVM also emits *.sources.txt build metadata in this directory.
-      # Only runtime libraries should be lipo'd.
-      for path in build_$arch1/lib/darwin/*.a build_$arch1/lib/darwin/*.dylib; do
-        [ -e "$path" ] || continue
-        file=${path##*/}
-        libs=""
-
-        for arch in $ARCHS; do
-          lib="build_$arch/lib/darwin/$file"
-          [ -n "$libs" ] && libs+=" "
-          if [ -f "$lib" ]; then
-            libs+="$lib"
-          fi
-        done
-
-        xcrun lipo -create $libs -output build_$arch1/lib/darwin/$file.lipo
-        rm build_$arch1/lib/darwin/$file
-        mv build_$arch1/lib/darwin/$file.lipo build_$arch1/lib/darwin/$file
+      for arch in "$@"; do
+        if echo "int main(){}" | xcrun clang -arch $arch -xc -o test - &>/dev/null; then
+          rm test
+          [ -n "$ARCHS" ] && ARCHS+=" "
+          ARCHS+="$arch"
+        fi
       done
 
-      create_symlink build_$arch1 build
-    else
-      build
+      popd &>/dev/null
+      rmdir $tmp
+    }
+
+    ARCHS=""
+    check_archs $OSXCROSS_SUPPORTED_ARCHS
+
+    if [ -z "$ARCHS" ]; then
+      echo "Compiler does not seem to work" 1>&2
+      exit 1
     fi
+
+    echo ""
+    echo "Building for archs $ARCHS ..."
+    echo ""
+
+    if [ -z "$DISABLE_PARALLEL_ARCH_BUILD" ] && [ $JOBS -gt 2 ]; then
+      build_pids="";
+      jobs_per_build_job=$(awk "BEGIN{print int($JOBS/$(echo $ARCHS | wc -w)+0.5)}")
+      ((jobs_per_build_job=jobs_per_build_job+1))
+
+      for arch in $ARCHS; do
+        JOBS=$jobs_per_build_job build $arch &
+        build_pids+=" $!"
+      done
+
+      for pid in $build_pids; do
+        wait $pid || {
+          echo ""
+          echo "Build failed!"
+          echo "Use DISABLE_PARALLEL_ARCH_BUILD=1 to disable parallel building of architectures"
+          echo ""
+          exit 1
+        }
+      done
+    else
+      for arch in $ARCHS; do
+        build $arch
+      done
+    fi
+
+    arch1=$(echo $ARCHS | awk '{print $1}')
+
+    # Recent LLVM also emits *.sources.txt build metadata in this directory.
+    # Only runtime libraries should be lipo'd. Use the union of all files
+    # built for the enabled architectures: some runtimes (such as the
+    # sanitizer dylibs) are intentionally not built for every architecture.
+    runtime_files=""
+    for arch in $ARCHS; do
+      for path in build_$arch/lib/darwin/*.a build_$arch/lib/darwin/*.dylib; do
+        [ -e "$path" ] || continue
+        file=${path##*/}
+
+        if [[ " $runtime_files " != *" $file "* ]]; then
+          runtime_files+=" $file"
+        fi
+      done
+    done
+
+    for file in $runtime_files; do
+      libs=""
+
+      for arch in $ARCHS; do
+        lib="build_$arch/lib/darwin/$file"
+        if [ -f "$lib" ]; then
+          [ -n "$libs" ] && libs+=" "
+          libs+="$lib"
+        fi
+      done
+
+      xcrun lipo -create $libs -output build_$arch1/lib/darwin/$file.lipo
+      mv build_$arch1/lib/darwin/$file.lipo build_$arch1/lib/darwin/$file
+    done
+
+    create_symlink build_$arch1 build
 
     ### CMAKE END ###
 
   else
 
     ### MAKE ###
+
+     if arch_supported $ARCHS "x86_64h"; then
+      if [ $(cmp-version $OSXCROSS_OSX_VERSION_MIN "<" 10.8) -eq 1 ]; then
+        export MACOSX_DEPLOYMENT_TARGET=10.8
+      fi
+    fi
 
     $SED -i "s/Configs += ios//g" make/platform/clang_darwin.mk
     $SED -i "s/Configs += cc_kext_ios5//g" make/platform/clang_darwin.mk
@@ -329,7 +338,7 @@ function print_or_run() {
   if [ -z "$ENABLE_COMPILER_RT_INSTALL" ]; then
     echo "$@"
   else
-    $@
+    "$@"
   fi
 }
 
@@ -369,7 +378,7 @@ else
 
   function print_install_command() {
     if [ -f "$1" ]; then
-      print_or_run cp $PWD/compiler-rt/$1 ${CLANG_DARWIN_LIB_DIR}/$2
+      print_or_run cp -v "$PWD/$1" "${CLANG_DARWIN_LIB_DIR}/$2"
     fi
   }
 
@@ -378,6 +387,9 @@ else
   print_install_command "eprintf/libcompiler_rt.a"     "libclang_rt.eprintf.a"
   print_install_command "cc_kext/libcompiler_rt.a"     "libclang_rt.cc_kext.a"
   print_install_command "profile_osx/libcompiler_rt.a" "libclang_rt.profile_osx.a"
+
+  print_install_command "ubsan_osx/libcompiler_rt.a" \
+    "libclang_rt.ubsan_osx.a"
 
   print_install_command "ubsan_osx_dynamic/libcompiler_rt.dylib" \
     "libclang_rt.ubsan_osx_dynamic.dylib"
@@ -393,4 +405,3 @@ fi
 
 
 echo ""
-

@@ -46,20 +46,25 @@ constexpr Compiler getDefaultCXXCompilerIdentifier() {
   return Compiler::CLANGXX;
 }
 
-constexpr const char *getSupportedArchsString() { return OSXCROSS_SUPPORTED_ARCHS; }
-
-static inline std::vector<Arch> getSupportedArchs() {
-  std::vector<Arch> result;
-  std::istringstream iss(OSXCROSS_SUPPORTED_ARCHS);
-  std::string token;
-  while (iss >> token) {
-    result.push_back(parseArch(token.c_str()));
-  }
-  return result;
+constexpr const char *getSupportedArchsString(bool GCC = false) {
+  return GCC ? OSXCROSS_GCC_TARGET_ARCHS
+             : OSXCROSS_SUPPORTED_ARCHS;
 }
 
-static inline Arch getDefaultArch() {
-  std::istringstream iss(OSXCROSS_SUPPORTED_ARCHS);
+static inline std::vector<Arch> getSupportedArchs(bool GCC = false) {
+  std::vector<Arch> result;
+  std::istringstream iss(GCC ? OSXCROSS_GCC_TARGET_ARCHS
+                             : OSXCROSS_SUPPORTED_ARCHS);
+  std::string token;
+
+  while (iss >> token)
+    result.push_back(parseArch(token.c_str()));
+
+  return result;
+}
+static inline Arch getDefaultArch(bool GCC = false) {
+  std::istringstream iss(GCC ? OSXCROSS_GCC_TARGET_ARCHS
+                             : OSXCROSS_SUPPORTED_ARCHS);
   std::string first;
   iss >> first;
   return parseArch(first.c_str());
@@ -139,13 +144,15 @@ struct Target {
 
   bool isKnownCompiler() const;
 
-  const std::string &getDefaultTriple(std::string &triple) const;
+  const std::string &buildDefaultTriple(std::string &triple, bool GCC = false, bool useAarch64InsteadOfArm64 = false) const;
+
   const std::string &getTriple() const { return triple; }
 
   void setCompilerPath();
   bool findClangIntrinsicHeaders(std::string &path);
 
   void setupGCCLibs(Arch arch);
+  void setTriple(bool useAarch64InsteadOfArm64 = false);
   bool setup();
 
   const char *vendor;

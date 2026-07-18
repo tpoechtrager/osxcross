@@ -68,6 +68,7 @@ int conf(Target &target) {
   print("CCTOOLS_PATH", target.execpath);
   print("LIBLTO_PATH", ltopath);
   print("SUPPORTED_ARCHS", getSupportedArchsString());
+  print("GCC_TARGET_ARCHS", getSupportedArchsString(true));
   print("DEFAULT_ARCH", getArchName(getDefaultArch()));
 
   return 0;

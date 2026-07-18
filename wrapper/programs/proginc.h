@@ -1,6 +1,7 @@
 #include "compat.h"
 
 #include <vector>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <cstdlib>

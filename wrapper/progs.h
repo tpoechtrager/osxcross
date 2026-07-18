@@ -79,7 +79,6 @@
   int sw_vers(int argc, char **argv, target::Target &target);
   int xcrun(int argc, char **argv, Target &target);
   int xcodebuild(int argc, char **argv, Target &target);
-  int dsymutil(int argc, char **argv, target::Target &target);
   int ld(int argc, char **argv, target::Target &target);
   
   namespace osxcross {
@@ -106,7 +105,6 @@
     return execute(Name, argc, argv);
   }
   
-  static constexpr char dsymutil[]          = "dsymutil";
   static constexpr char otool[]             = "llvm-otool";
   static constexpr char nm[]                = "llvm-nm";
   static constexpr char ar[]                = "llvm-ar";
@@ -146,7 +144,6 @@
     { "ld",                llvm::ld },
     { "lipo",              llvm::lipo },
     { "as",                llvm::clang::as },
-    { "dsymutil",          llvm::wrap<llvm::dsymutil> },
     { "otool",             llvm::wrap<llvm::otool> },
     { "nm",                llvm::wrap<llvm::nm> },
     { "ar",                llvm::wrap<llvm::ar> },
@@ -194,4 +191,3 @@
   }
   
   } // namespace program
-  

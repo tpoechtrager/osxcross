@@ -157,14 +157,14 @@ bool isDirectory(const char *file, const char *prefix);
 bool listFiles(const char *dir, std::vector<std::string> *files,
                listfilescallback cmp);
 
-typedef bool (*realpathcmp)(const char *file, const struct stat &st);
+typedef bool (*findexecfilter)(const char *file, const struct stat &st);
 bool isExecutable(const char *f, const struct stat &);
 bool ignoreCCACHE(const char *f, const struct stat &);
-bool realPath(const char *file, std::string &result,
-              realpathcmp cmp1 = nullptr, realpathcmp cmp2 = nullptr,
-              const size_t maxSymobolicLinkDepth = 1000);
-bool getPathOfCommand(const char *command, std::string &result,
-                      realpathcmp cmp = nullptr);
+bool findExecutableInPath(const char *file, std::string &result,
+              findexecfilter cmp1 = nullptr, findexecfilter cmp2 = nullptr,
+              bool lookupSymlinks = true);
+bool findCommandDirectory(const char *command, std::string &result,
+                          findexecfilter cmp = nullptr);
 
 void stripFileName(std::string &path);
 
@@ -182,6 +182,90 @@ inline const char *getFileExtension(const std::string &file) {
 //
 // Argument Parsing
 //
+
+// Parser for compiler options such as -I, -arch, and -stdlib.
+template <typename T, size_t size = 0> struct OptParser {
+  // Defines both how an option receives its value and which spellings match.
+  enum class ValueMode {
+    none,             // Exact flag without a value, e.g. "-m64".
+    separate,         // Exact option followed by its value, e.g. "-arch arm64".
+    joinedOrSeparate, // Joined or separate value, e.g. "-Ifoo" or "-I foo".
+    joinedWithEquals  // Joined using '=', e.g. "-stdlib=libc++".
+  };
+
+  // Tells the caller whether matched argument tokens must be forwarded.
+  enum class Forwarding {
+    discard, // Consume the option in the wrapper.
+    keep     // Keep the option and its value for the wrapped program.
+  };
+
+  struct Option {
+    const char *name;
+    const size_t namelen;
+    const T fun;
+    const ValueMode valueMode;
+    const Forwarding forwarding;
+
+    constexpr Option(const char *name, T fun,
+                     const ValueMode valueMode = ValueMode::none,
+                     const Forwarding forwarding = Forwarding::discard)
+        : name(name), namelen(constexprStrLen(name)), fun(fun),
+          valueMode(valueMode), forwarding(forwarding) {}
+
+    bool matches(const char *arg) const {
+      if (strncmp(arg, name, namelen))
+        return false;
+
+      const char *suffix = arg + namelen;
+
+      switch (valueMode) {
+      case ValueMode::none:
+      case ValueMode::separate:
+        return !*suffix;
+      case ValueMode::joinedOrSeparate:
+        return true;
+      case ValueMode::joinedWithEquals:
+        // Match the bare option too, allowing the caller to diagnose a
+        // missing "=<value>" instead of treating the option as unknown.
+        return !*suffix || *suffix == '=';
+      }
+
+      return false;
+    }
+  };
+
+  const Option options[size];
+
+  // Returns the first option whose spelling accepts arg. Table order therefore
+  // determines precedence if option spellings overlap.
+  const Option *parse(const char *arg) const {
+    for (const Option &option : options) {
+      if (option.matches(arg))
+        return &option;
+    }
+
+    return nullptr;
+  }
+
+  const bool debug;
+
+  // Prints the resolved option, its optional value, and its forwarding policy
+  // when debugging was enabled while constructing the parser.
+  void printDebug(const Option &option, const char *arg,
+                  const char *value) const {
+    if (!debug)
+      return;
+
+    dbg << "parsed option '" << option.name << "'";
+
+    if (value)
+      dbg << " with value '" << value << "'";
+
+    dbg << " from argument '" << arg << "' ("
+        << (option.forwarding == Forwarding::keep ? "forwarded" : "consumed")
+        << ")" << dbg.endl();
+  }
+};
 
 template <typename T, size_t size = 0> struct ArgParser {
   const struct Bind {
@@ -215,14 +299,6 @@ template <typename T, size_t size = 0> struct ArgParser {
     return nullptr;
   }
 };
-
-//
-// Shell Commands
-//
-
-constexpr size_t RUNCOMMAND_ERROR = -1;
-
-size_t runcommand(const char *command, char *buf, size_t len);
 
 //
 // Time

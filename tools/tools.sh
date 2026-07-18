@@ -225,8 +225,6 @@ if [ $SCRIPT != "build.sh" ]; then
   if [ -z "$res" ] &&
       [[ $SCRIPT != gen_sdk_package*.sh ]] &&
       [ $SCRIPT != "build_wrapper.sh" ] &&
-      [ $SCRIPT != "build_wrapper_new.sh" ] &&
-      [ $SCRIPT != "build_wrapper_new_2.sh" ] &&
       [[ $SCRIPT != build*_clang.sh ]] &&
       [ $SCRIPT != "mount_xcode_image.sh" ]; then
     echo "you must run ./build.sh first before you can start building $DESC"
