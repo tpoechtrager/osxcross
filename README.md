@@ -15,7 +15,7 @@
 
 `testing`:
 
-* Uses the latest versions of `cctools` and `ld64` — currently `cctools 1024.3` and `ld64 955.13`.  
+* Uses the latest versions of `cctools` and `ld64` — currently `cctools 1030.6.3` and `ld64 956.6`.
   Takes the longest to build due to additional dependencies introduced in the latest versions.
 
 `ppc-test`:
@@ -220,7 +220,7 @@ SDKs can be extracted either from the full Xcode or from the Xcode Command Line 
 
 Or by using xcrun:
 
-- i386: `xcrun clang++ -arch x86_64 test.cpp -O3 -o test`
+- i386: `xcrun clang++ -arch i386 test.cpp -O3 -o test`
 - x86_64: `xcrun clang++ -arch x86_64 test.cpp -O3 -o test`
 - arm64: `xcrun clang++ -arch arm64 test.cpp -O3 -o test`
 - arm64e: `xcrun clang++ -arch arm64e test.cpp -O3 -o test`

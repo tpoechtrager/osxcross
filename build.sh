@@ -105,9 +105,31 @@ echo "Tarball Directory: $TARBALL_DIR"
 echo "Build Directory: $BUILD_DIR"
 echo "Install Directory: $TARGET_DIR"
 echo "SDK Install Directory: $SDK_DIR"
-if [ -z "$UNATTENDED" ]; then
+
+if [ -e "$TARGET_DIR/bin/osxcross-conf" ]; then
   echo ""
-  read -p "Press enter to start building"
+  echo "An existing OSXCross installation was found."
+  echo ""
+  echo "To avoid an unreliable build state,"
+  echo "it is recommended to remove the build/ and target/ directories first."
+  echo ""
+
+  if [ "$UNATTENDED" = "1" ]; then
+    echo "UNATTENDED=1: continuing without confirmation."
+  else
+    read -r -p "Do you want to continue anyway? [y/N] " response
+
+    case "$response" in
+      y|Y|yes|YES) ;;
+      *)
+        echo "Build cancelled."
+        exit 0
+        ;;
+    esac
+  fi
+elif [ -z "$UNATTENDED" ]; then
+  echo ""
+  read -r -p "Press enter to start building"
 fi
 echo ""
 
@@ -211,8 +233,9 @@ if arch_supported arm64e; then
   create_arch_symlinks "arm64e"
 fi
 
-# For unpatched dsymutil. There is currently no way around it.
-create_symlink x86_64-apple-$TARGET-lipo lipo
+# LLVM dsymutil invokes "lipo" directly, even in recent releases such as 22.1.8.
+# Provide the osxcross host-lipo wrapper under that name.
+create_symlink "$(first_supported_arch)-apple-$TARGET-lipo" lipo
 popd &>/dev/null
 
 

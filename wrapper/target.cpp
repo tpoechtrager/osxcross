@@ -336,8 +336,14 @@ bool Target::isKnownCompiler() const {
 }
 
 
-const std::string &Target::getDefaultTriple(std::string &triple) const {
-  triple = getArchName(Arch::x86_64);
+const std::string &Target::buildDefaultTriple(std::string &triple,
+  bool GCC, bool useAarch64InsteadOfArm64) const {
+  Arch defaultArch = getDefaultArch(GCC);
+
+  if (defaultArch == Arch::arm64 && useAarch64InsteadOfArm64)
+    defaultArch = Arch::aarch64;
+
+  triple = getArchName(defaultArch);
   triple += "-";
   triple += getDefaultVendor();
   triple += "-";
@@ -362,7 +368,7 @@ void Target::setCompilerPath() {
       compilerpath += "/";
       compilerpath += compilername;
     } else {
-      if (!realPath(compilername.c_str(), compilerpath, ignoreCCACHE))
+      if (!findExecutableInPath(compilername.c_str(), compilerpath, ignoreCCACHE))
         compilerpath = compilername;
 
       compilerexecname += compilername;
@@ -553,6 +559,17 @@ void Target::setupGCCLibs(Arch arch) {
   fargs.push_back("-Wl,-no_compact_unwind");
 }
 
+void Target::setTriple(bool useAarch64InsteadOfArm64) {
+  Arch tripleArch = useAarch64InsteadOfArm64 && 
+    (arch == Arch::arm64) ? Arch::aarch64 : arch;
+
+  triple = getArchName(tripleArch);
+  triple += "-";
+  triple += vendor;
+  triple += "-";
+  triple += target;
+}
+
 bool Target::setup() {
   if (targetarchs.empty())
     addArch(arch);
@@ -570,12 +587,7 @@ bool Target::setup() {
   if (!getSDKPath(SDKPath))
     return false;
 
-  triple = getArchName(arch);
-  triple += "-";
-  triple += vendor;
-  triple += "-";
-  triple += target;
-
+  setTriple();
   setCompilerPath();
 
   constexpr struct {
@@ -913,8 +925,8 @@ bool Target::setup() {
     if (isClang() && clangversion < ClangVersion(11, 0) &&
         OSNum >= OSVersion(11, 0)) {
       // Clang <= 10 can't parse -mmacosx-version-min=11.x
-      warn << "Your clang installation is outdated and can't parse '-mmacosx-version-min=" << OSNum.shortStr() << "'. "
-           << "Setting it to 10.16."  << warn.endl();
+      warn << "your clang installation is outdated and can't parse '-mmacosx-version-min=" << OSNum.shortStr() << "'. "
+           << "setting it to 10.16."  << warn.endl();
       tmp += "10.16";
     } else {
       tmp += OSNum.Str();

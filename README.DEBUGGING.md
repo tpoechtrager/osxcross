@@ -5,12 +5,8 @@
 
 ### Setting up llvm-dsymutil: ###
 
-First of all, you **really** need llvm-dsymutil from llvm 3.8 (trunk as of writing),  
-llvm 3.7 or earlier **is not** sufficient.
-
-Run `./build_llvm_dsymutil.sh` to build and install llvm-dsymutil to target/bin.
-
-`dsymutil` is a no-op if you do not have [osxcross-]llvm-dsymutil >= 3.8 in PATH.
+Install `llvm-dsymutil` (>= 3.8) from your host system's LLVM packages and ensure
+that `llvm-dsymutil` or `dsymutil` is available in `PATH` BEFORE building OSXCross.
 
 ### Debug Example: ###
 
