@@ -47,7 +47,7 @@ The selected build flavor determines which binary utilities and linker are used:
   [cctools-port](https://github.com/tpoechtrager/cctools-port), including tools
   such as `ar`, `lipo`, and `otool`, together with the `ld64` linker.
 - The `llvm` flavor uses the corresponding LLVM tools and `ld64.lld`. It can
-  optionally build cctools lipo as a compatibility replacement for `llvm-lipo`.
+  optionally build `cctools lipo` as a compatibility replacement for `llvm-lipo`.
 
 During `./build.sh`, the SDK is installed into the target directory, the tools
 and dependencies required by the selected flavor are prepared, and the OSXCross
@@ -56,9 +56,9 @@ triple, SDK sysroot, deployment target, and linker for macOS automatically.
 
 Additional scripts can build optional compiler and runtime components:
 
-- [Current upstream LLVM/Clang and LLD](#build-clang-optional---if-you-need-an-up-to-date-version-of-llvmclang)
+- [Current upstream LLVM/Clang and LLD](README.BUILD-CLANG.md)
   (`./build_clang.sh`)
-- [Apple Clang](#build-clang-optional---if-you-need-an-up-to-date-version-of-llvmclang)
+- [Apple Clang](README.BUILD-CLANG.md)
   (`./build_apple_clang.sh`)
 - [Vanilla GCC for x86_64, with i386 multilib where supported](#build-gcc-optional)
   (`./build_gcc.sh`)
@@ -92,34 +92,23 @@ See [README.BUILD-DEPENDENCIES.md](README.BUILD-DEPENDENCIES.md) for required
 and optional dependencies, Debian/Ubuntu installation commands, and the systems
 supported by `tools/get_dependencies.sh`.
 
-#### Build Clang (Optional - if you need an up-to-date version of LLVM/Clang)
+#### Build Clang (Optional)
 
-Building the host LLVM/Clang toolchain requires a native C/C++ compiler and
-the listed build utilities. It does not require Clang to be installed already:
-
-Debian/Ubuntu:
-
-```sh
-sudo apt install bash gcc g++ cmake curl unzip make patch sed gzip
-```
-
-```sh
-./build_clang.sh                           # Builds mainline Clang
-./build_apple_clang.sh                     # Builds Apple's Clang
-INSTALLPREFIX=/opt/clang ./build_clang.sh  # Custom install path
-```
+See [README.CLANG.md](README.BUILD-CLANG.md) for dependencies and instructions for
+building current upstream LLVM/Clang or Apple Clang.
 
 #### Build OSXCross
 
 By default, this installs the OSXCross toolchain into `<current-directory>/target`.
 
-`./build.sh` prompts for the build flavor. Press Enter to select the default `stable` flavor.
+`./build.sh` prompts for the build flavor. Press Enter to select the default `stable` flavor.  
 Set `BUILD_FLAVOR` to `stable`, `latest`, or `llvm` to select a flavor without prompting.
-When `UNATTENDED=1` is set, an explicitly selected `BUILD_FLAVOR` is preserved; if no flavor
+
+When `UNATTENDED=1` is set, an explicitly selected `BUILD_FLAVOR` is preserved; if no flavor  
 is specified, `stable` is selected automatically.
 
-Use `TARGET_DIR` to specify a different installation path. `ENABLE_ARCHS` restricts the build
-to a supported set of architectures (for example, `"arm64 x86_64"`).
+Use `TARGET_DIR` to specify a different installation path.  
+`ENABLE_ARCHS` restricts the build to a supported set of architectures (for example, `"arm64 x86_64"`).
 
 ```sh
 ./build.sh
@@ -139,13 +128,12 @@ GCC_VERSION=15.1.0 ENABLE_FORTRAN=1 ./build_gcc.sh # Builds 15.1.0, and enables 
 ARM64_GCC_REPO="gcc-darwin-arm64" ./build_gcc_with_arm64_support.sh # Builds trunk
 ```
 
-Run `./build_gcc_with_arm64_support.sh` to build the experimental ARM64 Darwin GCC fork from
-the [`iains`](https://github.com/iains) GitHub account. This
-uses separate build directories to build both AArch64 and x86_64 from the same
-source checkout and installs the full-triplet compiler families
-`aarch64-apple-<darwin>-gcc` and `x86_64-apple-<darwin>-gcc`. Set
-`ARM64_GCC_REPO` to build a different repository from this account; it defaults
-to [`gcc-16-branch`](https://github.com/iains/gcc-16-branch).
+Run `./build_gcc_with_arm64_support.sh` to build the experimental ARM64 Darwin GCC fork from [`iains`](https://github.com/iains).  
+
+This uses separate build directories to build both `arm64` (`aarch64`) and `x86_64`  from the same source  
+checkout and installs the full-triplet compiler families  `arm64-apple-<darwin>-gcc` and `x86_64-apple-<darwin>-gcc`.  
+
+Set `ARM64_GCC_REPO` to build a different repository; it defaults to [`gcc-16-branch`](https://github.com/iains/gcc-16-branch).
 
 Install GCC dependencies:
 
