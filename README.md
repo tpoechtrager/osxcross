@@ -1,3 +1,6 @@
+## WARNING: This branch is no longer maintained. Use master branch with build flavor `latest` instead. ##
+
+
 
 ## macOS Cross-Toolchain for Linux and \*BSD
 
