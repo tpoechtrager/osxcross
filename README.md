@@ -1,3 +1,7 @@
+## WARNING: This branch is no longer maintained. Use master branch with build flavor `llvm` instead. ##
+
+
+
 ## macOS Cross-Toolchain for Linux and \*BSD
 
 ### 2.0-llvm branch

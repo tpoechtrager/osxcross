@@ -5,6 +5,11 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
+echo "WARNING: This branch is no longer maintained."
+echo "Use master branch with build flavor 'llvm' instead."
+echo ""
+sleep 2
+
 VERSION=2.0-llvm-based
 
 pushd "${0%/*}" &>/dev/null
