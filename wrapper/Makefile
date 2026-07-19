@@ -6,6 +6,7 @@ VERSION ?= unknown
 TARGET ?= darwin12
 OSX_VERSION_MIN ?= 10.5
 LINKER_VERSION ?= 134.9
+BUILD_FLAVOR ?= unknown
 LIBLTO_PATH ?=
 ADDITIONAL_CXXFLAGS ?=
 
@@ -26,6 +27,7 @@ ifeq ($(strip $(SUPPORTED_ARCHS)),)
 endif
 
 override CXXFLAGS+=-DOSXCROSS_VERSION="\"$(VERSION)\""
+override CXXFLAGS+=-DOSXCROSS_BUILD_FLAVOR="\"$(BUILD_FLAVOR)\""
 override CXXFLAGS+=-DOSXCROSS_TARGET="\"$(TARGET)\""
 override CXXFLAGS+=-DOSXCROSS_OSX_VERSION_MIN="\"$(OSX_VERSION_MIN)\""
 override CXXFLAGS+=-DOSXCROSS_LINKER_VERSION="\"$(LINKER_VERSION)\""
@@ -60,6 +62,7 @@ SRCS= \
  main.cpp \
  tools.cpp \
  target.cpp \
+ progs.cpp \
  programs/osxcross-version.cpp \
  programs/osxcross-env.cpp \
  programs/osxcross-conf.cpp \
@@ -67,7 +70,10 @@ SRCS= \
  programs/sw_vers.cpp \
  programs/pkg-config.cpp \
  programs/xcrun.cpp \
- programs/xcodebuild.cpp
+ programs/xcodebuild.cpp \
+ programs/lipo.cpp \
+ programs/ld.cpp \
+ programs/as.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
 

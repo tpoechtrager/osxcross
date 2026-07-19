@@ -16,7 +16,7 @@ source tools/tools.sh
 
 GCC_SOURCE_DIR=""
 
-if [ "${0##*/}" = "build_gcc_with_arm64_support.sh" ]; then
+if [ -n "$BUILD_ARM64_GCC" ]; then
   # Build a patched GCC that supports both x86_64 and arm64 targets.
   # https://github.com/iains/gcc-darwin-arm64
 
@@ -25,8 +25,11 @@ if [ "${0##*/}" = "build_gcc_with_arm64_support.sh" ]; then
     ARM64_GCC_REPO="gcc-16-branch"
   fi
 
-  BUILD_ARM64_GCC=1
-  GCC_TARGET_ARCHS="aarch64 x86_64 i386"
+  if [ "$BUILD_FLAVOR" = "llvm" ]; then
+    GCC_TARGET_ARCHS="aarch64 x86_64"
+  else
+    GCC_TARGET_ARCHS="aarch64 x86_64 i386"
+  fi
 else
   # GCC version to build
   # (<4.7 will not work properly with libc++)
@@ -37,7 +40,11 @@ else
 
   # GCC mirror
   GCC_MIRROR="https://mirrorservice.org/sites/sourceware.org/pub/gcc"
-  GCC_TARGET_ARCHS="x86_64 i386"
+  if [ "$BUILD_FLAVOR" = "llvm" ]; then
+    GCC_TARGET_ARCHS="x86_64"
+  else
+    GCC_TARGET_ARCHS="x86_64 i386"
+  fi
 fi
 
 # Export the GCC target list for wrapper/build_wrapper.sh.
@@ -253,6 +260,21 @@ if [ -n "$SDK" ]; then
 fi
 fi
 
+if [ "$BUILD_FLAVOR" = "llvm" ]; then
+  # GCC's Darwin configuration emits a few ld64-only options. Adapt the
+  # generated link commands for ld64.lld without changing the other flavors.
+  $SED -i \
+    's/-r -keep_private_externs/-lSystem -lemutls_w -Wl,-weak-liconv -Wl,-dylib/g' \
+    libstdc++-v3/configure
+  $SED -i \
+    's/libobjs~\(.*-dynamiclib\)/libobjs -lgcc~\1/g' \
+    libstdc++-v3/configure
+  $SED -i \
+    -e 's/ %:version-compare(>= 10\.6 mmacosx-version-min= -no_compact_unwind) //' \
+    -e '/^[[:space:]]*DARWIN_NOCOMPACT_UNWIND/d' \
+    gcc/config/darwin.h
+fi
+
 
 if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
@@ -285,6 +307,10 @@ for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
   pushd "$GCC_BUILD_SUBDIR" &>/dev/null
 
   EXTRACONFFLAGS=""
+
+  if [ "$BUILD_FLAVOR" = "llvm" ]; then
+    EXTRACONFFLAGS+="--disable-libsanitizer "
+  fi
 
   if [ "$PLATFORM" != "Darwin" ]; then
     EXTRACONFFLAGS+="--with-ld=$TARGET_DIR/bin/$GCC_TARGET_TRIPLE-ld "
@@ -375,6 +401,7 @@ fi
 echo "compiling wrapper ..."
 
 TARGETCOMPILER=gcc \
+  BUILD_FLAVOR="$BUILD_FLAVOR" \
   $BASE_DIR/wrapper/build_wrapper.sh
 
 install_cmake_toolchain_files gcc $GCC_TARGET_ARCHS

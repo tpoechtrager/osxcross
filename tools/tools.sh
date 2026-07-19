@@ -2,7 +2,7 @@
 
 export LC_ALL="C"
 
-function set_path_vars()
+function import_osxcross_environment()
 {
   if [ -n "$OSXCROSS_VERSION" ]; then
     export VERSION=$OSXCROSS_VERSION
@@ -19,6 +19,7 @@ function set_path_vars()
     export SDK=$OSXCROSS_SDK
     export LIBLTO_PATH=$OSXCROSS_LIBLTO_PATH
     export LINKER_VERSION=$OSXCROSS_LINKER_VERSION
+    export BUILD_FLAVOR=$OSXCROSS_BUILD_FLAVOR
     # Do not use these
     unset OSXCROSS_VERSION OSXCROSS_OSX_VERSION_MIN
     unset OSXCROSS_TARGET OSXCROSS_BASE_DIR
@@ -27,6 +28,7 @@ function set_path_vars()
     unset OSXCROSS_PATCH_DIR OSXCROSS_TARGET_DIR
     unset OSXCROSS_BUILD_DIR OSXCROSS_CCTOOLS_PATH
     unset OSXCROSS_LIBLTO_PATH OSXCROSS_LINKER_VERSION
+    unset OSXCROSS_BUILD_FLAVOR
   else
     export BASE_DIR=$PWD
     export TARBALL_DIR=$PWD/tarballs
@@ -38,7 +40,7 @@ function set_path_vars()
   fi
 }
 
-set_path_vars
+import_osxcross_environment
 
 PLATFORM=$(uname -s)
 ARCH=$(uname -m)
@@ -203,7 +205,6 @@ fi
 
 require $SED
 require $MAKE
-require $CMAKE
 require patch
 require gunzip
 
@@ -231,61 +232,138 @@ if [ $SCRIPT != "build.sh" ]; then
 
   if [ -z "$TOP_BUILD_SCRIPT" ]; then
     eval "$res"
-    set_path_vars
+    import_osxcross_environment
   fi
 fi
 
 
-# find sdk version to use
+# Detects the SDK archive in TARBALL_DIR and derives its macOS version.
+# Fails if no SDK is found or if multiple SDKs are present without an
+# explicit SDK_VERSION. The detected version is stored in and exported as
+# guess_sdk_version_result.
 function guess_sdk_version()
 {
-  tmp1=
-  tmp2=
-  tmp3=
-  file=
-  sdk=
+  local file=
+  local sdk=
+  local sdkcount=0
+  local -a sdks=()
   guess_sdk_version_result=
-  sdkcount=$(find -L tarballs/ -type f | grep MacOSX | wc -l)
+
+  while IFS= read -r -d '' sdk; do
+    file=$(basename "$sdk")
+    if [[ $file =~ ^MacOSX[0-9]+(\.[0-9]+)*u?(\.sdk)?\.tar\.(xz|gz|bz2)$ ]]; then
+      sdks+=("$sdk")
+    fi
+  done < <(find -L "$TARBALL_DIR" -type f -name 'MacOSX*' -print0)
+
+  sdkcount=${#sdks[@]}
   if [ $sdkcount -eq 0 ]; then
-    echo no SDK found in 'tarballs/'. please see README.md
+    echo "Error: No SDK found in '$TARBALL_DIR'. Please see README.md."
     exit 1
   elif [ $sdkcount -gt 1 ]; then
-    sdks=$(find -L tarballs/ -type f | grep MacOSX)
-    for sdk in $sdks; do echo $sdk; done
-    echo 'more than one MacOSX SDK tarball found. please set'
-    echo 'SDK_VERSION environment variable for the one you want'
-    echo '(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] [TARGET_DIR=...] ./build.sh)'
+    echo "Found the following SDKs:"
+    echo ""
+    for sdk in "${sdks[@]}"; do
+      echo "$sdk"
+    done
+    echo ""
+
+    echo "Please set the SDK_VERSION environment variable for the one you want."
+    echo ""
+    echo "(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] [TARGET_DIR=...] ./build.sh)"
     exit 1
   else
-    sdk=$(find -L tarballs/ -type f | grep MacOSX)
-    tmp2=$(echo ${sdk/bz2/} | $SED s/[^0-9.]//g)
-    tmp3=$(echo $tmp2 | $SED s/\\\.*$//g)
-    guess_sdk_version_result=$tmp3
-    echo 'found SDK version' $guess_sdk_version_result 'at tarballs/'$(basename $sdk)
-  fi
-  if [ $guess_sdk_version_result ]; then
-    if [ $guess_sdk_version_result = 10.4 ]; then
-      guess_sdk_version_result=10.4u
+    sdk=${sdks[0]}
+    file=$(basename "$sdk")
+    if [[ $file =~ ^MacOSX([0-9]+(\.[0-9]+)*) ]]; then
+      guess_sdk_version_result=${BASH_REMATCH[1]}
     fi
+    #echo "Found SDK version $guess_sdk_version_result at $TARBALL_DIR/$file"
+  fi
+  if [ "$guess_sdk_version_result" = 10.4 ]; then
+    guess_sdk_version_result=10.4u
   fi
   export guess_sdk_version_result
 }
 
-# make sure there is actually a file with the given SDK_VERSION
+# Locates the SDK archive matching SDK_VERSION in TARBALL_DIR and stores its
+# path in $SDK. Accepts either a full version such as 10.15 or a major version
+# such as 27. Terminates the build if no matching SDK archive is found.
 function set_and_verify_sdk_path()
 {
   if [[ $SDK_VERSION == *.* ]]; then
-    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION* || echo "")
+    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION* 2>/dev/null || echo "")
   else
-    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION.* | grep -v "\.[0-9]\+" || echo "")
+    SDK=$(ls $TARBALL_DIR/MacOSX$SDK_VERSION.* 2>/dev/null | grep -v "\.[0-9]\+" || echo "")
   fi
 
   if [ -z "$SDK" ] ; then
-    echo "cant find SDK for MacOSX $SDK_VERSION in tarballs. exiting."
+    echo "Error: Can't find SDK for macOS $SDK_VERSION in '$TARBALL_DIR'." 1>&2
     exit 1
-  else
-    echo "verified at $SDK"
   fi
+}
+
+# Detects an existing OSXCross installation in TARGET_DIR or PATH.
+# Reads its target and build directories, warns about reusing them,
+# and asks for confirmation unless running in unattended mode.
+function check_for_existing_osxcross_installation()
+{
+  EXISTING_OSXCROSS_CONF=""
+
+  if [ -x "$TARGET_DIR/bin/osxcross-conf" ]; then
+    EXISTING_OSXCROSS_CONF="$TARGET_DIR/bin/osxcross-conf"
+  elif EXISTING_OSXCROSS_CONF=$(command -v osxcross-conf 2>/dev/null); then
+    :
+  fi
+
+  if [ -z "$EXISTING_OSXCROSS_CONF" ]; then
+    return 1
+  fi
+
+  IFS=$'\t' read -r \
+    EXISTING_OSXCROSS_TARGET_DIR \
+    EXISTING_OSXCROSS_BUILD_DIR < <(
+    (
+      eval "$("$EXISTING_OSXCROSS_CONF")"
+
+      printf '%s\t%s\n' \
+        "$(realpath "$OSXCROSS_TARGET_DIR")" \
+        "$(realpath "$OSXCROSS_BUILD_DIR")"
+    )
+  )
+
+  echo ""
+  echo "WARNING: Existing OSXCross installation detected"
+  echo "------------------------------------------------"
+  echo "The following directories already contain an"
+  echo "OSXCross installation:"
+  echo ""
+  printf "%-7s: %s\n" "Target" "$EXISTING_OSXCROSS_TARGET_DIR"
+  printf "%-7s: %s\n" "Build" "$EXISTING_OSXCROSS_BUILD_DIR"
+  echo ""
+  echo "Remove these directories before rebuilding."
+  echo "Reusing them may produce an inconsistent or unreliable build."
+  echo ""
+
+  if [ "$UNATTENDED" = "1" ]; then
+    echo "UNATTENDED=1: continuing without confirmation."
+    return 0
+  else
+    read -r -p "Continue without removing them? [y/N] " response
+
+    case "$response" in
+      y|Y|yes|YES) ;;
+      *)
+        echo ""
+        echo "Build cancelled."
+        exit 0
+        ;;
+    esac
+
+    return 0
+  fi
+
+  return 0
 }
 
 

@@ -556,7 +556,10 @@ void Target::setupGCCLibs(Arch arch) {
   addLib(GCCLibPath, "gcc_eh");
 
   fargs.push_back("-lc");
-  fargs.push_back("-Wl,-no_compact_unwind");
+
+  // ld64.lld does not implement -no_compact_unwind.
+  if (!buildFlavor.IsLLVM())
+    fargs.push_back("-Wl,-no_compact_unwind");
 }
 
 void Target::setTriple(bool useAarch64InsteadOfArm64) {
@@ -813,11 +816,15 @@ bool Target::setup() {
     fargs.push_back("-target");
     fargs.push_back(getTriple());
 
-    tmp = "-mlinker-version=";
-    tmp += getLinkerVersion();
+    const char *linkerVersion = getLinkerVersion();
 
-    fargs.push_back(tmp);
-    tmp.clear();
+    // -mlinker-version= is only relevant for ld64.
+    if (!buildFlavor.IsLLVM() && linkerVersion && linkerVersion[0]) {
+      tmp = "-mlinker-version=";
+      tmp += linkerVersion;
+      fargs.push_back(tmp);
+      tmp.clear();
+    }
 
 #ifndef __APPLE__
     if (!findClangIntrinsicHeaders(ClangIntrinsicPath)) {
@@ -873,7 +880,7 @@ bool Target::setup() {
       fargs.push_back("-static-libstdc++");
     }
 
-    if (!isGCH())
+    if (!buildFlavor.IsLLVM() && !isGCH())
       fargs.push_back("-Wl,-no_compact_unwind");
   }
 
@@ -985,6 +992,13 @@ bool Target::setup() {
 #endif
 
   if (isClang()) {
+    if (buildFlavor.IsLLVM() &&
+        std::find(args.begin(), args.end(), "-c") == args.end() &&
+        std::find(args.begin(), args.end(), "-E") == args.end() &&
+        std::find(args.begin(), args.end(), "-S") == args.end()) {
+      fargs.push_back("-fuse-ld=lld");
+    }
+
     if (getenv("OSXCROSS_PRETEND_TO_BE_APPLE_CLANG")) {
       fargs.push_back("-D__apple_build_version__=1");
     }
@@ -1047,9 +1061,13 @@ bool Target::setup() {
       return false;
   }
 
-  // Silence 'operator new[]' warning in ld64
-  if (isgcclibstdcxx)
+  if (buildFlavor.IsLLVM() && isGCC()) {
+    // The LLVM as wrapper needs GCC's selected deployment target.
+    setenv("OSXCROSS_AS_TARGET_VERSION", OSNum.shortStr().c_str(), 1);
+  } else if (isgcclibstdcxx) {
+    // Silence 'operator new[]' warning in ld64.
     setenv("OSXCROSS_GCC_LIBSTDCXX", "1", 1);
+  }
 
   return true;
 }

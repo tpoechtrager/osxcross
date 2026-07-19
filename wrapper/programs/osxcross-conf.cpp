@@ -54,6 +54,7 @@ int conf(Target &target) {
     ltopath = "";
 
   print("VERSION", getOSXCrossVersion());
+  print("BUILD_FLAVOR", getBuildFlavor());
   print("OSX_VERSION_MIN", OSXVersionMin.shortStr());
   print("TARGET", getDefaultTarget());
   print("BASE_DIR", BuildDir + "/..");

@@ -71,6 +71,7 @@ static inline Arch getDefaultArch(bool GCC = false) {
 }
 
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
+
 constexpr const char *getBuildDir() { return OSXCROSS_BUILD_DIR; }
 
 constexpr const char *getLibLTOPath() {
@@ -110,6 +111,48 @@ inline const char *getSDKSearchDir() {
 
   return SDKSearchDir ? SDKSearchDir : "";
 }
+
+// Build flavor
+
+constexpr const char *getBuildFlavor() {
+#ifdef OSXCROSS_BUILD_FLAVOR
+  return OSXCROSS_BUILD_FLAVOR[0] ? OSXCROSS_BUILD_FLAVOR : "unknown";
+#else
+  return "unknown";
+#endif
+}
+
+class BuildFlavor {
+public:
+  BuildFlavor(const char *value = getBuildFlavor()) : type_(Parse(value)) {}
+
+  bool IsStable() const { return type_ == Stable; }
+  bool IsLatest() const { return type_ == Latest; }
+  bool IsLLVM() const { return type_ == LLVM; }
+  bool IsValid() const { return type_ != Unknown; }
+
+private:
+  enum {
+    Stable,
+    Latest,
+    LLVM,
+    Unknown
+  };
+
+  static int Parse(const char *value) {
+    if (!value || !*value)
+      return Unknown;
+    if (!std::strcmp(value, "stable"))
+      return Stable;
+    if (!std::strcmp(value, "latest"))
+      return Latest;
+    if (!std::strcmp(value, "llvm"))
+      return LLVM;
+    return Unknown;
+  }
+
+  int type_;
+};
 
 //
 // Target
@@ -178,6 +221,7 @@ struct Target {
   const char *language;
   char execpath[PATH_MAX + 1];
   std::string intrinsicpath;
+  BuildFlavor buildFlavor;
 };
 
 } // namespace target

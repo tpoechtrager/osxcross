@@ -100,8 +100,10 @@ if [ $f_res -eq 1 ]; then
   fi
 
   if [ $USE_CMAKE -eq 1 ]; then
-
+  
     ### CMAKE ###
+
+    require $CMAKE
 
     $SED -i 's/COMMAND xcodebuild -version -sdk ${sdk_name}.internal Path/'\
 \ \ \ \ \ \ \ 'COMMAND xcrun -sdk ${sdk_name}.internal --show-sdk-path/g' \

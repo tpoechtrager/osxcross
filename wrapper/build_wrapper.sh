@@ -238,6 +238,40 @@ fi
 install_program_links cc "$SUPPORTED_ARCHS"
 install_program_links c++ "$SUPPORTED_ARCHS"
 
+if [ "$BUILD_FLAVOR" = "llvm" ]; then
+  install_program_links ld "$SUPPORTED_ARCHS"
+  install_program_links otool "$SUPPORTED_ARCHS" enable_standalone
+  # LLVM dsymutil invokes "lipo" directly, even in recent releases such as 22.1.8.
+  # Provide a standalone lipo link so llvm-dsymutil will find the tool.
+  install_program_links lipo "$SUPPORTED_ARCHS" enable_standalone
+  install_program_links nm "$SUPPORTED_ARCHS"
+  install_program_links ar "$SUPPORTED_ARCHS"
+  install_program_links libtool "$SUPPORTED_ARCHS"
+  install_program_links install_name_tool "$SUPPORTED_ARCHS"
+  install_program_links ranlib "$SUPPORTED_ARCHS"
+  install_program_links readtapi "$SUPPORTED_ARCHS"
+  install_program_links objdump "$SUPPORTED_ARCHS"
+  install_program_links strip "$SUPPORTED_ARCHS"
+  install_program_links strings "$SUPPORTED_ARCHS"
+  install_program_links size "$SUPPORTED_ARCHS"
+  install_program_links symbolizer "$SUPPORTED_ARCHS"
+  install_program_links cov "$SUPPORTED_ARCHS"
+  install_program_links profdata "$SUPPORTED_ARCHS"
+  install_program_links readobj "$SUPPORTED_ARCHS"
+  install_program_links readelf "$SUPPORTED_ARCHS"
+  install_program_links dwarfdump "$SUPPORTED_ARCHS"
+  install_program_links cxxfilt "$SUPPORTED_ARCHS"
+  install_program_links objcopy "$SUPPORTED_ARCHS"
+  install_program_links config "$SUPPORTED_ARCHS"
+  install_program_links as "$SUPPORTED_ARCHS"
+  install_program_links dis "$SUPPORTED_ARCHS"
+  install_program_links link "$SUPPORTED_ARCHS"
+  install_program_links lto "$SUPPORTED_ARCHS"
+  install_program_links lto2 "$SUPPORTED_ARCHS"
+  install_program_links bcanalyzer "$SUPPORTED_ARCHS"
+  install_program_links bitcode_strip "$SUPPORTED_ARCHS"
+fi
+
 install_program_links osxcross "$SUPPORTED_ARCHS" enable_standalone
 install_program_links osxcross-conf "$SUPPORTED_ARCHS" enable_standalone
 install_program_links osxcross-env "$SUPPORTED_ARCHS" enable_standalone

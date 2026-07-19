@@ -1,26 +1,26 @@
 
 ## macOS Cross-Toolchain for Linux and \*BSD
 
-### OSXCross branches:
+### OSXCross build flavors
 
-`master`:
+OSXCross provides three build flavors:
 
-* Uses `cctools 986` and `ld64 711`. Known to be stable and well-working.
+`stable` (default):
 
-`2.0-llvm-based`:
+* Uses `cctools 986` and `ld64 711`.
+* Known to be stable and well-working.
 
-* OSXCross based on LLVM tools.  
-  Easiest to build and recommended for new projects.  
-  Does not support building for `i386`.
+`latest`:
 
-`testing`:
+* Uses `cctools 1030.6.3` and `ld64 956.6`.
+* Takes the longest to build because the newer tool versions require additional dependencies.
 
-* Uses the latest versions of `cctools` and `ld64` — currently `cctools 1030.6.3` and `ld64 956.6`.
-  Takes the longest to build due to additional dependencies introduced in the latest versions.
+`llvm`:
 
-`ppc-test`:
-
-* An older branch with support for PPC targets.
+* Uses LLVM tools and `ld64.lld` instead of cctools and ld64.
+* Is the easiest flavor to build and is recommended for new projects.
+* Supports `arm64`, `arm64e`, and `x86_64` targets. It does not support `i386` or `x86_64h`.
+* Can optionally use cctools lipo instead of `llvm-lipo` for improved compatibility.
 
 ---
 
@@ -38,22 +38,33 @@
 
 ### How It Works
 
-macOS cross-compilation requires:
+OSXCross combines a host compiler, a packaged macOS SDK, Darwin-compatible
+binary utilities, and a compiler wrapper into a cross-compilation toolchain.
 
-- Clang/LLVM (cross-compilation supported by default)
-- A macOS SDK
+The selected build flavor determines which binary utilities and linker are used:
 
-This branch of OSXCross uses [cctools-port](https://github.com/tpoechtrager/cctools-port).
-`cctools-port` provides toolchain tools such as `ar`, `lipo`, `otool`, and `ld64` as linker.
+- The `stable` and `latest` flavors build
+  [cctools-port](https://github.com/tpoechtrager/cctools-port), including tools
+  such as `ar`, `lipo`, and `otool`, together with the `ld64` linker.
+- The `llvm` flavor uses the corresponding LLVM tools and `ld64.lld`. It can
+  optionally build cctools lipo as a compatibility replacement for `llvm-lipo`.
 
-OSXCross provides a set of scripts for preparing the SDK, building `cctools-port` (along with its dependencies), and compiling the compiler wrapper.
+During `./build.sh`, the SDK is installed into the target directory, the tools
+and dependencies required by the selected flavor are prepared, and the OSXCross
+wrapper is compiled. The installed target-prefixed commands configure the target
+triple, SDK sysroot, deployment target, and linker for macOS automatically.
 
-It also includes scripts for optionally building:
+Additional scripts can build optional compiler and runtime components:
 
-- Up-to-date LLVM tools and clang (`./build_clang.sh`, `./build_apple_clang.sh`)
-- Vanilla GCC as a cross-compiler for target macOS x86 (`./build_gcc.sh`)
-- The experimental ARM64-capable Darwin GCC fork for ARM64 and x86 targets (`./build_gcc_with_arm64_support.sh`)
-- The "compiler-rt" runtime library (`./build_compiler_rt.sh`)
+- [Current upstream LLVM/Clang and LLD](#build-clang-optional---if-you-need-an-up-to-date-version-of-llvmclang)
+  (`./build_clang.sh`)
+- [Apple Clang](#build-clang-optional---if-you-need-an-up-to-date-version-of-llvmclang)
+  (`./build_apple_clang.sh`)
+- [Vanilla GCC for x86_64, with i386 multilib where supported](#build-gcc-optional)
+  (`./build_gcc.sh`)
+- [An experimental Darwin GCC fork for ARM64 and x86_64](#build-gcc-optional)
+  (`./build_gcc_with_arm64_support.sh`)
+- The [compiler-rt runtime library](README.COMPILER-RT.md) (`./build_compiler_rt.sh`)
 
 ---
 
@@ -75,19 +86,22 @@ binaries, package discovery, and complete examples.
 
 Place your [packaged SDK](https://github.com/tpoechtrager/osxcross#packaging-the-sdk) in the `tarballs/` directory.
 
-Install the following dependencies:
+#### Build dependencies
 
-```
-clang cmake git patch python libssl-dev lzma-dev libxml2-dev xz bzip2 cpio libbz2 zlib1g-dev bash
-```
-_Optional:_
-
--   `llvm-dev`: For Link Time Optimization support and `ld64` `-bitcode_bundle` support
--   `uuid-dev`: For ld64  `-random_uuid` support
-
-You can run `sudo tools/get_dependencies.sh` to get these (and the optional packages) automatically. (outdated)
+See [README.BUILD-DEPENDENCIES.md](README.BUILD-DEPENDENCIES.md) for required
+and optional dependencies, Debian/Ubuntu installation commands, and the systems
+supported by `tools/get_dependencies.sh`.
 
 #### Build Clang (Optional - if you need an up-to-date version of LLVM/Clang)
+
+Building the host LLVM/Clang toolchain requires a native C/C++ compiler and
+the listed build utilities. It does not require Clang to be installed already:
+
+Debian/Ubuntu:
+
+```sh
+sudo apt install bash gcc g++ cmake curl unzip make patch sed gzip
+```
 
 ```sh
 ./build_clang.sh                           # Builds mainline Clang
@@ -97,15 +111,21 @@ INSTALLPREFIX=/opt/clang ./build_clang.sh  # Custom install path
 
 #### Build OSXCross
 
-By default, this installs the osxcross toolchain into `<current-directory>/target`.  
-To specify a different installation path or run the build unattended,  
-set the `TARGET_DIR` and/or `UNATTENDED` environment variables accordingly.  
-You can use `ENABLE_ARCHS` to restrict the build to a specific set of supported architectures  
-(e.g. `"arm64 x86_64"`).
+By default, this installs the OSXCross toolchain into `<current-directory>/target`.
+
+`./build.sh` prompts for the build flavor. Press Enter to select the default `stable` flavor.
+Set `BUILD_FLAVOR` to `stable`, `latest`, or `llvm` to select a flavor without prompting.
+When `UNATTENDED=1` is set, an explicitly selected `BUILD_FLAVOR` is preserved; if no flavor
+is specified, `stable` is selected automatically.
+
+Use `TARGET_DIR` to specify a different installation path. `ENABLE_ARCHS` restricts the build
+to a supported set of architectures (for example, `"arm64 x86_64"`).
 
 ```sh
-./build.sh 
-[TARGET_DIR=/usr/local/osxcross] [OSX_VERSION_MIN=XX.X] [ENABLE_ARCHS="<ARCHS>"] [UNATTENDED=1] ./build.sh 
+./build.sh
+BUILD_FLAVOR=llvm ./build.sh
+UNATTENDED=1 BUILD_FLAVOR=latest ./build.sh
+TARGET_DIR=/usr/local/osxcross OSX_VERSION_MIN=XX.X ENABLE_ARCHS="<ARCHS>" ./build.sh
 ```
 
 Add `<target>/bin` to your `PATH` after installation.
@@ -128,6 +148,8 @@ source checkout and installs the full-triplet compiler families
 to [`gcc-16-branch`](https://github.com/iains/gcc-16-branch).
 
 Install GCC dependencies:
+
+Debian/Ubuntu:
 
 ```sh
 sudo apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev
@@ -304,6 +326,12 @@ Can be explicitely overriden by setting the C++ library to `libstdc++` via `-std
   (**Systems**: Linux, macOS, Windows, **Archs**: x86\_64,i386, arm, ppc, mips)  
   in Docker. OSXCross powers the Darwin builds.
 - [Smartmontools](https://www.smartmontools.org)
+
+---
+
+### Legacy branches
+
+The `ppc-test` branch is an older OSXCross branch with support for PowerPC targets.
 
 ---
 
