@@ -1,8 +1,7 @@
 # OSXCross Build Dependencies
 
-This document lists the dependencies required to build the main OSXCross
-toolchain with `build.sh`. Dependency names are distribution-independent;
-`(dev)` denotes development headers and libraries.
+This document lists the dependencies required to build the main OSXCross toolchain with `build.sh`.  
+Dependency names are distribution-independent; `(dev)` denotes development headers and libraries.
 
 ## Stable and latest build flavor
 
@@ -52,6 +51,10 @@ for all build flavors, including the optional packages:
 ```sh
 sudo tools/get_dependencies.sh
 ```
+
+The dependency helper does not install the build dependencies required by
+`build_clang.sh` or `build_gcc.sh`. Install these dependencies manually before
+running either script; see their respective README files for details.
 
 The following systems are detected automatically:
 

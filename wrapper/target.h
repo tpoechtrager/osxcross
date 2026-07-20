@@ -142,11 +142,11 @@ private:
   static int Parse(const char *value) {
     if (!value || !*value)
       return Unknown;
-    if (!std::strcmp(value, "stable"))
+    if (!strcmp(value, "stable"))
       return Stable;
-    if (!std::strcmp(value, "latest"))
+    if (!strcmp(value, "latest"))
       return Latest;
-    if (!std::strcmp(value, "llvm"))
+    if (!strcmp(value, "llvm"))
       return LLVM;
     return Unknown;
   }

@@ -378,25 +378,23 @@ else
 
   pushd "clang_darwin" &>/dev/null
 
-  function print_install_command() {
-    if [ -f "$1" ]; then
-      print_or_run cp -v "$PWD/$1" "${CLANG_DARWIN_LIB_DIR}/$2"
-    fi
+  function install_lib() {
+    [ -f "$1" ] && print_or_run cp -v "$PWD/$1" "${CLANG_DARWIN_LIB_DIR}/$2"
   }
 
-  print_install_command "osx/libcompiler_rt.a"         "libclang_rt.osx.a"
-  print_install_command "10.4/libcompiler_rt.a"        "libclang_rt.10.4.a"
-  print_install_command "eprintf/libcompiler_rt.a"     "libclang_rt.eprintf.a"
-  print_install_command "cc_kext/libcompiler_rt.a"     "libclang_rt.cc_kext.a"
-  print_install_command "profile_osx/libcompiler_rt.a" "libclang_rt.profile_osx.a"
+  install_lib "osx/libcompiler_rt.a"         "libclang_rt.osx.a"
+  install_lib "10.4/libcompiler_rt.a"        "libclang_rt.10.4.a"
+  install_lib "eprintf/libcompiler_rt.a"     "libclang_rt.eprintf.a"
+  install_lib "cc_kext/libcompiler_rt.a"     "libclang_rt.cc_kext.a"
+  install_lib "profile_osx/libcompiler_rt.a" "libclang_rt.profile_osx.a"
 
-  print_install_command "ubsan_osx/libcompiler_rt.a" \
+  install_lib "ubsan_osx/libcompiler_rt.a" \
     "libclang_rt.ubsan_osx.a"
 
-  print_install_command "ubsan_osx_dynamic/libcompiler_rt.dylib" \
+  install_lib "ubsan_osx_dynamic/libcompiler_rt.dylib" \
     "libclang_rt.ubsan_osx_dynamic.dylib"
 
-  print_install_command "asan_osx_dynamic/libcompiler_rt.dylib" \
+  install_lib "asan_osx_dynamic/libcompiler_rt.dylib" \
     "libclang_rt.asan_osx_dynamic.dylib"
 
   popd &>/dev/null

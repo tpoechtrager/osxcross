@@ -1,9 +1,9 @@
 ## OSXCross CMake Integration
 
-OSXCross installs architecture-specific CMake launchers which configure CMake
-for cross-compiling to macOS. The launchers select the target architecture,
-compiler family and C++ standard library, load the matching OSXCross
-configuration, and use the installed `toolchain.cmake` file automatically.
+OSXCross installs architecture-specific CMake launchers which configure CMake for cross-compiling to macOS.  
+
+The launchers select the target architecture, compiler family and C++ standard library, load the matching  
+OSXCross configuration, and use the installed `toolchain.cmake` file automatically.
 
 ### Requirements
 
@@ -12,10 +12,9 @@ configuration, and use the installed `toolchain.cmake` file automatically.
 - CMake 3.21 or newer
 - A build backend supported by CMake, such as Make or Ninja
 
-CMake 3.21 is required because the launchers provide the toolchain file through
-the `CMAKE_TOOLCHAIN_FILE` environment variable. Replace `darwinXX` in the
-examples below with the target reported by `osxcross-conf`, for example
-`darwin23`.
+CMake 3.21 is required because the launchers provide the toolchain file through the `CMAKE_TOOLCHAIN_FILE`  
+environment variable. Replace `darwinXX` in the examples below with the target reported by `osxcross-conf`,  
+for example `darwin23`.
 
 ### Installed CMake Launchers
 
@@ -40,13 +39,10 @@ x86_64-apple-darwinXX-cmake
 x86_64-apple-darwinXX-cmake-clang-gstdc++
 ```
 
-The unsuffixed `-cmake` launcher is the recommended default. The
-`-cmake-clang` form is an explicit alias for the same compiler selection.
-`-cmake-clang-libc++` selects the `clang++-libc++` wrapper and therefore
-explicitly uses libc++, independently of the OSXCross default.
-`-cmake-clang-gstdc++` selects the `clang++-gstdc++` wrapper and uses the
-libstdc++ headers and libraries installed by `./build_gcc.sh`. A GCC build for
-the selected target architecture must therefore be available.
+The unsuffixed `-cmake` launcher is the recommended default. The `-cmake-clang` form is an explicit alias for the same compiler selection.  
+`-cmake-clang-libc++` selects the `clang++-libc++` wrapper and therefore explicitly uses libc++, independently of the OSXCross default.  
+`-cmake-clang-gstdc++` selects the `clang++-gstdc++` wrapper and uses the libstdc++ headers and libraries installed by `./build_gcc.sh`.  
+A GCC build for the selected target architecture must therefore be available.
 
 After `./build_gcc.sh`, OSXCross additionally installs GCC launchers for each
 GCC target architecture built:
@@ -60,9 +56,8 @@ The regular GCC build targets x86_64. The experimental ARM64 GCC build also
 installs `aarch64-apple-darwinXX-*` launchers and equivalent
 `arm64-apple-darwinXX-*` CMake aliases.
 
-Do not run `osxcross-cmake` directly and do not use the installed
-`toolchain.cmake` by itself. The architecture-specific launcher supplies the
-OSXCross configuration and compiler selection required by the toolchain file.
+Do not run `osxcross-cmake` directly and do not use the installed `toolchain.cmake` by itself.  
+The architecture-specific launcher supplies the OSXCross configuration and compiler selection required by the toolchain file.
 
 ### Quick Start
 

@@ -401,7 +401,6 @@ fi
 echo "compiling wrapper ..."
 
 TARGETCOMPILER=gcc \
-  BUILD_FLAVOR="$BUILD_FLAVOR" \
   $BASE_DIR/wrapper/build_wrapper.sh
 
 install_cmake_toolchain_files gcc $GCC_TARGET_ARCHS
