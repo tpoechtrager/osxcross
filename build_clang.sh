@@ -61,6 +61,8 @@ function set_package_link()
     CLANG_VERSION_PARTS=(${CLANG_VERSION//./ })
     case ${CLANG_VERSION_PARTS[0]} in
       next) CLANG_LLVM_PKG="https://github.com/swiftlang/llvm-project/archive/refs/heads/next.zip" ;;
+      23)   CLANG_LLVM_PKG="https://github.com/swiftlang/llvm-project/archive/refs/heads/stable/20260609.zip" ;;
+      # Can't find a stable branch for 22.
       21)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20250402.zip" ;;
       # Can't find a stable branch for 20.
       19)   CLANG_LLVM_PKG="https://github.com/apple/llvm-project/archive/refs/heads/stable/20240723.zip" ;;
