@@ -26,6 +26,7 @@ namespace llvm {
 namespace clang {
 
 using tools::err;
+using tools::safeStrdup;
 
 // This assembler wrapper is specific to the LLVM build flavor. It translates
 // Darwin as(1) arguments for Clang's integrated assembler and must not be used
@@ -111,7 +112,7 @@ int as(int argc, char **argv, target::Target &target) {
   if (char *version = getenv("OSXCROSS_AS_TARGET_VERSION")) {
     std::string minimumVersion = "-mmacos-version-min=";
     minimumVersion += version;
-    args.push_back(strdup(minimumVersion.c_str()));
+    args.push_back(safeStrdup(minimumVersion.c_str()));
   }
 
   if (debug)

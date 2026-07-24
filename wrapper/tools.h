@@ -44,6 +44,18 @@ size_t constexpr constexprStrLen(const char *str) {
   return *str ? 1 + constexprStrLen(str + 1) : 0;
 }
 
+static inline char *safeStrdup(const char *str) {
+  if (!str)
+    abort();
+
+  char *newStr = strdup(str);
+
+  if (!newStr)
+    abort();
+
+  return newStr;
+}
+
 //
 // Terminal text colors
 //
@@ -381,6 +393,8 @@ struct OSVersion {
     }
 
     switch (c) {
+    case 0:
+      return majorStr() != val;
     case 1:
       return shortStr() != val;
     case 2:

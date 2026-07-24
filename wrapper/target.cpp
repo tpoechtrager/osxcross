@@ -170,7 +170,7 @@ void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
     SDKPath += PATHDIV;
     SDKPath += latestSDK;
 
-    SDK = strdup(SDKPath.c_str()); // intentionally leaked
+    SDK = safeStrdup(SDKPath.c_str()); // intentionally leaked
   }
 }
 
@@ -367,6 +367,7 @@ void Target::setCompilerPath() {
     if (!compilerpath.empty()) {
       compilerpath += "/";
       compilerpath += compilername;
+      compilerexecname = compilername;
     } else {
       if (!findExecutableInPath(compilername.c_str(), compilerpath, ignoreCCACHE))
         compilerpath = compilername;
@@ -524,7 +525,8 @@ void Target::setupGCCLibs(Arch arch) {
   case Arch::i586:
   case Arch::i686:
     GCCLibPath << "/" << getArchName(Arch::i386);
-    GCCLibSTDCXXPath << "/" << getArchName(i386);
+    GCCLibSTDCXXPath << "/" << getArchName(Arch::i386);
+    break;
   default:
     ;
   }

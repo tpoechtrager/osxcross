@@ -31,7 +31,7 @@ template<typename A>
 
 void print(const char *var, const A &val) {
   std::cout << "export OSXCROSS_" << var << "=" << "\"" << val << "\"" << std::endl;
-};
+}
 
 int conf(Target &target) {
   std::string SDKPath;

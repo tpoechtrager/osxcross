@@ -25,6 +25,7 @@ namespace program {
 namespace llvm {
 
 using tools::err;
+using tools::safeStrdup;
 
 // This linker wrapper is specific to the LLVM build flavor. It translates
 // Apple ld64 arguments for ld64.lld and must not be used by the cctools-based
@@ -81,13 +82,13 @@ int ld(int argc, char **argv, target::Target &target) {
   // tuple when the caller only supplied the legacy option (or no version).
   if (!platformVersionSeen) {
     if (!minimumVersion)
-      minimumVersion = strdup(target::getDefaultMinTarget().shortStr().c_str());
+      minimumVersion = safeStrdup(target::getDefaultMinTarget().shortStr().c_str());
 
     args.insert(args.begin() + 1,
                 {const_cast<char *>("-platform_version"),
                  const_cast<char *>("macos"),
                  const_cast<char *>(minimumVersion),
-                 strdup(target.getSDKOSNum().shortStr().c_str())});
+                 safeStrdup(target.getSDKOSNum().shortStr().c_str())});
   }
 
   if (debug)

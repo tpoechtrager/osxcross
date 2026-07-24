@@ -35,10 +35,18 @@ struct envvar {
 };
 
 static envvar &var(const char *p, envvar &evar, const bool skipval = false) {
-  const char *value = strchr(p, '=') + 1; // find value offset
-  evar.name.assign(p, value - p - 1);
+  if (!p)
+    return evar;
+
+  const char *separator = strchr(p, '=');
+  if (!separator)
+    return evar;
+
+  evar.name.assign(p, separator - p);
+
   if (!skipval)
-    evar.value = value;
+    evar.value.assign(separator + 1);
+
   return evar;
 }
 

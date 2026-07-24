@@ -109,6 +109,16 @@ if [ -n "$OSX_VERSION_MIN_INT" -a -z "$OSX_VERSION_MIN" ]; then
   OSX_VERSION_MIN=$OSX_VERSION_MIN_INT
 fi
 
+if [ -n "$OSX_VERSION_MIN" ]; then
+  if [ $(cmp-version $SDK_VERSION "<" $OSX_VERSION_MIN) -eq 1 ]; then
+    echo "OSX_VERSION_MIN must be <= SDK_VERSION" >&2
+    exit 1
+  elif [ $(cmp-version $OSX_VERSION_MIN "<" 10.6) -eq 1 ]; then
+    echo "OSX_VERSION_MIN must be >= 10.6" >&2
+    exit 1
+  fi
+fi
+
 function select_build_flavor()
 {
   local flavor_number
@@ -542,9 +552,8 @@ if [ "$BUILD_FLAVOR" = "llvm" ]; then
   LINKER_VERSION=
 elif [ "$PLATFORM" != "Darwin" ]; then
   # libLTO.so
-  set +e
-  eval $(cat $BUILD_DIR/cctools*/cctools/config.log | grep LLVM_LIB_DIR | head -n1)
-  set -e
+  LLVM_LIB_DIR=$($SED -n 's/^LLVM_LIB_DIR=['"'"']\(.*\)['"'"']$/\1/p' \
+    "$BUILD_DIR"/cctools*/cctools/config.log | head -n1)
   export LIBLTO_PATH=$LLVM_LIB_DIR
 fi
 
@@ -561,16 +570,6 @@ export TOP_BUILD_SCRIPT=1
 $BASE_DIR/wrapper/build_wrapper.sh
 
 echo ""
-
-if [ $(cmp-version $SDK_VERSION "<" $OSX_VERSION_MIN) -eq 1 ]; then
-  echo "OSX_VERSION_MIN must be <= SDK_VERSION"
-  trap "" EXIT
-  exit 1
-elif [ $(cmp-version $OSX_VERSION_MIN "<" 10.6) -eq 1  ]; then
-  echo "OSX_VERSION_MIN must be >= 10.6"
-  trap "" EXIT
-  exit 1
-fi
 
 ## CMake ##
 
@@ -666,7 +665,7 @@ if arch_supported arm64; then
   echo ""
 fi
 
-if ! arch_supported i386; then
+if [ "$BUILD_FLAVOR" != "llvm" ] && ! arch_supported i386; then
   echo "i386 is not supported by this SDK."
   echo "Use SDK version 10.13 or earlier if you need i386."
   echo ""

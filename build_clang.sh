@@ -159,28 +159,28 @@ if ([[ $CLANG_VERSION == 18* ]] || [[ $CLANG_VERSION == 17* ]] ||
     [[ $CLANG_VERSION == 14* ]] || [[ $CLANG_VERSION == 13* ]] ||
     [[ $CLANG_VERSION == 12* ]] || [[ $CLANG_VERSION == 11* ]]); then
   $SED -i 's/#include <cstddef>/#include <cstddef>\
-\ #include <cstdint>/' *llvm*/llvm/include/llvm/ADT/SmallVector.h
+\#include <cstdint>/' *llvm*/llvm/include/llvm/ADT/SmallVector.h
   $SED -i 's/#include <string>/#include <string>\
-\ #include <cstdint>/' *llvm*/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
+\#include <cstdint>/' *llvm*/llvm/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
 fi
 
 if ([[ $CLANG_VERSION == 15* ]] || [[ $CLANG_VERSION == 14* ]] ||
     [[ $CLANG_VERSION == 13* ]] || [[ $CLANG_VERSION == 12* ]] ||
     [[ $CLANG_VERSION == 11* ]] || [[ $CLANG_VERSION == 10* ]]); then
   $SED -i 's/#include <string>/#include <string>\
-\ #include <cstdint>/' *llvm*/llvm/include/llvm/Support/Signals.h
+\#include <cstdint>/' *llvm*/llvm/include/llvm/Support/Signals.h
 fi
 
 if ([[ $CLANG_VERSION == 11* ]] || [[ $CLANG_VERSION == 10* ]] ||
     [[ $CLANG_VERSION == 9* ]] || [[ $CLANG_VERSION == 8* ]]); then
   $SED -i 's/#include <vector>/#include <vector>\
-\ #include <limits>/' *llvm*/llvm/utils/benchmark/src/benchmark_register.h
+\#include <limits>/' *llvm*/llvm/utils/benchmark/src/benchmark_register.h
 fi
 
 if ([[ $CLANG_VERSION == 9* ]] || [[ $CLANG_VERSION == 8* ]]); then
   $SED -i 's/#include <array>/#include <array>\
-\ #include <cstdint>\
-\ #include <string>/' *llvm*/llvm/include/llvm/Demangle/MicrosoftDemangleNodes.h
+\#include <cstdint>\
+\#include <string>/' *llvm*/llvm/include/llvm/Demangle/MicrosoftDemangleNodes.h
 fi
 
 function build()

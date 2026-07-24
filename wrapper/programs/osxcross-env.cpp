@@ -32,6 +32,9 @@ int env(int argc, char **argv) {
   char epath[PATH_MAX + 1];
   const char *oldpath = getenv("PATH");
 
+  if (!oldpath)
+    abort();
+
   if (!getExecutablePath(epath, sizeof(epath)))
     exit(EXIT_FAILURE);
 

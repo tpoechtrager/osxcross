@@ -208,11 +208,8 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
   if (noinccheck)
     return true;
 
-  char buf[PATH_MAX + 1];
-  const char *rpath = realpath(path, buf);
-
-  if (!rpath)
-    rpath = path;
+  char *resolved = realpath(path, nullptr);
+  const char *rpath = resolved ? resolved : path;
 
   for (const char *dpath : DangerousIncludePaths) {
     if (!strncmp(rpath, dpath, strlen(dpath))) {
@@ -229,6 +226,8 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
                << warninfo.endl();
     }
   }
+
+  free(resolved);
 #else
   (void)opt;
   (void)path;
@@ -264,7 +263,7 @@ const Parser parser = {{
    Forwarding::keep},
   {"-I", checkincludepath, ValueMode::joinedOrSeparate, Forwarding::keep},
 
-  // sets a custom path for the compile
+  // sets a custom path for the compiler
   {"-foc-compiler-path", compilerpath, ValueMode::joinedWithEquals},
 
   // specifies an additional directory to search when looking for clang's
@@ -468,7 +467,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
 //
 
 int main(int argc, char **argv) {
-  char bbuf[sizeof(benchmark)];
+  alignas(benchmark) char bbuf[sizeof(benchmark)];
   auto b = new (bbuf) benchmark;
   Target target;
   char **cargs = nullptr;

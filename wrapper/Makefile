@@ -86,5 +86,3 @@ wrapper: $(OBJS)
 
 clean:
 	rm -f $(BIN) $(OBJS)
-
--include $(SRCS:cpp=d)

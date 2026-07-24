@@ -120,10 +120,8 @@ char *getExecutablePath(char *buf, size_t len) {
     const char *envpath = getenv("PATH");
     if (!envpath)
       abort();
-    char *xpath = strdup(envpath);
+    char *xpath = safeStrdup(envpath);
     struct stat st;
-    if (!xpath)
-      abort();
     char *path = strtok_r(xpath, ":", &sp);
     while (path) {
       snprintf(buf, len, "%s/%s", path, comm);
@@ -234,11 +232,7 @@ std::string &escapePath(const std::string &path, std::string &escapedpath) {
 
 void splitPath(const char *path, std::vector<std::string> &result) {
   char *sp;
-  char *xpath = strdup(path);
-
-  if (!xpath)
-    abort();
-
+  char *xpath = safeStrdup(path);
   char *p = strtok_r(xpath, ":", &sp);
 
   while (p) {
@@ -282,7 +276,7 @@ std::string *getFileContent(const std::string &file, std::string &content) {
   f.seekg(0, std::ios::beg);
 
   if (len != static_cast<decltype(len)>(-1))
-    content.reserve(static_cast<size_t>(f.tellg()));
+    content.reserve(static_cast<size_t>(len));
 
   content.assign(std::istreambuf_iterator<char>(f),
                  std::istreambuf_iterator<char>());
@@ -366,11 +360,15 @@ bool findExecutableInPath(const char *file, std::string &result,
     while (*p && *p != ':')
       ++p;
 
-    if (p == begin)
-      result = ".";
-    else
-      result.assign(begin, p - begin);
+    if (p == begin) {
+      // Skip empty PATH segments (e.g. "::") to avoid searching CWD.
+      if (!*p)
+        break;
+      ++p;
+      continue;
+    }
 
+    result.assign(begin, p - begin);
     result += PATHDIV;
     result += file;
 
