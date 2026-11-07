@@ -468,6 +468,8 @@ do {                                                                           \
   TRYDIR2("/../lib64/clang");
   // Fedora installs clang into /usr/lib64/llvm*
   TRYDIR2("/../../../lib/clang/");
+  // Gentoo installs clang into /usr/lib/llvm/version
+  TRYDIR2("/../../../clang/");
 #elif __i386__
   TRYDIR2("/../lib32/clang");
 #endif
