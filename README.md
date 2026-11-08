@@ -45,6 +45,13 @@ Move your
 [packaged SDK](https://github.com/tpoechtrager/osxcross#packaging-the-sdk)
 to the tarballs/ directory.
 
+This legacy branch uses cctools 877.8 and ld64 253.9 for compatibility with
+old SDKs, including the 10.4u framework stubs. Host compatibility fixes and
+the generated build system are maintained in cctools-port. This linker uses its
+built-in text stub parser;
+it does not use libtapi. SDK 10.12 and newer require newer text stub formats
+and should be used with the master branch instead.
+
 Then ensure you have the following installed on your system:
 
 `Clang 3.4+`, `cmake`, `git`, `patch`, `Python`, `libssl-devel` (openssl)  
@@ -296,8 +303,9 @@ Usage Examples:
 
 The default deployment target is:  
 
-SDK <= 10.13: `Mac OS X 10.5`  
-SDK >= 10.14: `Mac OS X 10.9`
+SDK 10.4u: `Mac OS X 10.4`
+
+SDK 10.5-10.11: `Mac OS X 10.5`
 
 However, there are several ways to override the default value:
 

@@ -18,23 +18,23 @@ else
   guess_sdk_version
   SDK_VERSION=$guess_sdk_version_result
 fi
-verify_sdk_version $SDK_VERSION
-
 case $SDK_VERSION in
-  10.4*)  TARGET=darwin8;  X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.4;  ;;
-  10.5*)  TARGET=darwin9;  X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.6*)  TARGET=darwin10; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.7*)  TARGET=darwin11; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.8*)  TARGET=darwin12; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.9*)  TARGET=darwin13; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=0; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.12*) TARGET=darwin16; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.13*) TARGET=darwin17; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.5;  ;;
-  10.14*) TARGET=darwin18; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
-  10.15*) TARGET=darwin19; X86_64H_SUPPORTED=1; I386_SUPPORTED=0; NEED_TAPI_SUPPORT=1; OSX_VERSION_MIN_INT=10.9;  ;;
-*) echo "Unsupported SDK"; exit 1 ;;
+  10.4*)  TARGET=darwin8;  X86_64H_SUPPORTED=0; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.4;  ;;
+  10.5*)  TARGET=darwin9;  X86_64H_SUPPORTED=0; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.6*)  TARGET=darwin10; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.7*)  TARGET=darwin11; X86_64H_SUPPORTED=0; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.8*)  TARGET=darwin12; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.9*)  TARGET=darwin13; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.10*) TARGET=darwin14; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  10.11*) TARGET=darwin15; X86_64H_SUPPORTED=1; I386_SUPPORTED=1; OSX_VERSION_MIN_INT=10.5;  ;;
+  *)
+    echo "SDK not supported. SDKs newer than 10.11 use TBD formats unsupported by ld64 253.9." >&2
+    echo "Use the master branch for these SDKs." >&2
+    exit 1
+    ;;
 esac
+
+verify_sdk_version $SDK_VERSION
 
 
 # Minimum targeted OS X version
@@ -88,24 +88,11 @@ build_xar
 # XAR END
 
 
-## Apple TAPI Library ##
-
-if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
-  get_sources https://github.com/tpoechtrager/apple-libtapi.git 1000.10.8
-
-  if [ $f_res -eq 1 ]; then
-    pushd $CURRENT_BUILD_PROJECT_NAME &>/dev/null
-    INSTALLPREFIX=$TARGET_DIR ./build.sh
-    ./install.sh
-    popd &>/dev/null
-    build_success
-  fi
-fi
-
 ## cctools and ld64 ##
 
-CCTOOLS_VERSION=927.0.2
-LINKER_VERSION=450.3
+# Keep the legacy linker compatible with the 10.4u SDK's framework stubs.
+CCTOOLS_VERSION=877.8
+LINKER_VERSION=253.9
 
 get_sources \
   https://github.com/tpoechtrager/cctools-port.git \
@@ -116,13 +103,11 @@ if [ $f_res -eq 1 ]; then
   echo ""
 
   CONFFLAGS="--prefix=$TARGET_DIR --target=x86_64-apple-$TARGET "
-  if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
-    CONFFLAGS+="--with-libtapi=$TARGET_DIR "
-  fi
-  CONFFLAGS+="--with-libxar=$TARGET_DIR "
   [ -n "$DISABLE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
   [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
   # https://github.com/tpoechtrager/osxcross/issues/156
+  CPPFLAGS="${CPPFLAGS:+$CPPFLAGS }-I$TARGET_DIR/include" \
+  LDFLAGS="${LDFLAGS:+$LDFLAGS }-L$TARGET_DIR/lib -Wl,-rpath,$TARGET_DIR/lib" \
   CXX="$CXX -DNDEBUG" ./configure $CONFFLAGS
   $MAKE -j$JOBS
   $MAKE install -j$JOBS
