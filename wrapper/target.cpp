@@ -557,12 +557,26 @@ void Target::setupGCCLibs(Arch arch) {
   addLib(GCCLibSTDCXXPath, "stdc++");
   addLib(GCCLibSTDCXXPath, "supc++");
   addLib(GCCLibPath, "gcc");
-  addLib(GCCLibPath, "gcc_eh");
+  // Fix #484: use the system unwinder with modern Darwin GCC runtimes.
+  // https://github.com/tpoechtrager/osxcross/issues/484
+  // Older GCC installations do not provide the weak emulated-TLS archive.
+  const bool useSystemUnwinder =
+      fileExists(GCCLibPath.str() + "/libemutls_w.a");
+  if (useSystemUnwinder) {
+    addLib(GCCLibPath, "emutls_w");
+    // Heap trampoline support is not present in every GCC version.
+    if (fileExists(GCCLibPath.str() + "/libheapt_w.a"))
+      addLib(GCCLibPath, "heapt_w");
+  } else {
+    addLib(GCCLibPath, "gcc_eh");
+  }
 
   fargs.push_back("-lc");
 
-  // ld64.lld does not implement -no_compact_unwind.
-  if (!buildFlavor.IsLLVM())
+  // Fix #484: Clang can emit compact-unwind-only frames.
+  // Preserve them for the system unwinder; the legacy GCC unwinder needs
+  // DWARF instead. ld64.lld does not implement -no_compact_unwind.
+  if (!useSystemUnwinder && !buildFlavor.IsLLVM())
     fargs.push_back("-Wl,-no_compact_unwind");
 }
 
