@@ -16,21 +16,7 @@ if [ $PLATFORM == "Darwin" ]; then
   exit 1
 fi
 
-CLANG_VERSION=$(echo "__clang_major__ __clang_minor__ __clang_patchlevel__" | \
- xcrun clang -xc -E - | tail -n1 | tr ' ' '.')
-
-# Drop patch level for <= 3.3.
-if [ $(cmp-version $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
-  CLANG_VERSION=$(echo $CLANG_VERSION | tr '.' ' ' |
-                  awk '{print $1, $2}' | tr ' ' '.')
-fi
-
-CLANG_LIB_DIR=$(clang -print-search-dirs | grep "libraries: =" | \
-                tr '=' ' ' | tr ':' ' ' | awk '{print $2}')
-
-VERSION=$(echo "${CLANG_LIB_DIR}" | tr '/' '\n' | tail -n1)
-CLANG_INCLUDE_DIR="${CLANG_LIB_DIR}/include"
-CLANG_DARWIN_LIB_DIR="${CLANG_LIB_DIR}/lib/darwin"
+detect_clang_version_and_dirs
 
 USE_CMAKE=0
 

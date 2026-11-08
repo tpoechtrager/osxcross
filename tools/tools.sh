@@ -164,6 +164,42 @@ function cmp-version() {
   printf '%d' "$result"
 }
 
+
+# Detect the Clang version and resource directories used by compiler-rt.
+# Sets CLANG_VERSION, CLANG_LIB_DIR, CLANG_INCLUDE_DIR and CLANG_DARWIN_LIB_DIR.
+function detect_clang_version_and_dirs()
+{
+  CLANG_VERSION=$(echo "__clang_major__ __clang_minor__ __clang_patchlevel__" | \
+   xcrun clang -xc -E - | tail -n1 | tr ' ' '.')
+
+  # Drop patch level for <= 3.3.
+  if [ $(cmp-version $CLANG_VERSION "<=" 3.3) -eq 1 ]; then
+    CLANG_VERSION=$(echo $CLANG_VERSION | tr '.' ' ' |
+                    awk '{print $1, $2}' | tr ' ' '.')
+  fi
+
+  CLANG_LIB_DIR=$(clang -print-search-dirs | grep "libraries: =" | \
+                  tr '=' ' ' | tr ':' ' ' | awk '{print $2}')
+
+  CLANG_INCLUDE_DIR="${CLANG_LIB_DIR}/include"
+  CLANG_DARWIN_LIB_DIR="${CLANG_LIB_DIR}/lib/darwin"
+}
+
+
+# Detect the version of ld64.lld in PATH and store it in LLD_VERSION.
+# Returns 1 if the linker cannot be run or its version cannot be parsed.
+function detect_ld64_lld_version()
+{
+  local output
+  LLD_VERSION=
+  output=$(ld64.lld --version) || return 1
+  if [[ $output =~ (^|[[:space:]])LLD[[:space:]]+([0-9]+(\.[0-9]+)+) ]]; then
+    LLD_VERSION=${BASH_REMATCH[2]}
+  else
+    return 1
+  fi
+}
+
 function require()
 {
   if ! command -v $1 &>/dev/null; then

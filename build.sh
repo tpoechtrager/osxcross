@@ -204,6 +204,26 @@ if [ "$BUILD_FLAVOR" = "llvm" ]; then
   configure_llvm_flavor
 fi
 
+if [ "$BUILD_FLAVOR" = "llvm" ] &&
+   [ "$(cmp-version "$SDK_VERSION" ">=" 27.0)" -eq 1 ]; then
+  if detect_ld64_lld_version; then
+    if [ "$(cmp-version "$LLD_VERSION" "<" 23.1.3)" -eq 1 ]; then
+      if [ -t 2 ]; then
+        printf '\033[1;33m' >&2
+      fi
+      echo "WARNING: macOS SDK $SDK_VERSION may not work with ld64.lld $LLD_VERSION." >&2
+      echo "Older ld64.lld versions cannot parse arm64e.x1 targets in SDK .tbd files." >&2
+      echo "Use ld64.lld 23.1.3 or newer, or select another build flavor." >&2
+      if [ -t 2 ]; then
+        printf '\033[0m' >&2
+      fi
+    fi
+  else
+    echo "WARNING: Could not determine the ld64.lld version for SDK compatibility check." >&2
+  fi
+  echo ""
+fi
+
 if [ -n "$ENABLE_ARCHS" ]; then
   for arch in $ENABLE_ARCHS; do
     if ! arch_supported "$arch"; then
@@ -570,6 +590,7 @@ export SUPPORTED_ARCHS
 export TOP_BUILD_SCRIPT=1
 
 $BASE_DIR/wrapper/build_wrapper.sh
+
 
 echo ""
 
