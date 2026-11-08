@@ -12,7 +12,7 @@ OSXCross provides three build flavors:
 
 `latest`:
 
-* Uses `cctools 1030.6.3` and `ld64 956.6`.
+* Uses `cctools 1035.1.102` and `ld64 957.1`.
 * Takes the longest to build because the newer tool versions require additional dependencies.
 
 `llvm`:
