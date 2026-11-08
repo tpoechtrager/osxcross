@@ -276,7 +276,10 @@ function build_stable()
 {
   # XAR
 
-  build_xar
+  # macOS provides libxar and its headers through the host SDK.
+  if [[ $PLATFORM != Darwin ]]; then
+    build_xar
+  fi
 
   # XAR END
 
@@ -312,7 +315,9 @@ function build_stable()
     if [ $NEED_TAPI_SUPPORT -eq 1 ]; then
       CONFFLAGS+="--with-libtapi=$TARGET_DIR "
     fi
-    CONFFLAGS+="--with-libxar=$TARGET_DIR "
+    if [[ $PLATFORM != Darwin ]]; then
+      CONFFLAGS+="--with-libxar=$TARGET_DIR "
+    fi
     [ -n "$DISABLE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
     [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
     ./configure $CONFFLAGS
@@ -326,7 +331,10 @@ function build_latest()
 {
   # XAR
 
-  build_xar
+  # macOS provides libxar and its headers through the host SDK.
+  if [[ $PLATFORM != Darwin ]]; then
+    build_xar
+  fi
 
   # XAR END
 
@@ -384,7 +392,9 @@ function build_latest()
       CONFFLAGS+="--with-libblocksruntime=$TARGET_DIR "
       CONFFLAGS+="--with-libtapi=$TARGET_DIR "
     fi
-    CONFFLAGS+="--with-libxar=$TARGET_DIR "
+    if [[ $PLATFORM != Darwin ]]; then
+      CONFFLAGS+="--with-libxar=$TARGET_DIR "
+    fi
     [ -n "$DISABLE_CLANG_AS" ] && CONFFLAGS+="--disable-clang-as "
     [ -n "$DISABLE_LTO_SUPPORT" ] && CONFFLAGS+="--disable-lto-support "
     ./configure $CONFFLAGS
