@@ -294,6 +294,18 @@ fi
 
 GCC_INSTALL_VERSION=$(echo $GCC_VERSION | tr '-' ' ' | awk '{print $1}')
 
+GCC_CONFIGURE_ENV=()
+GCC_CHECKING=release
+if [ "$GCC_FAST_BUILD" = "1" ]; then
+  # Speed up the host compiler build without changing target runtime flags.
+  GCC_CONFIGURE_ENV=(
+    "CFLAGS=${CFLAGS:+$CFLAGS }-O0 -g0"
+    "CXXFLAGS=${CXXFLAGS:+$CXXFLAGS }-O0 -g0"
+  )
+  GCC_CHECKING=no
+  echo "GCC_FAST_BUILD=1: building without host optimization, debug info or checks."
+fi
+
 for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
   # i386 is built by the x86_64 target through GCC multilib.
   if [ "$GCC_TARGET_ARCH" = "i386" ]; then
@@ -325,21 +337,47 @@ for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
     EXTRACONFFLAGS+="--disable-multilib "
   fi
 
-  ../configure \
+  # BEGIN FIX: Set the GCC runtime build deployment target (#485)
+  # GCC's own default follows the Darwin triple, which can be newer than the
+  # deployment target selected for OSXCross. Build all target runtime libraries
+  # for that deployment target too; changing the wrapper alone is insufficient.
+  GCC_OSX_VERSION_MIN=$OSX_VERSION_MIN
+  if [ "$GCC_TARGET_ARCH" = "aarch64" ] &&
+     [ "$(cmp-version "$GCC_OSX_VERSION_MIN" '<' 11.0)" -eq 1 ]; then
+    GCC_OSX_VERSION_MIN=11.0
+  fi
+  GCC_DEPLOYMENT_FLAG="-mmacosx-version-min=$GCC_OSX_VERSION_MIN"
+
+  # Libtool omits compiler flags in some intermediate link steps. Supply the
+  # environment default as well, so those steps use the same deployment target.
+  GCC_BUILD_ENV=("MACOSX_DEPLOYMENT_TARGET=$GCC_OSX_VERSION_MIN")
+  # END FIX: Set the GCC runtime build deployment target (#485)
+
+  env "${GCC_BUILD_ENV[@]}" "${GCC_CONFIGURE_ENV[@]}" ../configure \
     --target=$GCC_TARGET_TRIPLE \
     --with-sysroot=$SDK \
     --disable-nls \
     --enable-languages=$LANGS \
     --without-headers \
     --enable-lto \
-    --enable-checking=release \
+    --enable-checking=$GCC_CHECKING \
     --disable-libstdcxx-pch \
     --prefix=$TARGET_DIR \
     --with-system-zlib \
     $EXTRACONFFLAGS
 
-  $MAKE -j$JOBS
-  $MAKE install
+  # BEGIN FIX: Set libgcc and CRT build deployment targets (#485)
+  # libgcc's Darwin make fragments append their own minimum versions. GCC's
+  # top-level makefile clears MAKEOVERRIDES, including when it recurses into
+  # itself. Keep these target-only overrides in the generated makefile so they
+  # survive every level of recursion without replacing GCC's normal flags.
+  printf 'override EXTRA_TARGET_FLAGS += "%s" "%s"\n' \
+    "DARWIN_MIN_LIB_VERSION=$GCC_DEPLOYMENT_FLAG" \
+    "DARWIN_MIN_CRT_VERSION=$GCC_DEPLOYMENT_FLAG" >> Makefile
+  # END FIX: Set libgcc and CRT build deployment targets (#485)
+
+  env "${GCC_BUILD_ENV[@]}" $MAKE -j$JOBS
+  env "${GCC_BUILD_ENV[@]}" $MAKE install
 
   popd &>/dev/null # build
 
