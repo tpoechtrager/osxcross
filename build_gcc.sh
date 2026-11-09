@@ -130,6 +130,20 @@ pushd $BUILD_DIR &>/dev/null
 
 source $BASE_DIR/tools/trap_exit.sh
 
+# GCC can build its own GMP, MPFR, MPC and related prerequisites in-tree.
+if [ "$DOWNLOAD_GCC_PREREQUISITES" = "1" ]; then
+  download_gcc_prerequisites=1
+elif [ "$UNATTENDED" = "1" ]; then
+  download_gcc_prerequisites=0
+else
+  read -r -p "Download GCC build prerequisites? [y/N] " response || response=""
+  case "$response" in
+    [yY]|[yY][eE][sS]) download_gcc_prerequisites=1 ;;
+    *) download_gcc_prerequisites=0 ;;
+  esac
+  echo ""
+fi
+
 if [ -n "$BUILD_ARM64_GCC" ]; then
   get_sources https://github.com/iains/$ARM64_GCC_REPO.git
   GCC_SOURCE_DIR=$CURRENT_BUILD_PROJECT_NAME
@@ -162,6 +176,14 @@ GCC_SOURCE_DIR=gcc-$GCC_VERSION
 fi
 
 pushd "$GCC_SOURCE_DIR" &>/dev/null
+
+if [ "$download_gcc_prerequisites" = "1" ]; then
+  echo "Downloading GCC prerequisites ..."
+  if ! ./contrib/download_prerequisites; then
+    echo "Failed to download GCC prerequisites." >&2
+    exit 1
+  fi
+fi
 
 if arch_supported "$GCC_TARGET_ARCHS" aarch64; then
   rm -f "$TARGET_DIR/bin/aarch64-apple-$TARGET-gcc"*

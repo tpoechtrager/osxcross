@@ -11,6 +11,12 @@ Debian/Ubuntu:
 sudo apt-get install gcc g++ zlib1g-dev libmpc-dev libmpfr-dev libgmp-dev
 ```
 
+GCC's `contrib/download_prerequisites` can download and build dependencies
+in the GCC source tree. The build script asks whether to download them; the
+default is no. Set `DOWNLOAD_GCC_PREREQUISITES=1` to download them without
+a prompt, including with `UNATTENDED=1`. Unattended builds otherwise skip
+the download and use available system dependencies.
+
 ## Build the ARM64 Darwin GCC fork
 
 Run `./build_gcc_with_arm64_support.sh` to build the ARM64 Darwin
