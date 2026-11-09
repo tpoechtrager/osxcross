@@ -193,11 +193,6 @@ bool runprog(Target &target, const char *, const char *progname, char **cargs) {
   (*prog)(args.size() - 1, args.data(), target);
 }
 
-bool liblto(Target &target, const char *opt, const char *, char **) {
-  target.wliblto = !strcmp(opt, "-Wliblto");
-  return true;
-}
-
 bool checkincludepath(Target &, const char *opt, const char *path, char **) {
 #ifndef __APPLE__
   constexpr const char *DangerousIncludePaths[] = { "/usr/include",
@@ -236,7 +231,7 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
   return true;
 }
 
-typedef OptParser<optFun, 19> Parser;
+typedef OptParser<optFun, 17> Parser;
 typedef Parser::ValueMode ValueMode;
 typedef Parser::Forwarding Forwarding;
 
@@ -253,8 +248,6 @@ const Parser parser = {{
   {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
   // for internal use only
   {"-foc-run-prog", runprog, ValueMode::joinedWithEquals},
-  {"-Wliblto", liblto, ValueMode::none, Forwarding::keep},
-  {"-Wno-liblto", liblto, ValueMode::none, Forwarding::keep},
   {"-isystem", checkincludepath, ValueMode::joinedOrSeparate,
    Forwarding::keep},
   {"-icxx-isystem", checkincludepath, ValueMode::joinedOrSeparate,

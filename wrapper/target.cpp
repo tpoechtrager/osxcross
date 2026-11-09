@@ -44,7 +44,7 @@ Target::Target()
     : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
       supportedarchs(getSupportedArchs()),
       arch(getDefaultArch()), target(getDefaultTarget()), stdlib(StdLib::unset),
-      usegcclibs(), wliblto(-1), compiler(getDefaultCompilerIdentifier()),
+      usegcclibs(), compiler(getDefaultCompilerIdentifier()),
       compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
     abort();
@@ -873,6 +873,12 @@ bool Target::setup() {
         fargs.push_back("-Qunused-arguments");
       }
 
+      if (stdlib == StdLib::libstdcxx && usegcclibs) {
+        // Match the TLS ABI of the libstdc++ built by build_gcc.sh.
+        // User arguments follow fargs, so -fno-emulated-tls can override this.
+        fargs.push_back("-femulated-tls");
+      }
+
       if (stdlib == StdLib::libstdcxx && usegcclibs && targetarchs.size() < 2 &&
           !isGCH()) {
         // Use libs from './build_gcc' installation
@@ -1034,8 +1040,8 @@ bool Target::setup() {
       // '-flto' will of course work nevertheless, it's just a buggy
       // cross-compilation warning.
       //
-      if (wliblto == -1)
-        fargs.push_back("-Wno-liblto");
+      // User arguments follow fargs, so -Wliblto can override this default.
+      fargs.push_back("-Wno-liblto");
     }
 
     if (getenv("OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION"))
