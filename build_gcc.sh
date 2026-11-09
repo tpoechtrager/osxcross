@@ -297,6 +297,24 @@ if [ "$BUILD_FLAVOR" = "llvm" ]; then
     gcc/config/darwin.h
 fi
 
+# BEGIN FIX: Link libgcc_s.1.dylib for macOS >= 10.7 (#485)
+# The legacy libgcc_s.1.dylib compatibility library forwards the unwinder
+# symbols from libSystem using -reexported_symbols_list, which ld64 only
+# supports for macOS >= 10.7. Allow the Makefile to give this one link its own
+# minimum version, independent of the deployment target of the runtime.
+LIBGCC_DARWIN_FRAGMENT=libgcc/config/t-slibgcc-darwin
+if grep -q -- '-Wl,-reexported_symbols_list,' "$LIBGCC_DARWIN_FRAGMENT" &&
+   ! grep -q 'LIBGCC_S1_MIN_VERSION' "$LIBGCC_DARWIN_FRAGMENT"; then
+  $SED -i \
+    's/-Wl,-reexported_symbols_list,/$(LIBGCC_S1_MIN_VERSION) &/' \
+    "$LIBGCC_DARWIN_FRAGMENT"
+  if ! grep -q 'LIBGCC_S1_MIN_VERSION' "$LIBGCC_DARWIN_FRAGMENT"; then
+    echo "Failed to patch $LIBGCC_DARWIN_FRAGMENT" 1>&2
+    exit 1
+  fi
+fi
+# END FIX: Link libgcc_s.1.dylib for macOS >= 10.7 (#485)
+
 
 if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
@@ -396,6 +414,20 @@ for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
   printf 'override EXTRA_TARGET_FLAGS += "%s" "%s"\n' \
     "DARWIN_MIN_LIB_VERSION=$GCC_DEPLOYMENT_FLAG" \
     "DARWIN_MIN_CRT_VERSION=$GCC_DEPLOYMENT_FLAG" >> Makefile
+  # libgcc_s.1.dylib forwards the unwinder symbols from libSystem using
+  # -reexported_symbols_list, which ld64 only supports for macOS >= 10.7.
+  # SDKs older than 10.7 cannot build it, so skip it there. Otherwise link it
+  # for at least 10.7, even if the runtime deployment target is older.
+  if [ "$(cmp-version "$SDK_VERSION" '<' 10.7)" -eq 1 ]; then
+    printf 'override EXTRA_TARGET_FLAGS += "%s"\n' "BUILD_LIBGCCS1=NO" >> Makefile
+  else
+    GCC_LIBGCC_S1_OSX_VERSION_MIN=$GCC_OSX_VERSION_MIN
+    if [ "$(cmp-version "$GCC_LIBGCC_S1_OSX_VERSION_MIN" '<' 10.7)" -eq 1 ]; then
+      GCC_LIBGCC_S1_OSX_VERSION_MIN=10.7
+    fi
+    printf 'override EXTRA_TARGET_FLAGS += "%s"\n' \
+      "LIBGCC_S1_MIN_VERSION=-mmacosx-version-min=$GCC_LIBGCC_S1_OSX_VERSION_MIN" >> Makefile
+  fi
   # END FIX: Set libgcc and CRT build deployment targets (#485)
 
   env "${GCC_BUILD_ENV[@]}" $MAKE -j$JOBS
