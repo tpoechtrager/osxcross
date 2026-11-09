@@ -315,6 +315,24 @@ if grep -q -- '-Wl,-reexported_symbols_list,' "$LIBGCC_DARWIN_FRAGMENT" &&
 fi
 # END FIX: Link libgcc_s.1.dylib for macOS >= 10.7 (#485)
 
+# BEGIN FIX: Honor the deployment target in the arm64 libgcc (#485)
+# libgcc/config/aarch64/t-darwin appends a hardcoded -mmacosx-version-min=11.0
+# to HOST_LIBGCC2_CFLAGS. It comes after DARWIN_MIN_LIB_VERSION and wins, so
+# e.g. libgcc_s.dylib would ignore the deployment target. Use
+# DARWIN_MIN_LIB_VERSION (11 by default) instead.
+LIBGCC_AARCH64_DARWIN_FRAGMENT=libgcc/config/aarch64/t-darwin
+if [ -f "$LIBGCC_AARCH64_DARWIN_FRAGMENT" ] &&
+   grep -Fq -- '-mmacosx-version-min=11.0' "$LIBGCC_AARCH64_DARWIN_FRAGMENT"; then
+  $SED -i \
+    's/-mmacosx-version-min=11.0/$(DARWIN_MIN_LIB_VERSION)/' \
+    "$LIBGCC_AARCH64_DARWIN_FRAGMENT"
+  if grep -Fq -- '-mmacosx-version-min=11.0' "$LIBGCC_AARCH64_DARWIN_FRAGMENT"; then
+    echo "Failed to patch $LIBGCC_AARCH64_DARWIN_FRAGMENT" 1>&2
+    exit 1
+  fi
+fi
+# END FIX: Honor the deployment target in the arm64 libgcc (#485)
+
 
 if [[ $PLATFORM == *BSD ]]; then
   export CPATH="/usr/local/include:/usr/pkg/include:$CPATH"
