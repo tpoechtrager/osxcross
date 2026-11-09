@@ -56,18 +56,6 @@ function compress()
 }
 
 
-function rreadlink()
-{
-  if [ ! -h "$1" ]; then
-    echo "$1"
-  else
-    local link="$(expr "$(command ls -ld -- "$1")" : '.*-> \(.*\)$')"
-    cd $(dirname $1)
-    rreadlink "$link" | sed "s|^\([^/].*\)\$|$(dirname $1)/\1|"
-  fi
-}
-
-
 WDIR=$(pwd)
 
 if [ -z "$XCODE_TOOLS" ]; then
@@ -190,17 +178,41 @@ else
 
 fi
 
+# Group SDK aliases by their physical directory. Keep the name with the most
+# version components, so MacOSX13.3.sdk wins over MacOSX13.sdk.
 SDKS=()
+SDK_PATHS=()
+SDK_VERSION_DEPTHS=()
 for pat in MacOS[0-9]*.sdk MacOSX[0-9]*.sdk; do
   while IFS= read -r d; do
-    if [[ "$d" != "MacOS.sdk" && "$d" != "MacOSX.sdk" && "$d" != *Patch* && -d "$d" ]]; then
-      SDKS+=("$d")
+    if [[ "$d" != *Patch* && -d "$d" ]]; then
+      sdk_path=$(cd -P -- "$d" && pwd -P) || continue
+      sdk_version=${d%.sdk}
+      sdk_version=${sdk_version#MacOSX}
+      sdk_version=${sdk_version#MacOS}
+      sdk_dots=${sdk_version//[^.]/}
+      sdk_depth=${#sdk_dots}
+      found=0
+      for ((i = 0; i < ${#SDKS[@]}; i++)); do
+        if [ "${SDK_PATHS[$i]}" = "$sdk_path" ]; then
+          found=1
+          if [ "$sdk_depth" -gt "${SDK_VERSION_DEPTHS[$i]}" ]; then
+            SDKS[$i]=$d
+            SDK_VERSION_DEPTHS[$i]=$sdk_depth
+          fi
+          break
+        fi
+      done
+      if [ "$found" = 0 ]; then
+        SDKS+=("$d")
+        SDK_PATHS+=("$sdk_path")
+        SDK_VERSION_DEPTHS+=("$sdk_depth")
+      fi
     fi
   done < <(compgen -G "$pat")
 done
 
-
-if [ -z "$SDKS" ]; then
+if [ ${#SDKS[@]} -eq 0 ]; then
   echo "No SDK found" 1>&2
   exit 1
 fi
@@ -227,7 +239,8 @@ for SDK in "${SDKS[@]}"; do
   fi
 
   TMP=$(mktemp -d /tmp/XXXXXXXXXXX)
-  cp -r $(rreadlink $SDK) $TMP/$SDK &>/dev/null || true
+  SDK_PATH=$(cd -P -- "$SDK" && pwd -P)
+  cp -r "$SDK_PATH" "$TMP/$SDK"
 
   pushd "$XCODEDIR" &>/dev/null
 
