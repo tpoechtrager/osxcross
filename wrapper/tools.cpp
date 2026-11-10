@@ -389,15 +389,6 @@ const char *getFileName(const char *file) {
   return p;
 }
 
-const char *getFileExtension(const char *file) {
-  const char *p = strrchr(file, '.');
-
-  if (!p)
-    p = "";
-
-  return p;
-}
-
 //
 // Time
 //

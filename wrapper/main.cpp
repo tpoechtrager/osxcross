@@ -58,17 +58,6 @@ void warnExtension(const char *extension) {
            << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warninfo.endl();
 }
 
-__attribute__((unused))
-void warnDeprecated(const char *flag, const char *replacement = nullptr) {
-  if (replacement)
-    warn << flag << " is deprecated; "
-         << "please use " << replacement << " instead"
-         << warn.endl();
-  else
-    warn << flag << " is deprecated and will be "
-         << "removed soon" << warn.endl();
-}
-
 //
 // Command Line Options
 //

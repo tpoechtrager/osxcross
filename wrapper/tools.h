@@ -133,7 +133,6 @@ std::string getExecutableDir();
 // Name of the parent process, for example "tcsh"; "unknown" if it cannot
 // be determined.
 std::string getParentProcessName();
-std::string &fixPathDiv(std::string &path);
 
 //
 // Environment
@@ -183,14 +182,8 @@ const char *getFileName(const char *file);
 // a file in the root directory and "." for a name without '/'.
 std::string getDirName(const std::string &file);
 
-const char *getFileExtension(const char *file);
-
 inline const char *getFileName(const std::string &file) {
   return getFileName(file.c_str());
-}
-
-inline const char *getFileExtension(const std::string &file) {
-  return getFileExtension(file.c_str());
 }
 
 //
