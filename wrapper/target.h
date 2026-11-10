@@ -163,7 +163,7 @@ struct Target {
 
   OSVersion getSDKOSNum() const;
   void overrideDefaultSDKPath(const char *SDKSearchDir);
-  bool getSDKPath(std::string &path, bool MacOSX10_16Fix = false, bool majorVersionOnly = false) const;
+  bool getSDKPath(std::string &path, bool majorVersionOnly = false) const;
 
   bool getMacPortsDir(std::string &path) const;
   bool getMacPortsSysRootDir(std::string &path) const;
