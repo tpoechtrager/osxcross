@@ -496,11 +496,9 @@ int main(int argc, char **argv) {
 
 #ifdef __DragonFly__
   // Escape DragonFlyBSD's weird PFS paths.
-  std::string escapedexecpath;
-  escapePath(target.execpath, escapedexecpath);
-  concatEnvVariable("COMPILER_PATH", escapedexecpath);
+  prependEnvVariable("COMPILER_PATH", escapePath(target.execpath));
 #else
-  concatEnvVariable("COMPILER_PATH", target.execpath);
+  prependEnvVariable("COMPILER_PATH", target.execpath);
 #endif
 
   auto printCommand = [&]() {

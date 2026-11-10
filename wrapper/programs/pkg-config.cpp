@@ -60,16 +60,16 @@ int pkg_config(int argc, char **argv, Target &target) {
     std::string MacPortsSysRoot;
 
     if (target.getMacPortsSysRootDir(MacPortsSysRoot)) {
-      concatEnvVariable(usenativevariables ? "PKG_CONFIG_SYSROOT_DIR"
-                                           : "OSXCROSS_PKG_CONFIG_SYSROOT_DIR",
-                        MacPortsSysRoot);
+      prependEnvVariable(usenativevariables ? "PKG_CONFIG_SYSROOT_DIR"
+                                            : "OSXCROSS_PKG_CONFIG_SYSROOT_DIR",
+                         MacPortsSysRoot);
 
       std::string MacPortsPkgConfigPath;
 
       if (target.getMacPortsPkgConfigDir(MacPortsPkgConfigPath))
-        concatEnvVariable(usenativevariables ? "PKG_CONFIG_PATH"
-                                             : "OSXCROSS_PKG_CONFIG_PATH",
-                          MacPortsPkgConfigPath);
+        prependEnvVariable(usenativevariables ? "PKG_CONFIG_PATH"
+                                              : "OSXCROSS_PKG_CONFIG_PATH",
+                           MacPortsPkgConfigPath);
     }
   } else {
     unsetenv("OSXCROSS_PKG_CONFIG_NO_MP_INC");

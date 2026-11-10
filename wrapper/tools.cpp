@@ -21,6 +21,7 @@
 
 #include "compat.h"
 
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -105,10 +106,7 @@ std::string resolveArgv0(const std::string &argv0) {
   if (!envpath)
     return std::string();
 
-  std::vector<std::string> dirs;
-  splitPath(envpath, dirs);
-
-  for (const std::string &dir : dirs) {
+  for (const std::string &dir : splitPath(envpath)) {
     const std::string candidate = dir + PATHDIV + argv0;
     struct stat st;
 
@@ -214,18 +212,22 @@ std::string getParentProcessName() {
 // Environment
 //
 
-void concatEnvVariable(const char *var, const std::string &val) {
-  std::string nval = val;
-  if (char *oldval = getenv(var)) {
-    nval += ":";
-    nval += oldval;
+void prependEnvVariable(const char *var, const std::string &val) {
+  std::string newval = val;
+
+  if (const char *oldval = getenv(var)) {
+    newval += ':';
+    newval += oldval;
   }
-  setenv(var, nval.c_str(), 1);
+
+  setenv(var, newval.c_str(), 1);
 }
 
-std::string &escapePath(const std::string &path, std::string &escapedpath) {
-  for (const char *p = path.c_str(); *p; ++p) {
-    switch (*p) {
+std::string escapePath(const std::string &path) {
+  std::string escaped;
+
+  for (const char c : path) {
+    switch (c) {
     case '"':
     case '\'':
     case '\\':
@@ -235,48 +237,49 @@ std::string &escapePath(const std::string &path, std::string &escapedpath) {
     case ' ':
     case ';':
     case ':':
-      escapedpath += '\\';
+      escaped += '\\';
     }
-    escapedpath += *p;
+    escaped += c;
   }
-  return escapedpath;
+
+  return escaped;
 }
 
-void splitPath(const char *path, std::vector<std::string> &result) {
-  const std::string str = path;
+std::vector<std::string> splitPath(const std::string &path) {
+  std::vector<std::string> dirs;
   size_t start = 0;
 
-  while (start <= str.size()) {
-    size_t end = str.find(':', start);
+  while (start <= path.size()) {
+    size_t end = path.find(':', start);
 
     if (end == std::string::npos)
-      end = str.size();
+      end = path.size();
 
     // Skip empty elements ("a::b", leading or trailing ':').
     if (end > start)
-      result.push_back(str.substr(start, end - start));
+      dirs.push_back(path.substr(start, end - start));
 
     start = end + 1;
   }
+
+  return dirs;
 }
 
 std::string joinPath(const std::vector<std::string> &path) {
-  std::string tmp;
-  std::string escaped;
+  std::string joined;
+
   for (size_t i = 0; i < path.size(); ++i) {
-    escaped.clear();
-    tmp += escapePath(path[i], escaped);
-    if (i != path.size() - 1)
-      tmp += ":";
+    if (i > 0)
+      joined += ':';
+
+    joined += escapePath(path[i]);
   }
-  return tmp;
+
+  return joined;
 }
 
-bool hasPath(const std::vector<std::string> &path, const char *find) {
-  for (const std::string &p : path)
-    if (p == find)
-      return true;
-  return false;
+bool hasPath(const std::vector<std::string> &path, const std::string &dir) {
+  return std::find(path.begin(), path.end(), dir) != path.end();
 }
 
 //
@@ -327,12 +330,11 @@ bool ignoreCCACHE(const std::string &path) {
 std::string findExecutableInPath(const std::string &file, bool resolve,
                                  bool (*accept)(const std::string &path)) {
   const char *envpath = getenv("PATH");
-  std::vector<std::string> dirs;
 
   // splitPath() skips empty elements, so the current directory is never
   // searched.
-  if (envpath)
-    splitPath(envpath, dirs);
+  const std::vector<std::string> dirs =
+      envpath ? splitPath(envpath) : std::vector<std::string>();
 
   for (const std::string &dir : dirs) {
     std::string path = dir + PATHDIV + file;

@@ -43,7 +43,7 @@ int man(int argc, char **argv, Target &target) {
 
   for (const std::string &manpath : manpaths)
     if (dirExists(manpath))
-      concatEnvVariable("MANPATH", manpath);
+      prependEnvVariable("MANPATH", manpath);
 
   if (!getenv("MANPATH")) {
     err << "cannot find man pages!" << err.endl();

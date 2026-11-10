@@ -51,12 +51,10 @@ int env(int argc, char **argv) {
     }
   }
 
-  std::vector<std::string> path;
+  std::vector<std::string> path = splitPath(oldpath);
   std::map<std::string, std::string> vars;
 
-  splitPath(oldpath, path);
-
-  if (!hasPath(path, epath.c_str()))
+  if (!hasPath(path, epath))
     path.push_back(epath);
 
   vars["PATH"] = joinPath(path);

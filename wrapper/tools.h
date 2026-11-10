@@ -139,11 +139,17 @@ std::string &fixPathDiv(std::string &path);
 // Environment
 //
 
-void concatEnvVariable(const char *var, const std::string &val);
-std::string &escapePath(const std::string &path, std::string &escapedpath);
-void splitPath(const char *path, std::vector<std::string> &result);
+// Puts val in front of the ':'-separated list in the environment variable
+// var ("val:<old value>"), or sets var to val if it is unset.
+void prependEnvVariable(const char *var, const std::string &val);
+// Backslash before the characters a shell or a ':'-separated list would
+// interpret: " ' \ $ ( ) space ; :
+std::string escapePath(const std::string &path);
+// Elements of a ':'-separated list such as PATH; empty elements are skipped.
+std::vector<std::string> splitPath(const std::string &path);
+// Joins the elements with ':', each one escaped with escapePath().
 std::string joinPath(const std::vector<std::string> &path);
-bool hasPath(const std::vector<std::string> &path, const char *find);
+bool hasPath(const std::vector<std::string> &path, const std::string &dir);
 
 //
 // Files and directories
