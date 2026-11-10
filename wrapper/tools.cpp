@@ -176,50 +176,38 @@ std::string getExecutableDir() {
 #endif
 }
 
-const std::string &getParentProcessName() {
-  static std::string name;
-  auto getName = [](const char * path)->const char * {
-    if (const char *p = strrchr(path, '/')) {
-      return p + 1;
-    }
-    return path;
-  };
-  auto ppid = getppid();
+std::string getParentProcessName() {
+  const pid_t ppid = getppid();
 #ifdef __APPLE__
   char path[PROC_PIDPATHINFO_MAXSIZE];
-  if (proc_pidpath(ppid, path, sizeof(path))) {
-    name = getName(path);
-    return name;
-  }
+
+  if (proc_pidpath(ppid, path, sizeof(path)) > 0)
+    return getFileName(path);
 #elif defined(__FreeBSD__)
-  struct kinfo_proc *proc = kinfo_getproc(ppid);
-  if (proc) {
-    name = getName(proc->ki_comm);
+  if (struct kinfo_proc *proc = kinfo_getproc(ppid)) {
+    const std::string name = getFileName(proc->ki_comm);
     free(proc);
     return name;
   }
 #else
-  std::stringstream file;
-  file << "/proc/" << ppid << "/comm";
-  if (getFileContent(file.str(), name)) {
-    if (!name.empty() && name.rbegin()[0] == '\n') {
-      name.resize(name.size() - 1);
-    }
+  const std::string procdir = "/proc/" + std::to_string(ppid);
+  std::string name;
+
+  if (getFileContent(procdir + "/comm", name)) {
+    if (!name.empty() && name.back() == '\n')
+      name.pop_back();
+
     return name;
-  } else {
-    clear(file);
-    file << "/proc/" << ppid << "/exe";
-    char buf[PATH_MAX + 1];
-    ssize_t len = readlink(file.str().c_str(), buf, sizeof(buf) - 1);
-    if (len > 0) {
-      buf[len] = '\0';
-      name = getName(buf);
-      return name;
-    }
   }
+
+  std::vector<char> buf(PATH_MAX + 1);
+  const ssize_t size =
+      readlink((procdir + "/exe").c_str(), buf.data(), buf.size() - 1);
+
+  if (size > 0)
+    return getFileName(buf.data());
 #endif
-  name = "unknown";
-  return name;
+  return "unknown";
 }
 
 //

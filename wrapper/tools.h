@@ -130,7 +130,9 @@ public:
 // Directory that contains the running executable, without a trailing '/'.
 // Returns an empty string on failure.
 std::string getExecutableDir();
-const std::string &getParentProcessName();
+// Name of the parent process, for example "tcsh"; "unknown" if it cannot
+// be determined.
+std::string getParentProcessName();
 std::string &fixPathDiv(std::string &path);
 
 //

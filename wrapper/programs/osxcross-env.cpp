@@ -40,7 +40,7 @@ int env(int argc, char **argv) {
     exit(EXIT_FAILURE);
 
   if (argc <= 1) {
-    const std::string &pname = getParentProcessName();
+    const std::string pname = getParentProcessName();
 
     if (pname == "csh" || pname == "tcsh") {
       std::cerr << std::endl << "you are invoking this program from a C shell, "
