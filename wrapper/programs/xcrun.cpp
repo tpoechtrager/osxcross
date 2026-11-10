@@ -107,7 +107,7 @@ int version(Target*, char**) {
   return 0;
 }
 
-int sdk(Target*, char **argv) {
+int sdk(Target *target, char **argv) {
   const char *SDK = argv[0];
 
   if (!strcmp(SDK, "macosx") || !strcmp(SDK, "macosx.internal"))
@@ -131,7 +131,10 @@ int sdk(Target*, char **argv) {
       return 1;
     }
 
+    // The tools started by xcrun read the variable; the in-process queries
+    // (--show-sdk-path, --show-sdk-version) use target->SDK.
     setenv("OSXCROSS_SDKROOT", SDK, 1);
+    target->detectSDK();
 
     return 0;
   }
@@ -234,6 +237,7 @@ int xcrun(int argc, char **argv, Target &target) {
 
   if (char *SDK = getenv("SDKROOT")) {
     unsetenv("OSXCROSS_SDKROOT");
+    target.detectSDK();
     char *sdkArgs[1] = { SDK };
     int retVal = sdk(&target, sdkArgs);
     if (retVal != 0)

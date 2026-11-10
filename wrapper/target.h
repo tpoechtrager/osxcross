@@ -167,6 +167,7 @@ struct Target {
   Target();
 
   OSVersion getSDKOSNum() const;
+  void detectSDK();
   void overrideDefaultSDKPath(const char *SDKSearchDir);
   bool getSDKPath(std::string &path, bool majorVersionOnly = false) const;
 
@@ -210,7 +211,7 @@ struct Target {
   bool setup();
 
   const char *vendor;
-  const char *SDK;
+  std::string SDK; // selected SDK; empty: the one in <execpath>/../SDK
   std::vector<Arch> supportedarchs;
   Arch arch;
   std::vector<Arch> targetarchs;

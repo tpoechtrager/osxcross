@@ -41,22 +41,30 @@
 namespace target {
 
 Target::Target()
-    : vendor(getDefaultVendor()), SDK(getenv("OSXCROSS_SDKROOT")),
-      supportedarchs(getSupportedArchs()),
+    : vendor(getDefaultVendor()), supportedarchs(getSupportedArchs()),
       arch(getDefaultArch()), target(getDefaultTarget()), stdlib(StdLib::unset),
       usegcclibs(), compiler(getDefaultCompilerIdentifier()),
       compilername(getDefaultCompilerName()), language() {
   if (!getExecutablePath(execpath, sizeof(execpath)))
     abort();
 
+  detectSDK();
+}
+
+// OSXCROSS_SDKROOT selects the SDK; otherwise OSXCROSS_SDK_SEARCH_DIR may
+// provide one. Without either, the SDK in <execpath>/../SDK is used.
+void Target::detectSDK() {
+  const char *SDKRoot = getenv("OSXCROSS_SDKROOT");
+  SDK = SDKRoot ? SDKRoot : "";
+
   const char *SDKSearchDir = getSDKSearchDir();
 
-  if (!SDK && SDKSearchDir[0])
+  if (SDK.empty() && SDKSearchDir[0])
     overrideDefaultSDKPath(SDKSearchDir);
 }
 
 OSVersion Target::getSDKOSNum() const {
-  if (SDK) {
+  if (!SDK.empty()) {
     std::string SDKPath = SDK;
 
     while (SDKPath.size() && SDKPath[SDKPath.size() - 1] == PATHDIV)
@@ -135,6 +143,7 @@ void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
 
     if (char *resolved = realpath(defaultSDKPath.c_str(), nullptr)) {
       SDK = resolved;
+      free(resolved);
     } else {
       err << "'" << defaultSDKPath << "' broken symlink" << err.endl();
       exit(EXIT_FAILURE);
@@ -170,14 +179,14 @@ void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
     SDKPath += PATHDIV;
     SDKPath += latestSDK;
 
-    SDK = safeStrdup(SDKPath.c_str()); // intentionally leaked
+    SDK = SDKPath;
   }
 }
 
 bool Target::getSDKPath(std::string &path, bool majorVersionOnly) const {
   OSVersion SDKVer = getSDKOSNum();
 
-  if (SDK) {
+  if (!SDK.empty()) {
     path = SDK;
   } else {
     path = execpath;
