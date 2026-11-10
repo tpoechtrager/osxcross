@@ -231,15 +231,21 @@ std::string &escapePath(const std::string &path, std::string &escapedpath) {
 }
 
 void splitPath(const char *path, std::vector<std::string> &result) {
-  char *sp;
-  char *xpath = safeStrdup(path);
-  char *p = strtok_r(xpath, ":", &sp);
+  const std::string str = path;
+  size_t start = 0;
 
-  while (p) {
-    result.push_back(p);
-    p = strtok_r(NULL, ":", &sp);
+  while (start <= str.size()) {
+    size_t end = str.find(':', start);
+
+    if (end == std::string::npos)
+      end = str.size();
+
+    // Skip empty elements ("a::b", leading or trailing ':').
+    if (end > start)
+      result.push_back(str.substr(start, end - start));
+
+    start = end + 1;
   }
-  free(xpath);
 }
 
 std::string joinPath(const std::vector<std::string> &path) {
