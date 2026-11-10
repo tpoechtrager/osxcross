@@ -25,7 +25,6 @@ namespace program {
 namespace llvm {
 
 using tools::err;
-using tools::safeStrdup;
 
 // This linker wrapper is specific to the LLVM build flavor. It translates
 // Apple ld64 arguments for ld64.lld and must not be used by the cctools-based
@@ -51,9 +50,9 @@ int ld(int argc, char **argv, target::Target &target) {
   const bool debug = getenv("OCDEBUG") != nullptr;
   const char *minimumVersion = getenv("MACOSX_DEPLOYMENT_TARGET");
   bool platformVersionSeen = false;
-  std::vector<char *> args;
+  std::vector<std::string> args;
 
-  args.push_back(const_cast<char *>("ld64.lld"));
+  args.push_back("ld64.lld");
 
   for (int i = 1; i < argc; ++i) {
     // GCC and older Darwin tooling use the legacy ld64 option. LLD expects the
@@ -81,24 +80,19 @@ int ld(int argc, char **argv, target::Target &target) {
   // ld64.lld needs both the deployment target and SDK version. Synthesize the
   // tuple when the caller only supplied the legacy option (or no version).
   if (!platformVersionSeen) {
-    if (!minimumVersion)
-      minimumVersion = safeStrdup(target::getDefaultMinTarget().shortStr().c_str());
+    const std::string minimum =
+        minimumVersion ? minimumVersion
+                       : target::getDefaultMinTarget().shortStr();
 
     args.insert(args.begin() + 1,
-                {const_cast<char *>("-platform_version"),
-                 const_cast<char *>("macos"),
-                 const_cast<char *>(minimumVersion),
-                 safeStrdup(target.getSDKOSNum().shortStr().c_str())});
+                {"-platform_version", "macos", minimum,
+                 target.getSDKOSNum().shortStr()});
   }
 
   if (debug)
-    printExternalToolArgs(argc, argv, args);
+    printExecProgramArgs(argc, argv, args);
 
-  args.push_back(nullptr);
-  execvp(args[0], args.data());
-
-  err << "Couldn't execute " << args[0] << err.endl();
-  return 1;
+  return execProgram(args[0], args);
 }
 
 } // namespace llvm

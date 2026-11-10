@@ -8,6 +8,7 @@
 #include <cstring>
 #include <climits>
 #include <cassert>
+#include <cerrno>
 #include <unistd.h>
 
 #include "tools.h"

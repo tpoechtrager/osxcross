@@ -27,8 +27,20 @@ namespace program {
 
 using target::Target;
 
-int executeExternalTool(const char *toolName, int argc, char **argv);
-void printExternalToolArgs(int argc, char **argv, std::vector<char *> &args);
+// Execute path (looked up in PATH if it contains no slash) with args;
+// args[0] is the name the program sees as argv[0]. Only returns on failure,
+// after printing an error message, and then returns 1.
+int execProgram(const std::string &path,
+                const std::vector<std::string> &args);
+
+// Same, with argv[1] to argv[argc - 1] as arguments; the program sees path
+// as argv[0].
+int execProgram(const std::string &path, int argc, char **argv);
+
+// Debug output: the original command line (argv) and the one passed to
+// execProgram() (args).
+void printExecProgramArgs(int argc, char **argv,
+                          const std::vector<std::string> &args);
 
 class prog {
 public:
@@ -64,7 +76,7 @@ public:
     case 4:
       exit(fun4(target));
     case 5:
-      exit(executeExternalTool(tool, argc, argv));
+      exit(execProgram(tool, argc, argv));
     }
 
     __builtin_unreachable();

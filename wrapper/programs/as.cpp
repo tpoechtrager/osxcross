@@ -26,7 +26,6 @@ namespace llvm {
 namespace clang {
 
 using tools::err;
-using tools::safeStrdup;
 
 // This assembler wrapper is specific to the LLVM build flavor. It translates
 // Darwin as(1) arguments for Clang's integrated assembler and must not be used
@@ -77,56 +76,48 @@ int as(int argc, char **argv, target::Target &target) {
   target.setTriple();
   std::string clang = target.buildToolPath("clang");
 
-  std::vector<char *> args;
-  args.push_back(const_cast<char *>(clang.c_str()));
+  std::vector<std::string> args;
+  args.push_back(clang);
 
   // Force assembler input even for stdin or files without a .s suffix. These
   // options must precede a synthesized "-" or Clang rejects stdin input.
-  args.push_back(const_cast<char *>("-x"));
-  args.push_back(const_cast<char *>("assembler"));
+  args.push_back("-x");
+  args.push_back("assembler");
 
   if (!someInputFiles)
-    args.push_back(const_cast<char *>("-"));
+    args.push_back("-");
 
-  for (std::vector<char *>::const_iterator it = givenArgs.begin();
-       it != givenArgs.end(); ++it) {
+  for (const char *arg : givenArgs) {
     // Translate Darwin as(1)'s alternate stdin spelling for Clang.
-    if (!strcmp(*it, "--"))
-      args.push_back(const_cast<char *>("-"));
+    if (!strcmp(arg, "--"))
+      args.push_back("-");
     // Darwin as(1) accepts -V; Clang does not.
-    else if (strcmp(*it, "-V"))
-      args.push_back(*it);
+    else if (strcmp(arg, "-V"))
+      args.push_back(arg);
   }
 
   if (!outputSpecified) {
-    args.push_back(const_cast<char *>("-o"));
-    args.push_back(const_cast<char *>("a.out"));
+    args.push_back("-o");
+    args.push_back("a.out");
   }
 
   // Avoid invoking an external as wrapper recursively, and stop Clang after
   // assembly so it cannot invoke the linker.
-  args.push_back(const_cast<char *>("-integrated-as"));
-  args.push_back(const_cast<char *>("-c"));
+  args.push_back("-integrated-as");
+  args.push_back("-c");
 
   // Darwin as(1) accepts driver options that may be unused after translation.
-  args.push_back(const_cast<char *>("-Wno-unused-command-line-argument"));
+  args.push_back("-Wno-unused-command-line-argument");
 
   // The GCC wrapper communicates its selected deployment target through the environment;
   // the standalone assembler invocation cannot otherwise recover that value.
-  if (char *version = getenv("OSXCROSS_AS_TARGET_VERSION")) {
-    std::string minimumVersion = "-mmacos-version-min=";
-    minimumVersion += version;
-    args.push_back(safeStrdup(minimumVersion.c_str()));
-  }
+  if (const char *version = getenv("OSXCROSS_AS_TARGET_VERSION"))
+    args.push_back(std::string("-mmacos-version-min=") + version);
 
   if (debug)
-    printExternalToolArgs(argc, argv, args);
+    printExecProgramArgs(argc, argv, args);
 
-  args.push_back(nullptr);
-  execvp(args[0], args.data());
-
-  err << "Couldn't execute " << args[0] << err.endl();
-  return 1;
+  return execProgram(clang, args);
 }
 
 } // namespace clang

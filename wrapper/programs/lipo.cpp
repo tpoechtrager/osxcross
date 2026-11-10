@@ -34,19 +34,13 @@ int lipo(int argc, char **argv, target::Target &target) {
     return 1;
   }
 
-  (void)argc;
-
   std::string executable;
 
   if (getenv("OSXCROSS_FORCE_LLVM_LIPO") ||
       !target::findExecutableInPath("osxcross-cctools-lipo", executable))
     executable = "llvm-lipo";
 
-  argv[0] = const_cast<char *>(executable.c_str());
-
-  execvp(executable.c_str(), argv);
-  err << "cannot execute '" << executable << "'" << err.endl();
-  return 1;
+  return execProgram(executable, argc, argv);
 }
 
 } // namespace llvm

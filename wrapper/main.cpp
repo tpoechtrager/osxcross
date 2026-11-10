@@ -463,7 +463,6 @@ int main(int argc, char **argv) {
   alignas(benchmark) char bbuf[sizeof(benchmark)];
   auto b = new (bbuf) benchmark;
   Target target;
-  char **cargs = nullptr;
   int rc = -1;
 
   if (char *p = getenv("OCDEBUG"))
@@ -539,19 +538,6 @@ int main(int argc, char **argv) {
     dbg << "<-- " << out << dbg.endl();
   };
 
-  if (rc == -1) {
-    cargs = new char *[target.fargs.size() + target.args.size() + 1];
-    size_t i = 0;
-
-    for (auto &arg : target.fargs)
-      cargs[i++] = const_cast<char *>(arg.c_str());
-
-    for (auto &arg : target.args)
-      cargs[i++] = const_cast<char *>(arg.c_str());
-
-    cargs[i] = nullptr;
-  }
-
   if (debug) {
     time_type diff = b->getDiff();
 
@@ -565,8 +551,11 @@ int main(int argc, char **argv) {
   if (unittest == 2)
     return 0;
 
-  if (rc == -1 && execvp(target.compilerpath.c_str(), cargs)) {
-    err << "invoking compiler failed" << err.endl();
+  if (rc == -1) {
+    string_vector cargs = target.fargs;
+    cargs.insert(cargs.end(), target.args.begin(), target.args.end());
+
+    program::execProgram(target.compilerpath, cargs);
 
     if (!debug)
       printCommand();

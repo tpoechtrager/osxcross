@@ -50,15 +50,11 @@ int man(int argc, char **argv, Target &target) {
     return 1;
   }
 
-  std::vector<char *> args;
-
-  // All the const violation here doesn't matter,
-  // the arguments won't be modified
-
-  args.push_back(const_cast<char *>("man"));
+  std::vector<std::string> args;
+  args.push_back("man");
 
   for (int i = 1; i < argc; ++i) {
-    char *arg = argv[i];
+    std::string arg = argv[i];
 
     // Rewrite gcc to <triple>-gcc for compatibility
     // with other man pages
@@ -66,19 +62,17 @@ int man(int argc, char **argv, Target &target) {
     constexpr const char *GCCManPages[] = { "gcc", "g++", "cpp", "gcov" };
 
     for (const char *mp : GCCManPages) {
-      if (!strcmp(mp, arg)) {
-        std::string *str = new std::string; // Intentionally "leaked"
+      if (arg == mp) {
+        std::string triple;
         if (isStandaloneOSXCrossMan) {
           // osxcross-man -> use default GCC architecture for triple
-          target.buildDefaultTriple(*str, /* GCC */ true, /* useAarch64InsteadOfArm64 */ true);
+          target.buildDefaultTriple(triple, /* GCC */ true, /* useAarch64InsteadOfArm64 */ true);
         } else {
           // <triple>-osxcross-man -> use the triple architecture for triple
           target.setTriple(/* useAarch64InsteadOfArm64 */ true);
-          *str = target.getTriple();
+          triple = target.getTriple();
         }
-        str->append("-");
-        str->append(arg);
-        arg = const_cast<char *>(str->c_str());
+        arg = triple + "-" + arg;
         break;
       }
     }
@@ -86,11 +80,7 @@ int man(int argc, char **argv, Target &target) {
     args.push_back(arg);
   }
 
-  args.push_back(nullptr);
-
-  execvp(args[0], args.data());
-  err << "cannot execute '" << args[0] << "'" << err.endl();
-  return 1;
+  return execProgram(args[0], args);
 }
 
 } // namespace osxcross

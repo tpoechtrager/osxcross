@@ -51,8 +51,6 @@ static envvar &var(const char *p, envvar &evar, const bool skipval = false) {
 }
 
 int pkg_config(int argc, char **argv, Target &target) {
-  (void)argc;
-
   std::vector<envvar> envvars;
   std::vector<envvar> unset;
   envvar evar;
@@ -110,9 +108,8 @@ int pkg_config(int argc, char **argv, Target &target) {
     if (!getenv("PKG_CONFIG_LIBDIR"))
       setenv("PKG_CONFIG_LIBDIR", "", 1);
 
-    execvp("pkg-config", argv);
-    err << "cannot find or execute pkg-config" << err.endl();
-    return 1;
+    return execProgram("pkg-config",
+                       std::vector<std::string>(argv, argv + argc));
   }
 
   warn << argv[0] << " is a no-op - please see README.PKG-CONFIG.md for more"

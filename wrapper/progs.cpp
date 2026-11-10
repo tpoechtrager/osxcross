@@ -5,22 +5,37 @@ namespace program {
 using tools::dbg;
 using tools::err;
 
-int executeExternalTool(const char *toolName, int argc, char **argv) {
-  std::vector<char *> args;
-  args.reserve(argc + 1);
-  args.push_back(const_cast<char *>(toolName));
+// Replace the current process with path; args[0] becomes its argv[0].
+int execProgram(const std::string &path,
+                const std::vector<std::string> &args) {
+  std::vector<char *> argv;
+  argv.reserve(args.size() + 1);
 
-  for (int i = 1; i < argc; ++i)
-    args.push_back(argv[i]);
+  for (const std::string &arg : args)
+    argv.push_back(const_cast<char *>(arg.c_str()));
 
-  args.push_back(nullptr);
-  execvp(toolName, args.data());
+  argv.push_back(nullptr);
+  execvp(path.c_str(), argv.data());
 
-  err << "Error: cannot execute '" << toolName << "'" << err.endl();
+  const int error = errno;
+  err << "cannot execute '" << path << "': " << strerror(error) << err.endl();
   return 1;
 }
 
-void printExternalToolArgs(int argc, char **argv, std::vector<char *> &args) {
+// Like above, but pass on argv[1..] and use path as argv[0].
+int execProgram(const std::string &path, int argc, char **argv) {
+  std::vector<std::string> args(1, path);
+
+  if (argc > 1)
+    args.insert(args.end(), argv + 1, argv + argc);
+
+  return execProgram(path, args);
+}
+
+// Debug output: the original command line and the one passed to
+// execProgram().
+void printExecProgramArgs(int argc, char **argv,
+                          const std::vector<std::string> &args) {
   std::string in;
   std::string out;
 
@@ -29,12 +44,9 @@ void printExternalToolArgs(int argc, char **argv, std::vector<char *> &args) {
     in += " ";
   }
 
-  for (std::vector<char *>::const_iterator it = args.begin();
-       it != args.end(); ++it) {
-    if (*it) {
-      out += *it;
-      out += " ";
-    }
+  for (const std::string &arg : args) {
+    out += arg;
+    out += " ";
   }
 
   dbg << "--> " << in << dbg.endl();

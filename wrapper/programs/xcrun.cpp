@@ -170,25 +170,22 @@ int run(Target *target, char **argv) {
   if (!getToolPath(target, toolpath, toolname))
     exit(1);
 
-  std::vector<char *> args;
-  args.push_back(const_cast<char *>(toolpath.c_str()));
+  std::vector<std::string> args;
+  args.push_back(toolpath);
 
   for (char **arg = &argv[1]; *arg; ++arg)
     args.push_back(*arg);
 
-  args.push_back(nullptr);
-
   if (showCommand) {
-    for (size_t i = 0; i < args.size() - 1; ++i) {
+    for (size_t i = 0; i < args.size(); ++i) {
       std::cout << args[i];
-      if (i != args.size() - 2)
+      if (i != args.size() - 1)
         std::cout << " ";
     }
     std::cout << std::endl;
   }
 
-  execvp(args[0], args.data());
-  err << "xcrun: cannot execute '" << args[0] << "'" << err.endl();
+  execProgram(args[0], args);
   exit(1);
 
   // Silence -Wreturn-type warnings in case exit() is not marked as
