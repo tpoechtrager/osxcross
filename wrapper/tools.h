@@ -151,15 +151,14 @@ bool hasPath(const std::vector<std::string> &path, const char *find);
 
 constexpr char PATHDIV = '/';
 
-std::string *getFileContent(const std::string &file, std::string &content);
-bool writeFileContent(const std::string &file, const std::string &content);
+// Reads the whole file into content; false if it cannot be opened.
+bool getFileContent(const std::string &file, std::string &content);
 
-bool fileExists(const std::string &dir);
+bool fileExists(const std::string &file);
 bool dirExists(const std::string &dir);
-typedef bool (*listfilescallback)(const char *file);
-bool isDirectory(const char *file, const char *prefix);
-bool listFiles(const char *dir, std::vector<std::string> *files,
-               listfilescallback cmp);
+// Names of all entries of a directory, including "." and "..", in the
+// order of readdir(); empty if the directory cannot be opened.
+std::vector<std::string> listFiles(const std::string &dir);
 
 // First match for <file> in the PATH directories, resolved with realpath()
 // unless resolve is false. If accept() rejects a match, the search goes on.

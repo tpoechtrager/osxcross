@@ -283,33 +283,18 @@ bool hasPath(const std::vector<std::string> &path, const char *find) {
 // Files and Directories
 //
 
-std::string *getFileContent(const std::string &file, std::string &content) {
+bool getFileContent(const std::string &file, std::string &content) {
   std::ifstream f(file.c_str());
-
-  if (!f.is_open())
-    return nullptr;
-
-  f.seekg(0, std::ios::end);
-  auto len = f.tellg();
-  f.seekg(0, std::ios::beg);
-
-  if (len != static_cast<decltype(len)>(-1))
-    content.reserve(static_cast<size_t>(len));
-
-  content.assign(std::istreambuf_iterator<char>(f),
-                 std::istreambuf_iterator<char>());
-
-  return &content;
-}
-
-bool writeFileContent(const std::string &file, const std::string &content) {
-  std::ofstream f(file.c_str());
 
   if (!f.is_open())
     return false;
 
-  f << content;
-  return f.good();
+  // operator<< catches read errors (for example EISDIR) and only sets
+  // failbit, so a directory gives an empty string instead of an exception.
+  std::ostringstream ss;
+  ss << f.rdbuf();
+  content = ss.str();
+  return true;
 }
 
 bool fileExists(const std::string &file) {
@@ -322,36 +307,17 @@ bool dirExists(const std::string &dir) {
   return !stat(dir.c_str(), &st) && S_ISDIR(st.st_mode);
 }
 
-typedef bool (*listfilescallback)(const char *file);
+std::vector<std::string> listFiles(const std::string &dir) {
+  std::vector<std::string> files;
 
-bool isDirectory(const char *file, const char *prefix) {
-  struct stat st;
-  if (prefix) {
-    std::string tmp = prefix;
-    tmp += "/";
-    tmp += file;
-    return !stat(tmp.c_str(), &st) && S_ISDIR(st.st_mode);
-  } else {
-    return !stat(file, &st) && S_ISDIR(st.st_mode);
-  }
-}
+  if (DIR *d = opendir(dir.c_str())) {
+    while (const dirent *de = readdir(d))
+      files.push_back(de->d_name);
 
-bool listFiles(const char *dir, std::vector<std::string> *files,
-               listfilescallback cmp) {
-  DIR *d = opendir(dir);
-  dirent *de;
-
-  if (!d)
-    return false;
-
-  while ((de = readdir(d))) {
-    if ((!cmp || cmp(de->d_name)) && files) {
-      files->push_back(de->d_name);
-    }
+    closedir(d);
   }
 
-  closedir(d);
-  return true;
+  return files;
 }
 
 bool ignoreCCACHE(const std::string &path) {

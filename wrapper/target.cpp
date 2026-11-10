@@ -156,22 +156,20 @@ void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
   } else {
     // Choose the latest SDK
 
-    static OSVersion latestSDKVersion;
-    static std::string latestSDK;
+    OSVersion latestSDKVersion;
+    std::string latestSDK;
 
-    latestSDKVersion = OSVersion();
-    latestSDK.clear();
+    for (const std::string &entry : listFiles(SDKSearchDir)) {
+      if (strncasecmp(entry.c_str(), "MacOSX", 6))
+        continue;
 
-    listFiles(SDKSearchDir, nullptr, [](const char *SDK) {
-      if (!strncasecmp(SDK, "MacOSX", 6)) {
-        OSVersion SDKVersion = parseOSVersion(SDK + 6);
-        if (SDKVersion > latestSDKVersion) {
-          latestSDKVersion = SDKVersion;
-          latestSDK = SDK;
-        }
+      const OSVersion SDKVersion = parseOSVersion(entry.c_str() + 6);
+
+      if (SDKVersion > latestSDKVersion) {
+        latestSDKVersion = SDKVersion;
+        latestSDK = entry;
       }
-      return false;
-    });
+    }
 
     if (!latestSDKVersion.Num()) {
       err << "no SDK found in '" << SDKSearchDir << "'" << err.endl();
@@ -386,8 +384,6 @@ void Target::setCompilerPath() {
 }
 
 bool Target::findClangIntrinsicHeaders(std::string &path) {
-  static std::stringstream dir;
-
   assert(isClang());
 
   if (compilerpath.empty())
@@ -396,115 +392,85 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
   std::string clangbindir = compilerpath;
   stripFileName(clangbindir);
 
-  static ClangVersion *clangversion;
-  static std::string pathtmp;
+  // Looks for <dir>/<version>/include/xmmintrin.h or
+  // <dir>/<version>/xmmintrin.h; the highest version wins.
+  auto tryDir = [&](const std::string &dir) {
+    ClangVersion bestversion;
+    std::string bestpath;
 
-  clangversion = &this->clangversion;
+    for (const std::string &file : listFiles(dir)) {
+      if (file[0] == '.' || !dirExists(dir + "/" + file))
+        continue;
 
-  clear(dir);
-  *clangversion = ClangVersion();
-  pathtmp.clear();
+      const ClangVersion cv = parseClangVersion(file.c_str());
 
-  auto tryDir = [&]()->bool {
-    listFiles(dir.str().c_str(), nullptr, [](const char *file) {
-      if (file[0] != '.' && isDirectory(file, dir.str().c_str())) {
-        ClangVersion cv = parseClangVersion(file);
+      if (cv == ClangVersion())
+        continue;
 
-        if (cv != ClangVersion()) {
-          static std::stringstream tmp;
-          clear(tmp);
-
-          auto checkDir = [&](std::stringstream &dir) {
-            static std::string intrindir;
-            auto &file = dir;
-
-            intrindir = dir.str();
-            file << "/xmmintrin.h";
-
-            if (fileExists(file.str())) {
-              if (cv > *clangversion) {
-                *clangversion = cv;
-                pathtmp.swap(intrindir);
-              }
-              return true;
-            }
-
-            return false;
-          };
-
-          tmp << dir.str() << "/" << file << "/include";
-
-          if (!checkDir(tmp)) {
-            clear(tmp);
-            tmp << dir.str() << "/" << file;
-            checkDir(tmp);
+      for (const std::string &intrindir :
+           { dir + "/" + file + "/include", dir + "/" + file }) {
+        if (fileExists(intrindir + "/xmmintrin.h")) {
+          if (cv > bestversion) {
+            bestversion = cv;
+            bestpath = intrindir;
           }
+          break;
         }
-        return true;
       }
-      return true;
-    });
-    return *clangversion != ClangVersion();
+    }
+
+    clangversion = bestversion;
+
+    if (bestversion == ClangVersion())
+      return false;
+
+    path = bestpath;
+    return true;
   };
 
-#define TRYDIR(basedir, subdir)                                                \
-do {                                                                           \
-  dir << basedir << subdir;                                                    \
-  if (tryDir()) {                                                              \
-    path.swap(pathtmp);                                                        \
-    return true;                                                               \
-  }                                                                            \
-  clear(dir);                                                                  \
-} while (0)
-
-#define TRYDIR2(libdir) TRYDIR(clangbindir, libdir)
-#define TRYDIR3(libdir) TRYDIR(std::string(), libdir)
+  std::vector<std::string> dirs;
 
 #ifdef __CYGWIN__
 #ifdef __x86_64__
-  TRYDIR2("/../lib/clang/x86_64-pc-cygwin");
+  dirs.push_back(clangbindir + "/../lib/clang/x86_64-pc-cygwin");
 #else
-  TRYDIR2("/../lib/clang/i686-pc-cygwin");
+  dirs.push_back(clangbindir + "/../lib/clang/i686-pc-cygwin");
 #endif
 #endif
 
-  TRYDIR2("/../lib/clang");
+  dirs.push_back(clangbindir + "/../lib/clang");
 
 #ifdef __linux__
 #ifdef __x86_64__
   // opensuse uses lib64 instead of lib on x86_64
-  TRYDIR2("/../lib64/clang");
+  dirs.push_back(clangbindir + "/../lib64/clang");
   // Fedora installs clang into /usr/lib64/llvm*
-  TRYDIR2("/../../../lib/clang/");
+  dirs.push_back(clangbindir + "/../../../lib/clang/");
   // Gentoo installs clang into /usr/lib/llvm/version
-  TRYDIR2("/../../../clang/");
+  dirs.push_back(clangbindir + "/../../../clang/");
 #elif __i386__
-  TRYDIR2("/../lib32/clang");
+  dirs.push_back(clangbindir + "/../lib32/clang");
 #endif
 #endif
 
 #ifdef __APPLE__
-  constexpr const char *OSXIntrinDirs[] = {
-    "/Library/Developer/CommandLineTools/usr/lib/clang",
-    "/Applications/Contents/Developer/Toolchains/"
-    "XcodeDefault.xctoolchain/usr/lib/clang"
-  };
-
-  for (auto intrindir : OSXIntrinDirs)
-    TRYDIR3(intrindir);
+  dirs.push_back("/Library/Developer/CommandLineTools/usr/lib/clang");
+  dirs.push_back("/Applications/Contents/Developer/Toolchains/"
+                 "XcodeDefault.xctoolchain/usr/lib/clang");
 #endif
 
-  TRYDIR2("/../include/clang");
-  TRYDIR2("/usr/include/clang");
+  dirs.push_back(clangbindir + "/../include/clang");
+  dirs.push_back(clangbindir + "/usr/include/clang");
 
-  if (!intrinsicpath.empty()) {
-    TRYDIR2(intrinsicpath);
+  if (!intrinsicpath.empty())
+    dirs.push_back(clangbindir + intrinsicpath);
+
+  for (const std::string &dir : dirs) {
+    if (tryDir(dir))
+      return true;
   }
 
   return false;
-#undef TRYDIR
-#undef TRYDIR2
-#undef TRYDIR3
 }
 
 void Target::setupGCCLibs(Arch arch) {
@@ -783,14 +749,12 @@ bool Target::setup() {
       CXXHeaderPath += CXXBuildTriple;
       CXXHeaderPath += "/include/c++";
 
-      static std::vector<GCCVersion> v;
-      v.clear();
+      std::vector<GCCVersion> v;
 
-      listFiles(CXXHeaderPath.c_str(), nullptr, [](const char *path) {
-        if (path[0] != '.')
-          v.push_back(parseGCCVersion(path));
-        return false;
-      });
+      for (const std::string &entry : listFiles(CXXHeaderPath)) {
+        if (entry[0] != '.')
+          v.push_back(parseGCCVersion(entry.c_str()));
+      }
 
       if (v.empty()) {
         err << "'-foc-use-gcc-libstdc++' requires gcc to be installed "

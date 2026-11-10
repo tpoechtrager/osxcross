@@ -82,7 +82,7 @@ bool getToolPath(Target *target, std::string &toolpath, std::string tool) {
     toolpath = target->buildToolPath(triple, tool);
   }
 
-  if (!fileExists(toolpath.c_str())) {
+  if (!fileExists(toolpath)) {
     // Fall back to system executables so 'xcrun git status' etc. works.
     // Do not resolve symlinks, so that 'xcrun -f sh' prints /usr/bin/sh
     // and not /usr/bin/bash.
