@@ -63,27 +63,23 @@ bool getToolPath(Target *target, std::string &toolpath, std::string tool) {
   }
 
   if (toolpath.empty()) {
-    std::string defaultTriple;
-
-    toolpath = target->execpath;
-    toolpath += PATHDIV;
+    std::string triple;
 
     if (isStandaloneXcrun) {
       // Standalone xcrun uses the default target architecture.
       // For GCC tools, prefer the default GCC architecture so xcrun can find
       // GCC even when it is not available for the Clang default architecture.
       bool isGCC = (tool.rfind("gcc", 0) == 0 || tool.rfind("g++", 0) == 0);
-      toolpath += target->buildDefaultTriple(defaultTriple, isGCC);
+      target->buildDefaultTriple(triple, isGCC);
     } else {
       // A target-prefixed xcrun must resolve tools for that exact target.
       // For example, arm64-apple-darwin27-xcrun -f gcc must fail when
       // no ARM64 GCC installation exists.
       target->setTriple();
-      toolpath += target->getTriple();
+      triple = target->getTriple();
     }
-  
-    toolpath += "-";
-    toolpath += tool;
+
+    toolpath = target->buildToolPath(triple, tool);
   }
 
   if (!fileExists(toolpath.c_str())) {

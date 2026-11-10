@@ -332,31 +332,29 @@ bool Target::isKnownCompiler() const {
 
 const std::string &Target::buildDefaultTriple(std::string &triple,
   bool GCC, bool useAarch64InsteadOfArm64) const {
-  Arch defaultArch = getDefaultArch(GCC);
-
-  if (defaultArch == Arch::arm64 && useAarch64InsteadOfArm64)
-    defaultArch = Arch::aarch64;
-
-  triple = getArchName(defaultArch);
-  triple += "-";
-  triple += getDefaultVendor();
-  triple += "-";
-  triple += getDefaultTarget();
+  triple = makeTriple(getDefaultArch(GCC), getDefaultVendor(),
+                      getDefaultTarget(), useAarch64InsteadOfArm64);
   return triple;
+}
+
+std::string Target::buildToolPath(const std::string &tool) const {
+  return buildToolPath(triple, tool);
+}
+
+std::string Target::buildToolPath(const std::string &toolTriple,
+                                  const std::string &tool) const {
+  std::string path = execpath;
+  path += PATHDIV;
+  path += toolTriple;
+  path += "-";
+  path += tool;
+  return path;
 }
 
 void Target::setCompilerPath() {
   if (isGCC()) {
-    compilerpath = execpath;
-    compilerpath += "/";
-    compilerpath += getTriple();
-    compilerpath += "-";
-    compilerpath += "base-";
-    compilerpath += compilername;
-
-    compilerexecname = getTriple();
-    compilerexecname += "-";
-    compilerexecname += compilername;
+    compilerpath = buildToolPath("base-" + compilername);
+    compilerexecname = getTriple() + "-" + compilername;
   } else {
     if (!compilerpath.empty()) {
       compilerpath += "/";
@@ -498,22 +496,20 @@ void Target::setupGCCLibs(Arch arch) {
   fargs.push_back("-nodefaultlibs");
 
   std::string SDKPath;
-  std::stringstream GCCTriple;
   std::stringstream GCCLibSTDCXXPath;
   std::stringstream GCCLibPath;
 
   const bool dynamic = !!getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
   // The i386 runtime is a multilib of the x86_64 GCC installation.
-  const char *GCCArch = arch == Arch::arm64 ? "aarch64" : "x86_64";
+  const std::string GCCTriple = makeTriple(
+      arch == Arch::arm64 ? Arch::aarch64 : Arch::x86_64, vendor, target);
 
   getSDKPath(SDKPath);
 
-  GCCTriple << GCCArch << "-" << vendor << "-" << target;
-
-  GCCLibPath << SDKPath << "/../../lib/gcc/" << GCCTriple.str() << "/"
+  GCCLibPath << SDKPath << "/../../lib/gcc/" << GCCTriple << "/"
              << gccversion.Str();
 
-  GCCLibSTDCXXPath << SDKPath << "/../../" << GCCTriple.str() << "/lib";
+  GCCLibSTDCXXPath << SDKPath << "/../../" << GCCTriple << "/lib";
 
   switch (arch) {
   case Arch::i386:
@@ -574,15 +570,21 @@ void Target::setupGCCLibs(Arch arch) {
     fargs.push_back("-Wl,-no_compact_unwind");
 }
 
-void Target::setTriple(bool useAarch64InsteadOfArm64) {
-  Arch tripleArch = useAarch64InsteadOfArm64 && 
-    (arch == Arch::arm64) ? Arch::aarch64 : arch;
+std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
+                       bool useAarch64InsteadOfArm64) {
+  if (arch == Arch::arm64 && useAarch64InsteadOfArm64)
+    arch = Arch::aarch64;
 
-  triple = getArchName(tripleArch);
+  std::string triple = getArchName(arch);
   triple += "-";
   triple += vendor;
   triple += "-";
   triple += target;
+  return triple;
+}
+
+void Target::setTriple(bool useAarch64InsteadOfArm64) {
+  triple = makeTriple(arch, vendor, target, useAarch64InsteadOfArm64);
 }
 
 bool Target::setup() {
@@ -736,7 +738,7 @@ bool Target::setup() {
       // i.e. x86_64-apple-darwin27-clang++-gstdc++ -arch arm64
       //      -> results in aarch64-apple-darwin27
 
-      std::string CXXBuildTriple;
+      Arch CXXBuildArch;
 
       if (targetarchs.size() > 1) { // TODO: should probably check earlier for this
         err << "clang++-gstdc++ does not support multiple architectures in "
@@ -747,22 +749,20 @@ bool Target::setup() {
 
       switch (targetarchs[0]) {
       case Arch::arm64:
-        CXXBuildTriple += getArchName(Arch::aarch64);
+        CXXBuildArch = Arch::aarch64;
         break;
       case Arch::i386:
       case Arch::x86_64:
         // i386 is a multilib of the x86_64 GCC installation;
-        CXXBuildTriple += getArchName(Arch::x86_64);
+        CXXBuildArch = Arch::x86_64;
         break;
       default:
         err << "clang++-gstdc++ does not support architecture '"
             << getArchName(targetarchs[0]) << "'" << err.endl();
         return false;
       }
-      CXXBuildTriple += "-";
-      CXXBuildTriple += vendor;
-      CXXBuildTriple += "-";
-      CXXBuildTriple += target;
+      const std::string CXXBuildTriple =
+          makeTriple(CXXBuildArch, vendor, target);
 
       CXXHeaderPath += CXXBuildTriple;
       CXXHeaderPath += "/include/c++";
@@ -791,17 +791,12 @@ bool Target::setup() {
       addCXXPath(CXXBuildTriple);
     } else {
       // Use SDK libs
-      std::string tmp;
-
       if (SDKOSNum <= OSVersion(10, 5))
         CXXHeaderPath += "/usr/include/c++/4.0.0";
       else
         CXXHeaderPath += "/usr/include/c++/4.2.1";
 
-      tmp = getArchName(arch);
-      tmp += "-apple-";
-      tmp += target;
-      addCXXPath(tmp);
+      addCXXPath(makeTriple(arch, vendor, target));
     }
 
     addCXXPath("backward");

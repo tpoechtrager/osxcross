@@ -158,6 +158,11 @@ private:
 // Target
 //
 
+// Build a target triple such as x86_64-apple-darwin27.3. With
+// useAarch64InsteadOfArm64, arm64 is spelled aarch64 (GCC's name).
+std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
+                       bool useAarch64InsteadOfArm64 = false);
+
 struct Target {
   Target();
 
@@ -191,6 +196,11 @@ struct Target {
   const std::string &buildDefaultTriple(std::string &triple, bool GCC = false, bool useAarch64InsteadOfArm64 = false) const;
 
   const std::string &getTriple() const { return triple; }
+
+  // <execpath>/<triple>-<tool>, by default for the current triple.
+  std::string buildToolPath(const std::string &tool) const;
+  std::string buildToolPath(const std::string &toolTriple,
+                            const std::string &tool) const;
 
   void setCompilerPath();
   bool findClangIntrinsicHeaders(std::string &path);

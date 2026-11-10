@@ -26,7 +26,6 @@ namespace llvm {
 namespace clang {
 
 using tools::err;
-using tools::PATHDIV;
 using tools::safeStrdup;
 
 // This assembler wrapper is specific to the LLVM build flavor. It translates
@@ -76,10 +75,7 @@ int as(int argc, char **argv, target::Target &target) {
   // Run the clang wrapper for the same target, for example
   // x86_64-apple-darwinXX-as -> x86_64-apple-darwinXX-clang.
   target.setTriple();
-  std::string clang = target.execpath;
-  clang += PATHDIV;
-  clang += target.getTriple();
-  clang += "-clang";
+  std::string clang = target.buildToolPath("clang");
 
   std::vector<char *> args;
   args.push_back(const_cast<char *>(clang.c_str()));
