@@ -212,6 +212,13 @@ for pat in MacOS[0-9]*.sdk MacOSX[0-9]*.sdk; do
   done < <(compgen -G "$pat")
 done
 
+# Old Xcode images ship SDKs as installer packages; they are copied as-is.
+while IFS= read -r p; do
+  if [[ "$p" != *Patch* && -f "$p" ]]; then
+    SDKS+=("$p")
+  fi
+done < <(compgen -G "MacOSX[0-9]*.pkg")
+
 if [ ${#SDKS[@]} -eq 0 ]; then
   echo "No SDK found" 1>&2
   exit 1
