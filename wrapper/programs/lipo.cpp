@@ -36,8 +36,10 @@ int lipo(int argc, char **argv, target::Target &target) {
 
   std::string executable;
 
-  if (getenv("OSXCROSS_FORCE_LLVM_LIPO") ||
-      !target::findExecutableInPath("osxcross-cctools-lipo", executable))
+  if (!getenv("OSXCROSS_FORCE_LLVM_LIPO"))
+    executable = target::findExecutableInPath("osxcross-cctools-lipo");
+
+  if (executable.empty())
     executable = "llvm-lipo";
 
   return execProgram(executable, argc, argv);

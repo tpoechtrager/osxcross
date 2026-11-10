@@ -84,10 +84,14 @@ bool getToolPath(Target *target, std::string &toolpath, std::string tool) {
 
   if (!fileExists(toolpath.c_str())) {
     // Fall back to system executables so 'xcrun git status' etc. works.
-    // Call findExecutableInPath() with lookupSymlinks=false to avoid 
-    // 'xcrun -f sh' print /usr/bin/bash instead of /usr/bin/sh.
-    if (!isxcodetool && findExecutableInPath(tool.c_str(), toolpath, nullptr, nullptr, false))
-      return true;
+    // Do not resolve symlinks, so that 'xcrun -f sh' prints /usr/bin/sh
+    // and not /usr/bin/bash.
+    if (!isxcodetool) {
+      toolpath = findExecutableInPath(tool, false);
+
+      if (!toolpath.empty())
+        return true;
+    }
 
     err << "xcrun: cannot find '" << tool << "' executable" << err.endl();
     return false;

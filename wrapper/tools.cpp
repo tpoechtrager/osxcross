@@ -354,77 +354,42 @@ bool listFiles(const char *dir, std::vector<std::string> *files,
   return true;
 }
 
-bool isExecutable(const char *f, const struct stat &) {
-  return !access(f, F_OK | X_OK);
+bool ignoreCCACHE(const std::string &path) {
+  return strncmp(getFileName(path), "ccache", 6) != 0;
 }
 
-bool ignoreCCACHE(const char *f, const struct stat &) {
-  const char *name = getFileName(f);
-  return name && strstr(name, "ccache") != name;
-}
+std::string findExecutableInPath(const std::string &file, bool resolve,
+                                 bool (*accept)(const std::string &path)) {
+  const char *envpath = getenv("PATH");
+  std::vector<std::string> dirs;
 
-bool findExecutableInPath(const char *file, std::string &result,
-                          findexecfilter cmp1, findexecfilter cmp2,
-                          bool lookupSymlinks) {
-  const char *path = getenv("PATH");
-  const char *p = path ? path : "";
-  struct stat st;
+  // splitPath() skips empty elements, so the current directory is never
+  // searched.
+  if (envpath)
+    splitPath(envpath, dirs);
 
-  result.clear();
+  for (const std::string &dir : dirs) {
+    std::string path = dir + PATHDIV + file;
+    struct stat st;
 
-  for (;;) {
-    const char *begin = p;
-
-    while (*p && *p != ':')
-      ++p;
-
-    if (p == begin) {
-      // Skip empty PATH segments (e.g. "::") to avoid searching CWD.
-      if (!*p)
-        break;
-      ++p;
+    if (stat(path.c_str(), &st) != 0)
       continue;
+
+    if (resolve) {
+      char *resolved = realpath(path.c_str(), nullptr);
+
+      if (!resolved)
+        continue;
+
+      path = resolved;
+      free(resolved);
     }
 
-    result.assign(begin, p - begin);
-    result += PATHDIV;
-    result += file;
-
-    if (!stat(result.c_str(), &st)) {
-      if (lookupSymlinks) {
-        char *resolved = realpath(result.c_str(), nullptr);
-
-        if (!resolved) {
-          result.clear();
-        } else {
-          result.assign(resolved);
-          free(resolved);
-        }
-      }
-
-      if (!result.empty() &&
-          (!cmp1 || cmp1(result.c_str(), st)) &&
-          (!cmp2 || cmp2(result.c_str(), st)))
-        return true;
-    }
-
-    result.clear();
-
-    if (!*p)
-      break;
-
-    ++p;
+    if (!accept || accept(path))
+      return path;
   }
 
-  return false;
-}
-
-bool findCommandDirectory(const char *command, std::string &result,
-                               findexecfilter cmp) {
-  if (findExecutableInPath(command, result, isExecutable, cmp))
-    stripFileName(result);
-
-  return !result.empty();
+  return std::string();
 }
 
 std::string getDirName(const std::string &file) {

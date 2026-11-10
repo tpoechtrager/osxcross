@@ -375,7 +375,9 @@ void Target::setCompilerPath() {
       compilerpath += compilername;
       compilerexecname = compilername;
     } else {
-      if (!findExecutableInPath(compilername.c_str(), compilerpath, ignoreCCACHE))
+      compilerpath = findExecutableInPath(compilername, true, ignoreCCACHE);
+
+      if (compilerpath.empty())
         compilerpath = compilername;
 
       compilerexecname += compilername;

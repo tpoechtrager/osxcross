@@ -161,14 +161,14 @@ bool isDirectory(const char *file, const char *prefix);
 bool listFiles(const char *dir, std::vector<std::string> *files,
                listfilescallback cmp);
 
-typedef bool (*findexecfilter)(const char *file, const struct stat &st);
-bool isExecutable(const char *f, const struct stat &);
-bool ignoreCCACHE(const char *f, const struct stat &);
-bool findExecutableInPath(const char *file, std::string &result,
-              findexecfilter cmp1 = nullptr, findexecfilter cmp2 = nullptr,
-              bool lookupSymlinks = true);
-bool findCommandDirectory(const char *command, std::string &result,
-                          findexecfilter cmp = nullptr);
+// First match for <file> in the PATH directories, resolved with realpath()
+// unless resolve is false. If accept() rejects a match, the search goes on.
+// Returns an empty string if nothing is found.
+std::string findExecutableInPath(const std::string &file, bool resolve = true,
+                                 bool (*accept)(const std::string &path) = nullptr);
+// accept() for findExecutableInPath(): rejects ccache, for example a
+// /usr/lib/ccache/clang symlink that resolves to ccache.
+bool ignoreCCACHE(const std::string &path);
 
 void stripFileName(std::string &path);
 
