@@ -26,6 +26,7 @@ namespace llvm {
 namespace clang {
 
 using tools::err;
+using tools::PATHDIV;
 using tools::safeStrdup;
 
 // This assembler wrapper is specific to the LLVM build flavor. It translates
@@ -72,9 +73,16 @@ int as(int argc, char **argv, target::Target &target) {
     givenArgs.push_back(argv[i]);
   }
 
+  // Run the clang wrapper for the same target, for example
+  // x86_64-apple-darwinXX-as -> x86_64-apple-darwinXX-clang.
+  target.setTriple();
+  std::string clang = target.execpath;
+  clang += PATHDIV;
+  clang += target.getTriple();
+  clang += "-clang";
+
   std::vector<char *> args;
-  args.push_back(const_cast<char *>("xcrun"));
-  args.push_back(const_cast<char *>("clang"));
+  args.push_back(const_cast<char *>(clang.c_str()));
 
   // Force assembler input even for stdin or files without a .s suffix. These
   // options must precede a synthesized "-" or Clang rejects stdin input.
