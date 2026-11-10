@@ -44,18 +44,6 @@ size_t constexpr constexprStrLen(const char *str) {
   return *str ? 1 + constexprStrLen(str + 1) : 0;
 }
 
-static inline char *safeStrdup(const char *str) {
-  if (!str)
-    abort();
-
-  char *newStr = strdup(str);
-
-  if (!newStr)
-    abort();
-
-  return newStr;
-}
-
 //
 // Terminal text colors
 //
@@ -139,7 +127,9 @@ public:
 // Executable path
 //
 
-char *getExecutablePath(char *buf, size_t len);
+// Directory that contains the running executable, without a trailing '/'.
+// Returns an empty string on failure.
+std::string getExecutableDir();
 const std::string &getParentProcessName();
 std::string &fixPathDiv(std::string &path);
 
@@ -181,6 +171,11 @@ bool findCommandDirectory(const char *command, std::string &result,
 void stripFileName(std::string &path);
 
 const char *getFileName(const char *file);
+
+// Directory part of a file path: everything before the last '/', "/" for
+// a file in the root directory and "." for a name without '/'.
+std::string getDirName(const std::string &file);
+
 const char *getFileExtension(const char *file);
 
 inline const char *getFileName(const std::string &file) {

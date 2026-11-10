@@ -45,8 +45,13 @@ Target::Target()
       arch(getDefaultArch()), target(getDefaultTarget()), stdlib(StdLib::unset),
       usegcclibs(), compiler(getDefaultCompilerIdentifier()),
       compilername(getDefaultCompilerName()), language() {
-  if (!getExecutablePath(execpath, sizeof(execpath)))
-    abort();
+  execpath = getExecutableDir();
+
+  if (execpath.empty()) {
+    err << "cannot determine the directory of the osxcross executable"
+        << err.endl();
+    exit(EXIT_FAILURE);
+  }
 
   detectSDK();
 }

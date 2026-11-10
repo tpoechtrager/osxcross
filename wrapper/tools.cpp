@@ -82,74 +82,98 @@ bool isTerminal() {
 // Executable path
 //
 
-char *getExecutablePath(char *buf, size_t len) {
-  if (!buf || !len)
-    return nullptr;
+#ifdef __OpenBSD__
+namespace {
 
-  char *p;
+// OpenBSD cannot report the path of the running executable, so resolve
+// argv[0] like the shell that started us: a path starting with '/' or '.'
+// is resolved with realpath(), any other name is looked up in PATH.
+std::string resolveArgv0(const std::string &argv0) {
+  if (argv0[0] == '/' || argv0[0] == '.') {
+    char *resolved = realpath(argv0.c_str(), nullptr);
+
+    if (!resolved)
+      return std::string();
+
+    std::string path = resolved;
+    free(resolved);
+    return path;
+  }
+
+  const char *envpath = getenv("PATH");
+
+  if (!envpath)
+    return std::string();
+
+  std::vector<std::string> dirs;
+  splitPath(envpath, dirs);
+
+  for (const std::string &dir : dirs) {
+    const std::string candidate = dir + PATHDIV + argv0;
+    struct stat st;
+
+    if (!stat(candidate.c_str(), &st) && (st.st_mode & S_IXUSR))
+      return candidate;
+  }
+
+  return std::string();
+}
+
+} // unnamed namespace
+#endif
+
+std::string getExecutableDir() {
 #ifdef __APPLE__
-  unsigned int l = len;
-  if (_NSGetExecutablePath(buf, &l) != 0)
-    return nullptr;
+  std::vector<char> buf(PATH_MAX + 1);
+  uint32_t size = buf.size();
+
+  if (_NSGetExecutablePath(buf.data(), &size) != 0 || !buf[0])
+    return std::string();
+
+  return getDirName(buf.data());
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
   int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
-  size_t l = len;
-  if (sysctl(mib, 4, buf, &l, nullptr, 0) != 0)
-    return nullptr;
+  std::vector<char> buf(PATH_MAX + 1);
+  size_t size = buf.size();
+
+  if (sysctl(mib, 4, buf.data(), &size, nullptr, 0) != 0 || !size)
+    return std::string();
+
+  buf.back() = '\0';
+
+  if (!buf[0])
+    return std::string();
+
+  return getDirName(buf.data());
 #elif defined(__OpenBSD__)
-  int mib[4] = {CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV};
-  char **argv;
-  size_t l;
-  const char *comm;
-  int ok = 0;
-  if (sysctl(mib, 4, NULL, &l, NULL, 0) < 0)
-    abort();
-  argv = new char *[l];
-  if (sysctl(mib, 4, argv, &l, NULL, 0) < 0)
-    abort();
-  comm = argv[0];
-  if (*comm == '/' || *comm == '.') {
-    char *rpath;
-    if ((rpath = realpath(comm, NULL))) {
-      strlcpy(buf, rpath, len);
-      free(rpath);
-      ok = 1;
-    }
-  } else {
-    char *sp;
-    const char *envpath = getenv("PATH");
-    if (!envpath)
-      abort();
-    char *xpath = safeStrdup(envpath);
-    struct stat st;
-    char *path = strtok_r(xpath, ":", &sp);
-    while (path) {
-      snprintf(buf, len, "%s/%s", path, comm);
-      if (!stat(buf, &st) && (st.st_mode & S_IXUSR)) {
-        ok = 1;
-        break;
-      }
-      path = strtok_r(NULL, ":", &sp);
-    }
-    free(xpath);
-  }
-  if (ok)
-    l = strlen(buf);
-  else
-    l = 0;
-  delete[] argv;
+  int mib[4] = { CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV };
+  size_t size = 0;
+
+  if (sysctl(mib, 4, nullptr, &size, nullptr, 0) != 0)
+    return std::string();
+
+  // The kernel stores the argv pointer array followed by the strings.
+  std::vector<char *> argv(size / sizeof(char *) + 1);
+
+  if (sysctl(mib, 4, argv.data(), &size, nullptr, 0) != 0 || !argv[0])
+    return std::string();
+
+  const std::string path = resolveArgv0(argv[0]);
+
+  if (path.empty())
+    return std::string();
+
+  return getDirName(path);
 #else
-  ssize_t l = readlink("/proc/self/exe", buf, len - 1);
-  assert(l > 0 && "/proc not mounted?");
-  if (l > 0) buf[l] = '\0';
+  std::vector<char> buf(PATH_MAX + 1);
+  const ssize_t size = readlink("/proc/self/exe", buf.data(), buf.size());
+
+  // A result that fills the whole buffer may have been truncated.
+  if (size <= 0 || static_cast<size_t>(size) >= buf.size())
+    return std::string();
+
+  return getDirName(std::string(buf.data(), size));
 #endif
-  if (l <= 0)
-    return nullptr;
-  buf[len - 1] = '\0';
-  p = strrchr(buf, PATHDIV);
-  if (p)
-    *p = '\0';
-  return buf;
 }
 
 const std::string &getParentProcessName() {
@@ -413,6 +437,18 @@ bool findCommandDirectory(const char *command, std::string &result,
     stripFileName(result);
 
   return !result.empty();
+}
+
+std::string getDirName(const std::string &file) {
+  const size_t slash = file.rfind(PATHDIV);
+
+  if (slash == std::string::npos)
+    return ".";
+
+  if (slash == 0)
+    return std::string(1, PATHDIV);
+
+  return file.substr(0, slash);
 }
 
 void stripFileName(std::string &path) {

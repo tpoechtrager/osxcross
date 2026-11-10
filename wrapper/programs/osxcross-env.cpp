@@ -29,13 +29,14 @@ namespace program {
 namespace osxcross {
 
 int env(int argc, char **argv) {
-  char epath[PATH_MAX + 1];
   const char *oldpath = getenv("PATH");
 
   if (!oldpath)
     abort();
 
-  if (!getExecutablePath(epath, sizeof(epath)))
+  const std::string epath = getExecutableDir();
+
+  if (epath.empty())
     exit(EXIT_FAILURE);
 
   if (argc <= 1) {
@@ -55,7 +56,7 @@ int env(int argc, char **argv) {
 
   splitPath(oldpath, path);
 
-  if (!hasPath(path, epath))
+  if (!hasPath(path, epath.c_str()))
     path.push_back(epath);
 
   vars["PATH"] = joinPath(path);

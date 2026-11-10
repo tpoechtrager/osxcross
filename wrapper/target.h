@@ -229,7 +229,7 @@ struct Target {
   string_vector fargs;
   string_vector args;
   const char *language;
-  char execpath[PATH_MAX + 1];
+  std::string execpath; // directory of the running executable
   std::string intrinsicpath;
   BuildFlavor buildFlavor;
 };
