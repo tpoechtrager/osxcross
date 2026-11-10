@@ -41,7 +41,7 @@ int as(int argc, char **argv, target::Target &target) {
   const bool debug = getenv("OCDEBUG") != nullptr;
   bool someInputFiles = false;
   bool outputSpecified = false;
-  std::vector<char *> givenArgs;
+  std::vector<const char *> givenArgs;
 
   for (int i = 1; i < argc; ++i) {
     const char *arg = argv[i];
