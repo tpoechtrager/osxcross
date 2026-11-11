@@ -1,4 +1,14 @@
-#include "programs/proginc.h"
+#include "compat.h"
+
+#include <cerrno>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include <unistd.h>
+
+#include "tools.h"
+#include "progs.h"
 
 namespace program {
 

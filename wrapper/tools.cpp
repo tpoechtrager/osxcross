@@ -22,24 +22,21 @@
 #include "compat.h"
 
 #include <algorithm>
-#include <vector>
-#include <string>
-#include <sstream>
-#include <istream>
-#include <fstream>
-#include <iostream>
-#include <cstdlib>
-#include <cstdio>
-#include <cstring>
 #include <climits>
-#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
 #include <initializer_list>
-#include <sys/stat.h>
+#include <sstream>
+#include <string>
+#include <vector>
 
-#include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>

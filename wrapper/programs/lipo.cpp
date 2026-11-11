@@ -19,7 +19,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
-#include "proginc.h"
+#include "compat.h"
+
+#include <cstdlib>
+#include <string>
+
+#include "tools.h"
+#include "target.h"
+#include "progs.h"
 
 namespace program {
 namespace llvm {

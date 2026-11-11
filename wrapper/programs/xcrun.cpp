@@ -19,7 +19,19 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
-#include "proginc.h"
+#include "compat.h"
+
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
+
+#include <strings.h>
+
+#include "tools.h"
+#include "target.h"
+#include "progs.h"
 
 using namespace tools;
 using namespace target;

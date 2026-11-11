@@ -21,19 +21,17 @@
 
 #include "compat.h"
 
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <map>
 #include <algorithm>
-#include <cstring>
-#include <strings.h>
-#include <cstdlib>
-#include <climits>
 #include <cassert>
+#include <cstdlib>
+#include <cstring>
+#include <initializer_list>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <strings.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "tools.h"
 #include "target.h"

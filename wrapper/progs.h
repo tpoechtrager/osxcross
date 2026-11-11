@@ -19,6 +19,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
+#ifndef OSXCROSS_WRAPPER_PROGS_H
+#define OSXCROSS_WRAPPER_PROGS_H
+
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+
 namespace target {
 struct Target;
 }
@@ -193,3 +201,5 @@ template <class T> const prog *getprog(const T &name) {
 }
 
 } // namespace program
+
+#endif // OSXCROSS_WRAPPER_PROGS_H

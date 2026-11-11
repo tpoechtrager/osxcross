@@ -25,17 +25,10 @@
 
 #include "compat.h"
 
-#include <vector>
-#include <string>
-#include <sstream>
-#include <iostream>
-#include <cstring>
 #include <cstdlib>
-#include <cstdio>
-#include <climits>
-#include <cassert>
-#include <unistd.h>
-#include <sys/wait.h>
+#include <cstring>
+#include <string>
+#include <vector>
 
 #include "tools.h"
 #include "target.h"

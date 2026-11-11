@@ -19,9 +19,16 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
-#include <chrono>
+#ifndef OSXCROSS_WRAPPER_TOOLS_H
+#define OSXCROSS_WRAPPER_TOOLS_H
 
-struct stat;
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+#include <string>
+#include <vector>
 
 namespace tools {
 
@@ -502,3 +509,5 @@ constexpr const char *getStdLibString(StdLib stdlib) {
 }
 
 } // namespace tools
+
+#endif // OSXCROSS_WRAPPER_TOOLS_H
