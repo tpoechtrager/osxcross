@@ -1,4 +1,5 @@
 *.o
+*.d
 *gcc*.tar.*
 *MacOSX*.*
 cpucount

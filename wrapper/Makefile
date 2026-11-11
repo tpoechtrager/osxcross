@@ -38,6 +38,11 @@ override CXXFLAGS+=-DOSXCROSS_GCC_TARGET_ARCHS="\"$(GCC_TARGET_ARCHS)\""
 
 override CXXFLAGS+= $(ADDITIONAL_CXXFLAGS)
 
+# Write a .d file with the headers of each object, so that a changed header
+# rebuilds the objects that include it. -MP keeps the build working after a
+# header has been removed.
+override CPPFLAGS+=-MMD -MP
+
 ifneq (,$(findstring FreeBSD, $(PLATFORM)))
   override LDFLAGS+=-lutil
 else ifneq (,$(findstring Darwin, $(PLATFORM)))
@@ -75,6 +80,7 @@ SRCS= \
  programs/as.cpp
 
 OBJS=$(subst .cpp,.o,$(SRCS))
+DEPS=$(OBJS:.o=.d)
 
 all: wrapper
 
@@ -84,4 +90,6 @@ wrapper: $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -f $(BIN) $(OBJS)
+	rm -f $(BIN) $(OBJS) $(DEPS)
+
+-include $(DEPS)
