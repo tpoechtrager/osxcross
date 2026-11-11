@@ -76,24 +76,17 @@ Target::Target()
            "set OSXCROSS_SDKROOT to the SDK directory" << err.endl();
     exit(EXIT_FAILURE);
   }
-
-  detectSDK();
 }
 
-// OSXCROSS_SDKROOT selects the SDK; without it, the SDK in <execpath>/../SDK
-// is used.
-void Target::detectSDK() {
-  const char *SDKRoot = getenv("OSXCROSS_SDKROOT");
-  SDK = SDKRoot ? SDKRoot : "";
-}
-
-// The macOS version of the selected SDK, taken from the name of its
-// directory (15.4 for "/path/to/MacOSX15.4.sdk"); if no SDK is selected,
-// the version that belongs to the Darwin target (15.4 for "darwin24.4"),
-// because the default SDK in <execpath>/../SDK is named after it.
+// The macOS version of the SDK in use: with an SDK override, taken from the
+// name of its directory (15.4 for "/path/to/MacOSX15.4.sdk"); otherwise the
+// version that belongs to the Darwin target (15.4 for "darwin24.4"), which
+// the default SDK is named after (see getDefaultSDKPath()).
 OSVersion Target::getSDKOSNum() const {
-  if (!SDK.empty()) {
-    std::string SDKPath = SDK;
+  const char *SDKOverride = getenv("OSXCROSS_SDKROOT");
+
+  if (SDKOverride && SDKOverride[0]) {
+    std::string SDKPath = SDKOverride;
 
     // Ignore trailing slashes, as in "MacOSX15.4.sdk/".
     while (!SDKPath.empty() && SDKPath.back() == PATHDIV)
@@ -154,31 +147,39 @@ OSVersion Target::getSDKOSNum() const {
   return OSVersion(10, major - 4);
 }
 
-bool Target::getSDKPath(std::string &path, bool majorVersionOnly) const {
-  OSVersion SDKVer = getSDKOSNum();
+// The default SDK: <execpath>/../SDK/MacOSX<version>.sdk with the macOS
+// version that belongs to the target (see getSDKOSNum()), or with only its
+// major version ("MacOSX15.sdk" instead of "MacOSX15.0.sdk").
+std::string Target::getDefaultSDKPath(bool majorVersionOnly) const {
+  std::string path = execpath + "/../SDK/MacOSX";
+  const OSVersion SDKVersion = getSDKOSNum();
+  path += majorVersionOnly ? SDKVersion.majorStr() : SDKVersion.shortStr();
 
-  if (!SDK.empty()) {
-    path = SDK;
+  // The 10.4 SDK is named MacOSX10.4u.sdk (universal).
+  if (SDKVersion <= OSVersion(10, 4))
+    path += "u";
+
+  return path + ".sdk";
+}
+
+// The SDK in use: the SDK override if one is set, otherwise the default SDK.
+// Prints an error and returns false if its directory does not exist.
+bool Target::getSDKPath(std::string &path) const {
+  const char *SDKOverride = getenv("OSXCROSS_SDKROOT");
+
+  if (SDKOverride && SDKOverride[0]) {
+    path = SDKOverride;
   } else {
-    path = execpath;
-    path += "/../SDK/MacOSX";
-    if (majorVersionOnly) {
-      path += SDKVer.majorStr();
-    } else {
-      path += SDKVer.shortStr();
-    }
-    if (SDKVer <= OSVersion(10, 4))
-      path += "u";
-    path += ".sdk";
+    path = getDefaultSDKPath(false);
+
+    // The default SDK for macOS 15.0 may also be named MacOSX15.sdk.
+    if (!dirExists(path) && getSDKOSNum().minor == 0)
+      path = getDefaultSDKPath(true);
   }
 
   if (!dirExists(path)) {
-    if (SDKVer.minor == 0 && !majorVersionOnly)
-      return getSDKPath(path, true);
-
     err << "cannot find macOS SDK (expected in: " << path << ")"
         << err.endl();
-
     return false;
   }
 

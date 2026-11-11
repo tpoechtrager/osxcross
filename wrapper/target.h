@@ -150,9 +150,13 @@ std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
 struct Target {
   Target();
 
+  // The SDK in use is the SDK override (OSXCROSS_SDKROOT, which xcrun -sdk
+  // and SDKROOT also set) if there is one, otherwise the default SDK in
+  // <execpath>/../SDK, which is named after the macOS version that belongs
+  // to the target.
   OSVersion getSDKOSNum() const;
-  void detectSDK();
-  bool getSDKPath(std::string &path, bool majorVersionOnly = false) const;
+  std::string getDefaultSDKPath(bool majorVersionOnly) const;
+  bool getSDKPath(std::string &path) const;
 
   bool getMacPortsDir(std::string &path) const;
   bool getMacPortsSysRootDir(std::string &path) const;
@@ -194,7 +198,6 @@ struct Target {
   bool setup();
 
   const char *vendor;
-  std::string SDK; // selected SDK; empty: the one in <execpath>/../SDK
   std::vector<Arch> supportedarchs;
   Arch arch;
   std::vector<Arch> targetarchs;
