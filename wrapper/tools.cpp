@@ -43,13 +43,11 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
-#include <mach/mach.h>
 #include <libproc.h>
 #endif
 
 #if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 #include <sys/sysctl.h>
-#include <sys/types.h>
 #include <sys/user.h>
 #endif
 
@@ -371,13 +369,7 @@ void stripFileName(std::string &path) {
 
 const char *getFileName(const char *file) {
   const char *p = strrchr(file, PATHDIV);
-
-  if (!p)
-    p = file;
-  else
-    ++p;
-
-  return p;
+  return p ? p + 1 : file;
 }
 
 //
