@@ -40,7 +40,7 @@ void print(const char *var, const A &val) {
   std::cout << "export OSXCROSS_" << var << "=" << "\"" << val << "\"" << std::endl;
 }
 
-int conf(Target &target) {
+int conf(int, char **, Target &target) {
   std::string SDKPath;
   OSVersion OSXVersionMin = getDefaultMinTarget();
   const char *ltopath = getLibLTOPath();

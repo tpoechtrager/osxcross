@@ -23,7 +23,6 @@
 #define OSXCROSS_WRAPPER_PROGS_H
 
 #include <cstdlib>
-#include <cstring>
 #include <string>
 #include <vector>
 
@@ -50,70 +49,34 @@ int execProgram(const std::string &path, int argc, char **argv);
 void printExecProgramArgs(int argc, char **argv,
                           const std::vector<std::string> &args);
 
+// A program the wrapper provides: either a built-in function or an LLVM
+// tool that is executed with the same arguments.
 class prog {
 public:
-  typedef int (*f1)();
-  typedef int (*f2)(int, char **);
-  typedef int (*f3)(int, char **, Target &);
-  typedef int (*f4)(Target &);
+  typedef int (*function)(int argc, char **argv, Target &target);
 
-  constexpr prog(const char *name, f1 fun)
-      : name(name), fun1(fun), tool(nullptr), type(1) {}
-
-  constexpr prog(const char *name, f2 fun)
-      : name(name), fun2(fun), tool(nullptr), type(2) {}
-
-  constexpr prog(const char *name, f3 fun)
-      : name(name), fun3(fun), tool(nullptr), type(3) {}
-
-  constexpr prog(const char *name, f4 fun)
-      : name(name), fun4(fun), tool(nullptr), type(4) {}
+  constexpr prog(const char *name, function fun)
+      : name(name), fun(fun), tool(nullptr) {}
 
   constexpr prog(const char *name, const char *tool)
-      : name(name), fun1(nullptr), tool(tool), type(5) {}
+      : name(name), fun(nullptr), tool(tool) {}
 
   __attribute__((noreturn))
   void operator()(int argc, char **argv, Target &target) const {
-    switch (type) {
-    case 1:
-      exit(fun1());
-    case 2:
-      exit(fun2(argc, argv));
-    case 3:
-      exit(fun3(argc, argv, target));
-    case 4:
-      exit(fun4(target));
-    case 5:
-      exit(execProgram(tool, argc, argv));
-    }
+    if (fun)
+      exit(fun(argc, argv, target));
 
-    __builtin_unreachable();
-  }
-
-  bool operator==(const char *name) const {
-    return !strcmp(name, this->name);
-  }
-
-  template <class T>
-  bool operator==(const T &name) const {
-    return name == this->name;
+    exit(execProgram(tool, argc, argv));
   }
 
   const char *name;
 
 private:
-  union {
-    f1 fun1;
-    f2 fun2;
-    f3 fun3;
-    f4 fun4;
-  };
-
+  function fun;
   const char *tool;
-  int type;
 };
 
-int sw_vers(int argc, char **argv, target::Target &target);
+int sw_vers(int argc, char **argv, Target &target);
 int xcrun(int argc, char **argv, Target &target);
 int xcodebuild(int argc, char **argv, Target &target);
 
@@ -127,78 +90,16 @@ int as(int argc, char **argv, Target &target);
 } // namespace llvm
 
 namespace osxcross {
-int version();
-int env(int argc, char **argv);
-int conf(Target &target);
+int version(int argc, char **argv, Target &target);
+int env(int argc, char **argv, Target &target);
+int conf(int argc, char **argv, Target &target);
 int man(int argc, char **argv, Target &target);
 int pkg_config(int argc, char **argv, Target &target);
 } // namespace osxcross
 
-static int dummy() { return 0; }
-
-constexpr prog programs[] = {
-  // Built-in tools
-  { "sw_vers",          sw_vers },
-  { "xcrun",            xcrun },
-  { "xcodebuild",       xcodebuild },
-
-  // LLVM tools
-
-  // These are LLVM tools where we must modify the passed arguments to it.
-  { "ld",               llvm::ld },
-  { "lipo",             llvm::lipo },
-  { "as",               llvm::clang::as },
-
-  // Used 'as-is', besides making them believe
-  // they are invoked as "llvm-<tool>" instead of "<tool>".
-  { "otool",            "llvm-otool" },
-
-  { "nm",               "llvm-nm" },
-  { "ar",               "llvm-ar" },
-  { "libtool",          "llvm-libtool-darwin" },
-  { "install_name_tool","llvm-install-name-tool" },
-  { "ranlib",           "llvm-ranlib" },
-  { "readtapi",         "llvm-readtapi" },
-  { "objdump",          "llvm-objdump" },
-  { "strip",            "llvm-strip" },
-  { "strings",          "llvm-strings" },
-  { "size",             "llvm-size" },
-  { "symbolizer",       "llvm-symbolizer" },
-  { "cov",              "llvm-cov" },
-  { "profdata",         "llvm-profdata" },
-  { "readobj",          "llvm-readobj" },
-  { "readelf",          "llvm-readelf" },
-  { "dwarfdump",        "llvm-dwarfdump" },
-  { "cxxfilt",          "llvm-cxxfilt" },
-  { "objcopy",          "llvm-objcopy" },
-  { "config",           "llvm-config" },
-  { "dis",              "llvm-dis" },
-  { "link",             "llvm-link" },
-  { "lto",              "llvm-lto" },
-  { "lto2",             "llvm-lto2" },
-  { "bcanalyzer",       "llvm-bcanalyzer" },
-  { "bitcode_strip",    "llvm-bitcode-strip" },
-
-  // OSXCross tools
-  { "osxcross",         osxcross::version },
-  { "osxcross-env",     osxcross::env },
-  { "osxcross-conf",    osxcross::conf },
-
-  // Tools where we must modify the passed arguments to it.
-  { "osxcross-man",     osxcross::man },
-  { "pkg-config",       osxcross::pkg_config },
-
-  // Dummy tool. No-op.
-  { "wrapper",          dummy }
-};
-
-template <class T> const prog *getprog(const T &name) {
-  for (auto &p : programs) {
-    if (p == name)
-      return &p;
-  }
-  return nullptr;
-}
+// The program with this name, for example "xcrun" or "otool"; nullptr if
+// there is none.
+const prog *getprog(const std::string &name);
 
 } // namespace program
 

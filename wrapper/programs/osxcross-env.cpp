@@ -38,7 +38,7 @@ using namespace target;
 namespace program {
 namespace osxcross {
 
-int env(int argc, char **argv) {
+int env(int argc, char **argv, Target &) {
   const char *oldpath = getenv("PATH");
 
   if (!oldpath)

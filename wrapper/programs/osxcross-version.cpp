@@ -33,7 +33,7 @@ using namespace target;
 namespace program {
 namespace osxcross {
 
-int version() {
+int version(int, char **, Target &) {
   std::cout << "version: " << getOSXCrossVersion() << std::endl;
   return 0;
 }
