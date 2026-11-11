@@ -70,7 +70,7 @@ typedef bool (*optFun)(Target &target, const char *opt, const char *val,
 bool versionmin(Target &target, const char *, const char *val, char **) {
   target.OSNum = parseOSVersion(val);
 
-  if (target.OSNum != val)
+  if (!target.OSNum.matchesString(val))
     warn << "'-mmacosx-version-min=' (" << target.OSNum.Str()
          << " != " << val << ")" << warn.endl();
 

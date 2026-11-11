@@ -66,14 +66,7 @@ namespace tools {
 //
 
 bool isTerminal() {
-  static bool first = false;
-  static bool val;
-
-  if (!first) {
-    val = !!isatty(fileno(stderr));
-    first = true;
-  }
-
+  static const bool val = isatty(fileno(stderr));
   return val;
 }
 
@@ -403,6 +396,19 @@ OSVersion parseOSVersion(const char *OSVer) {
   }
 
   return OSNum;
+}
+
+bool OSVersion::matchesString(const char *str) const {
+  switch (std::count(str, str + strlen(str), '.')) {
+  case 0:
+    return majorStr() == str;
+  case 1:
+    return shortStr() == str;
+  case 2:
+    return Str() == str;
+  default:
+    return false;
+  }
 }
 
 } // namespace tools

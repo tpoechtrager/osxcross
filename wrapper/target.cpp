@@ -517,10 +517,7 @@ void Target::setupGCCLibs(Arch arch) {
       fargs.push_back("-l");
       fargs.push_back(lib);
     } else {
-      static std::stringstream tmp;
-      clear(tmp);
-      tmp << path.str() << "/lib" << lib << ".a";
-      fargs.push_back(tmp.str());
+      fargs.push_back(path.str() + "/lib" + lib + ".a");
     }
   };
 

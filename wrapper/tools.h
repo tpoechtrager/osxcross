@@ -31,11 +31,6 @@ namespace tools {
 
 typedef std::vector<std::string> string_vector;
 
-static inline void clear(std::stringstream &sstr) {
-  sstr.clear();
-  sstr.str(std::string());
-}
-
 static inline bool endsWith(std::string const &str, std::string const &end) {
   if (end.size() > str.size())
     return false;
@@ -179,14 +174,13 @@ bool ignoreCCACHE(const std::string &path);
 void stripFileName(std::string &path);
 
 const char *getFileName(const char *file);
+inline const char *getFileName(const std::string &file) {
+  return getFileName(file.c_str());
+}
 
 // Directory part of a file path: everything before the last '/', "/" for
 // a file in the root directory and "." for a name without '/'.
 std::string getDirName(const std::string &file);
-
-inline const char *getFileName(const std::string &file) {
-  return getFileName(file.c_str());
-}
 
 //
 // Argument Parsing
@@ -283,18 +277,16 @@ template <typename T, size_t size = 0> struct ArgParser {
     int numArgs;
   } binds[size];
 
-  const Bind *parseArg(int argc, char **argv, const int numArg = 1) {
+  const Bind *parseArg(int argc, char **argv, int numArg = 1) const {
     const char *arg = argv[numArg];
 
     if (*arg != '-')
       return nullptr;
 
-    while (*arg && *arg == '-')
+    while (*arg == '-')
       ++arg;
 
-    for (size_t i = 0; i < size; ++i) {
-      const Bind &bind = binds[i];
-
+    for (const Bind &bind : binds) {
       if (!strcmp(arg, bind.name)) {
         if (argc - numArg <= bind.numArgs) {
           err << "too few arguments for '-" << bind.name << "'" << err.endl();
@@ -348,7 +340,7 @@ struct OSVersion {
 
   constexpr int Num() const {
     return major * 10000 + minor * 100 + patch;
-  };
+  }
 
   constexpr bool operator>(const OSVersion &OSNum) const {
     return Num() > OSNum.Num();
@@ -374,50 +366,19 @@ struct OSVersion {
     return Num() != OSNum.Num();
   }
 
-  bool operator!=(const char *val) const {
-    size_t c = 0;
-    const char *p = val;
+  // True if str is this version written with as many parts as str has,
+  // e.g. "10", "10.9" or "10.9.0" for 10.9.0, but not "10.09".
+  bool matchesString(const char *str) const;
 
-    while (*p) {
-      if (*p++ == '.')
-        ++c;
-    }
-
-    switch (c) {
-    case 0:
-      return majorStr() != val;
-    case 1:
-      return shortStr() != val;
-    case 2:
-      return Str() != val;
-    default:
-      return true;
-    }
-  }
-
-  std::string Str() const {
-    std::stringstream tmp;
-    tmp << major << "." << minor << "." << patch;
-    return tmp.str();
-  }
+  std::string Str() const { return shortStr() + "." + std::to_string(patch); }
 
   std::string shortStr() const {
-    std::stringstream tmp;
-    tmp << major << "." << minor;
-    return tmp.str();
+    return std::to_string(major) + "." + std::to_string(minor);
   }
 
-  std::string majorStr() const {
-    std::stringstream tmp;
-    tmp << major;
-    return tmp.str();
-  }
+  std::string majorStr() const { return std::to_string(major); }
 
-  std::string numStr() const {
-    std::stringstream tmp;
-    tmp << Num();
-    return tmp.str();
-  }
+  std::string numStr() const { return std::to_string(Num()); }
 
   int major;
   int minor;
@@ -429,13 +390,17 @@ static_assert(OSVersion(10, 6) != OSVersion(10, 5), "");
 OSVersion parseOSVersion(const char *OSVer);
 
 typedef OSVersion GCCVersion;
-static const auto &parseGCCVersion = parseOSVersion;
+inline GCCVersion parseGCCVersion(const char *ver) { return parseOSVersion(ver); }
 
 typedef OSVersion ClangVersion;
-static const auto &parseClangVersion = parseOSVersion;
+inline ClangVersion parseClangVersion(const char *ver) {
+  return parseOSVersion(ver);
+}
 
 typedef OSVersion LLVMVersion;
-static const auto &parseLLVMVersion = parseOSVersion;
+inline LLVMVersion parseLLVMVersion(const char *ver) {
+  return parseOSVersion(ver);
+}
 
 //
 // Compiler Identifier
@@ -460,9 +425,9 @@ inline Compiler getCompilerIdentifier(const char *compilername) {
     return Compiler::CLANGXX;
   if (!strncmp(compilername, "clang", 5))
     return Compiler::CLANG;
-  else if (!strncmp(compilername, "g++", 3))
+  if (!strncmp(compilername, "g++", 3))
     return Compiler::GXX;
-  else if (!strncmp(compilername, "gcc", 3))
+  if (!strncmp(compilername, "gcc", 3))
     return Compiler::GCC;
   return Compiler::UNKNOWN;
 }
