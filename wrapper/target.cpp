@@ -84,12 +84,27 @@ void Target::detectSDK() {
     overrideDefaultSDKPath(SDKSearchDir);
 }
 
+// The macOS version of the selected SDK, taken from the name of its
+// directory (15.4 for "/path/to/MacOSX15.4.sdk"); if no SDK is selected,
+// the version that belongs to the Darwin target (15.4 for "darwin24.4"),
+// because the default SDK in <execpath>/../SDK is named after it.
 OSVersion Target::getSDKOSNum() const {
   if (!SDK.empty()) {
     std::string SDKPath = SDK;
 
-    while (SDKPath.size() && SDKPath[SDKPath.size() - 1] == PATHDIV)
-      SDKPath.erase(SDKPath.size() - 1, 1);
+    // Ignore trailing slashes, as in "MacOSX15.4.sdk/".
+    while (!SDKPath.empty() && SDKPath.back() == PATHDIV)
+      SDKPath.pop_back();
+
+    // MacOSX.sdk may be a symlink to a versioned SDK directory.
+    // Resolve it only to determine the version, preserving the selected SDK.
+    if (!strcasecmp(getFileName(SDKPath), "MacOSX.sdk")) {
+      char *resolved = realpath(SDKPath.c_str(), nullptr);
+      if (resolved) {
+        SDKPath = resolved;
+        free(resolved);
+      }
+    }
 
     const char *SDKName = getFileName(SDKPath);
 
@@ -97,53 +112,43 @@ OSVersion Target::getSDKOSNum() const {
       return OSVersion();
 
     return parseOSVersion(SDKName + 6);
-  } else {
-    if (target.size() < 7)
-      return OSVersion();
-
-    double n = atof(target.c_str() + 6);
-
-    if (n >= 27.0f) {
-      // Darwin 27 and later correspond directly to macOS 27 and later.
-
-      int major = (int)n;
-      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
-
-      return OSVersion(major, minor);
-    } else if (n >= 25.0f) {
-      // Darwin 25 corresponds to macOS 26.
-      // Darwin 26 was skipped.
-
-      int major = (int)n + 1;
-      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
-
-      return OSVersion(major, minor);
-    } else if (n >= 20.0f) {
-      // MacOS 11-15
-
-      int major = 11 + ((int)n % 20);
-      int minor = (int)(((n - (int)n) * 10.0) + 0.1);
-
-      // Adjust for early versions where the minor version was offset by -1
-
-      // Darwin 23.0 => macOS 14.0
-      // Darwin 23.1 => macOS 14.1
-
-      // Darwin 22.1 => macOS 13.0
-      // Darwin 22.2 => macOS 13.1
-
-      // ...
-
-      if (n < 23.0f) {
-        minor -= 1;
-      }
-
-      return OSVersion(major, minor);
-    } else {
-      // MacOS 10
-      return OSVersion(10, (int)n - 4);
-    }
   }
+
+  // The Darwin version follows "darwin", for example "24.4" in "darwin24.4".
+  constexpr size_t darwinLen = constexprStrLen("darwin");
+  if (target.size() <= darwinLen) return OSVersion();
+  const char *darwinVersion = target.c_str() + darwinLen;
+
+  const OSVersion darwin = parseOSVersion(darwinVersion);
+  const int major = darwin.major;
+  const int minor = darwin.minor;
+
+  // Darwin 27 and later correspond directly to macOS 27 and later.
+  if (major >= 27)
+    return OSVersion(major, minor);
+
+  // Darwin 25 corresponds to macOS 26.
+  // Darwin 26 was skipped.
+  if (major >= 25)
+    return OSVersion(major + 1, minor);
+
+  // MacOS 11-15 (Darwin 20-24)
+  if (major >= 20) {
+    // Adjust for early versions where the minor version was offset by -1
+
+    // Darwin 23.0 => macOS 14.0
+    // Darwin 23.1 => macOS 14.1
+
+    // Darwin 22.1 => macOS 13.0
+    // Darwin 22.2 => macOS 13.1
+
+    // ...
+
+    return OSVersion(11 + (major - 20), major < 23 ? minor - 1 : minor);
+  }
+
+  // MacOS 10 (Darwin 4 => 10.0, ..., Darwin 19 => 10.15)
+  return OSVersion(10, major - 4);
 }
 
 void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
