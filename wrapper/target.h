@@ -22,7 +22,6 @@
 #ifndef OSXCROSS_WRAPPER_TARGET_H
 #define OSXCROSS_WRAPPER_TARGET_H
 
-#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -97,17 +96,6 @@ inline OSVersion getDefaultMinTarget() {
 constexpr OSVersion getDefaultMinTarget() { return OSVersion(); }
 #endif
 
-inline const char *getSDKSearchDir() {
-  const char *SDKSearchDir = getenv("OSXCROSS_SDK_SEARCH_DIR");
-
-#ifdef OSXCROSS_SDK_SEARCH_DIR
-  if (!SDKSearchDir)
-    SDKSearchDir = OSXCROSS_SDK_SEARCH_DIR;
-#endif
-
-  return SDKSearchDir ? SDKSearchDir : "";
-}
-
 // Build flavor
 
 constexpr const char *getBuildFlavor() {
@@ -164,7 +152,6 @@ struct Target {
 
   OSVersion getSDKOSNum() const;
   void detectSDK();
-  void overrideDefaultSDKPath(const char *SDKSearchDir);
   bool getSDKPath(std::string &path, bool majorVersionOnly = false) const;
 
   bool getMacPortsDir(std::string &path) const;

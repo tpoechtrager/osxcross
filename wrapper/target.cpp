@@ -31,7 +31,6 @@
 #include <vector>
 
 #include <strings.h>
-#include <sys/stat.h>
 
 #include "tools.h"
 #include "target.h"
@@ -69,19 +68,23 @@ Target::Target()
     exit(EXIT_FAILURE);
   }
 
+  // OSXCROSS_SDK_SEARCH_DIR was removed; tell those who still set it.
+  const char *SDKSearchDir = getenv("OSXCROSS_SDK_SEARCH_DIR");
+
+  if (SDKSearchDir && SDKSearchDir[0]) {
+    err << "OSXCROSS_SDK_SEARCH_DIR is no longer supported; "
+           "set OSXCROSS_SDKROOT to the SDK directory" << err.endl();
+    exit(EXIT_FAILURE);
+  }
+
   detectSDK();
 }
 
-// OSXCROSS_SDKROOT selects the SDK; otherwise OSXCROSS_SDK_SEARCH_DIR may
-// provide one. Without either, the SDK in <execpath>/../SDK is used.
+// OSXCROSS_SDKROOT selects the SDK; without it, the SDK in <execpath>/../SDK
+// is used.
 void Target::detectSDK() {
   const char *SDKRoot = getenv("OSXCROSS_SDKROOT");
   SDK = SDKRoot ? SDKRoot : "";
-
-  const char *SDKSearchDir = getSDKSearchDir();
-
-  if (SDK.empty() && SDKSearchDir[0])
-    overrideDefaultSDKPath(SDKSearchDir);
 }
 
 // The macOS version of the selected SDK, taken from the name of its
@@ -149,62 +152,6 @@ OSVersion Target::getSDKOSNum() const {
 
   // MacOS 10 (Darwin 4 => 10.0, ..., Darwin 19 => 10.15)
   return OSVersion(10, major - 4);
-}
-
-void Target::overrideDefaultSDKPath(const char *SDKSearchDir) {
-  std::string defaultSDKPath;
-
-  defaultSDKPath = SDKSearchDir;
-  defaultSDKPath += PATHDIV;
-  defaultSDKPath += "default";
-
-  struct stat st;
-
-  if (!lstat(defaultSDKPath.c_str(), &st)) {
-    if (!S_ISLNK(st.st_mode)) {
-      err << "'" << defaultSDKPath << "' must be a symlink to an SDK"
-          << err.endl();
-      exit(EXIT_FAILURE);
-    }
-
-    if (char *resolved = realpath(defaultSDKPath.c_str(), nullptr)) {
-      SDK = resolved;
-      free(resolved);
-    } else {
-      err << "'" << defaultSDKPath << "' broken symlink" << err.endl();
-      exit(EXIT_FAILURE);
-    }
-  } else {
-    // Choose the latest SDK
-
-    OSVersion latestSDKVersion;
-    std::string latestSDK;
-
-    for (const std::string &entry : listFiles(SDKSearchDir)) {
-      if (strncasecmp(entry.c_str(), "MacOSX", 6))
-        continue;
-
-      const OSVersion SDKVersion = parseOSVersion(entry.c_str() + 6);
-
-      if (SDKVersion > latestSDKVersion) {
-        latestSDKVersion = SDKVersion;
-        latestSDK = entry;
-      }
-    }
-
-    if (!latestSDKVersion.Num()) {
-      err << "no SDK found in '" << SDKSearchDir << "'" << err.endl();
-      exit(EXIT_FAILURE);
-    }
-
-    std::string SDKPath;
-
-    SDKPath = SDKSearchDir;
-    SDKPath += PATHDIV;
-    SDKPath += latestSDK;
-
-    SDK = SDKPath;
-  }
 }
 
 bool Target::getSDKPath(std::string &path, bool majorVersionOnly) const {
