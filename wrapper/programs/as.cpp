@@ -47,6 +47,10 @@ int as(int argc, char **argv, target::Target &target) {
     return 1;
   }
 
+  const int sdkResult = applySDKRootFromEnvironment();
+  if (sdkResult != 0)
+    return sdkResult;
+
   const bool debug = getenv("OCDEBUG") != nullptr;
   bool someInputFiles = false;
   bool outputSpecified = false;

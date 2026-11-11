@@ -80,6 +80,8 @@ int sw_vers(int argc, char **argv, Target &target);
 int xcrun(int argc, char **argv, Target &target);
 int xcodebuild(int argc, char **argv, Target &target);
 
+int applySDKRootFromEnvironment();
+
 namespace llvm {
 int lipo(int argc, char **argv, Target &target);
 int ld(int argc, char **argv, Target &target);

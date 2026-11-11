@@ -148,8 +148,11 @@ int sdk(Target *, char **argv) {
     }
 
     // The in-process queries (--show-sdk-path, --show-sdk-version) and the
-    // tools that xcrun starts read the variable.
+    // tools that xcrun starts read OSXCROSS_SDKROOT. Set SDKROOT as well, as
+    // Apple's xcrun does, so that a stale SDKROOT does not reach the tools:
+    // a nested xcrun would prefer it over OSXCROSS_SDKROOT.
     setenv("OSXCROSS_SDKROOT", SDK, 1);
+    setenv("SDKROOT", SDK, 1);
 
     return 0;
   }
@@ -231,6 +234,34 @@ int showPlatformPath(Target *target, char**) {
 
 } // anonymous namespace
 
+int applySDKRootFromEnvironment() {
+  // SDKROOT is the SDK selector used by Apple's tools. Apple's xcrun
+  // passes an explicitly selected SDK to developer tools through SDKROOT.
+  // OSXCROSS_SDKROOT is our own SDK override, read by the compiler wrapper.
+  // Translate the incoming SDKROOT selection into that internal override.
+  //
+  // If SDKROOT is unset, preserve OSXCROSS_SDKROOT. Otherwise SDKROOT
+  // takes precedence: clear the old override and let sdk() validate it.
+  // Empty SDKROOT, "/", "macosx" and "macosx.internal" select the default
+  // SDK by leaving OSXCROSS_SDKROOT unset.
+  //
+  // For an explicit SDK path, sdk() sets both variables. This also matters
+  // when xcrun handles -sdk: a nested xcrun must inherit the new SDKROOT,
+  // or it could prefer an older SDKROOT and undo the outer SDK selection.
+  // Apple propagates its selection through SDKROOT; OSXCROSS_SDKROOT is
+  // the additional variable needed by our compiler wrapper.
+  char *SDK = getenv("SDKROOT");
+
+  if (!SDK)
+    return 0;
+
+  // Environment updates may invalidate the pointer returned by getenv().
+  const std::string SDKValue = SDK;
+  unsetenv("OSXCROSS_SDKROOT");
+  char *sdkArgs[1] = { const_cast<char *>(SDKValue.c_str()) };
+  return sdk(nullptr, sdkArgs);
+}
+
 int xcrun(int argc, char **argv, Target &target) {
   isStandaloneXcrun = !endsWith(argv[0], "-xcrun");
 
@@ -250,14 +281,9 @@ int xcrun(int argc, char **argv, Target &target) {
     }
   }
 
-  // SDKROOT replaces OSXCROSS_SDKROOT.
-  if (char *SDK = getenv("SDKROOT")) {
-    unsetenv("OSXCROSS_SDKROOT");
-    char *sdkArgs[1] = { SDK };
-    int retVal = sdk(&target, sdkArgs);
-    if (retVal != 0)
-      return retVal;
-  }
+  const int sdkResult = applySDKRootFromEnvironment();
+  if (sdkResult != 0)
+    return sdkResult;
 
   auto dummy = [](Target*, char**) { return 0; };
 
