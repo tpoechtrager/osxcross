@@ -25,6 +25,7 @@
 
 #include "compat.h"
 
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -434,6 +435,30 @@ bool detectTarget(int argc, char **argv, Target &target) {
   detectCXXLib(target);
   return target.setup();
 }
+
+//
+// Time
+//
+
+// Measures the elapsed time, excluding the time between halt() and resume().
+class benchmark {
+  typedef std::chrono::steady_clock clock;
+
+public:
+  benchmark() : start(clock::now()) {}
+
+  double getMilliseconds() const {
+    return std::chrono::duration<double, std::milli>(clock::now() - start)
+        .count();
+  }
+
+  void halt() { haltTime = clock::now(); }
+  void resume() { start += clock::now() - haltTime; }
+
+private:
+  clock::time_point start;
+  clock::time_point haltTime;
+};
 
 } // unnamed namespace
 

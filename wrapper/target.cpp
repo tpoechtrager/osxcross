@@ -38,6 +38,24 @@
 
 namespace target {
 
+std::vector<Arch> getSupportedArchs(bool GCC) {
+  std::vector<Arch> result;
+  std::istringstream iss(getSupportedArchsString(GCC));
+  std::string token;
+
+  while (iss >> token)
+    result.push_back(parseArch(token.c_str()));
+
+  return result;
+}
+
+Arch getDefaultArch(bool GCC) {
+  std::istringstream iss(getSupportedArchsString(GCC));
+  std::string first;
+  iss >> first;
+  return parseArch(first.c_str());
+}
+
 Target::Target()
     : vendor(getDefaultVendor()), supportedarchs(getSupportedArchs()),
       arch(getDefaultArch()), target(getDefaultTarget()), stdlib(StdLib::unset),

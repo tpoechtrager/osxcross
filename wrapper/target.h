@@ -24,7 +24,6 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -62,24 +61,10 @@ constexpr const char *getSupportedArchsString(bool GCC = false) {
              : OSXCROSS_SUPPORTED_ARCHS;
 }
 
-static inline std::vector<Arch> getSupportedArchs(bool GCC = false) {
-  std::vector<Arch> result;
-  std::istringstream iss(GCC ? OSXCROSS_GCC_TARGET_ARCHS
-                             : OSXCROSS_SUPPORTED_ARCHS);
-  std::string token;
-
-  while (iss >> token)
-    result.push_back(parseArch(token.c_str()));
-
-  return result;
-}
-static inline Arch getDefaultArch(bool GCC = false) {
-  std::istringstream iss(GCC ? OSXCROSS_GCC_TARGET_ARCHS
-                             : OSXCROSS_SUPPORTED_ARCHS);
-  std::string first;
-  iss >> first;
-  return parseArch(first.c_str());
-}
+// The architectures in SUPPORTED_ARCHS or, with GCC, GCC_TARGET_ARCHS; the
+// default architecture is the first one.
+std::vector<Arch> getSupportedArchs(bool GCC = false);
+Arch getDefaultArch(bool GCC = false);
 
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
 

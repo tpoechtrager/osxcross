@@ -22,8 +22,6 @@
 #ifndef OSXCROSS_WRAPPER_TOOLS_H
 #define OSXCROSS_WRAPPER_TOOLS_H
 
-#include <algorithm>
-#include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <iostream>
@@ -38,10 +36,9 @@ namespace tools {
 
 typedef std::vector<std::string> string_vector;
 
-static inline bool endsWith(std::string const &str, std::string const &end) {
-  if (end.size() > str.size())
-    return false;
-  return std::equal(end.rbegin(), end.rend(), str.rbegin());
+inline bool endsWith(const std::string &str, const std::string &end) {
+  return str.size() >= end.size() &&
+         str.compare(str.size() - end.size(), end.size(), end) == 0;
 }
 
 size_t constexpr constexprStrLen(const char *str) {
@@ -306,30 +303,6 @@ template <typename T, size_t size = 0> struct ArgParser {
 
     return nullptr;
   }
-};
-
-//
-// Time
-//
-
-// Measures the elapsed time, excluding the time between halt() and resume().
-class benchmark {
-  typedef std::chrono::steady_clock clock;
-
-public:
-  benchmark() : start(clock::now()) {}
-
-  double getMilliseconds() const {
-    return std::chrono::duration<double, std::milli>(clock::now() - start)
-        .count();
-  }
-
-  void halt() { haltTime = clock::now(); }
-  void resume() { start += clock::now() - haltTime; }
-
-private:
-  clock::time_point start;
-  clock::time_point haltTime;
 };
 
 //
