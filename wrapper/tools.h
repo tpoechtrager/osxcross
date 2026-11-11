@@ -19,6 +19,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
+#include <chrono>
+
 struct stat;
 
 namespace tools {
@@ -311,30 +313,24 @@ template <typename T, size_t size = 0> struct ArgParser {
 // Time
 //
 
-typedef unsigned long long time_type;
-time_type getNanoSeconds();
-
+// Measures the elapsed time, excluding the time between halt() and resume().
 class benchmark {
+  typedef std::chrono::steady_clock clock;
+
 public:
-  benchmark() { s = getTime(); }
+  benchmark() : start(clock::now()) {}
 
-  time_type getDiff() { return getTime() - s; }
-
-  void halt() { h = getTime(); }
-  void resume() { s += getTime() - h; }
-
-  ~benchmark() {
-    time_type diff = getTime() - s;
-    dbg << "took: " << diff / 1000000.0 << " ms" << dbg.endl();
+  double getMilliseconds() const {
+    return std::chrono::duration<double, std::milli>(clock::now() - start)
+        .count();
   }
+
+  void halt() { haltTime = clock::now(); }
+  void resume() { start += clock::now() - haltTime; }
 
 private:
-  __attribute__((always_inline)) time_type getTime() {
-    return getNanoSeconds();
-  }
-
-  time_type h;
-  time_type s;
+  clock::time_point start;
+  clock::time_point haltTime;
 };
 
 //

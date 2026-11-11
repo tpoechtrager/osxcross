@@ -449,8 +449,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
 //
 
 int main(int argc, char **argv) {
-  alignas(benchmark) char bbuf[sizeof(benchmark)];
-  auto b = new (bbuf) benchmark;
+  benchmark b;
   Target target;
   int rc = -1;
 
@@ -470,7 +469,7 @@ int main(int argc, char **argv) {
   }
 
   if (debug) {
-    b->halt();
+    b.halt();
 
     if (debug >= 2) {
       dbg << "detected target triple: " << target.getTriple() << dbg.endl();
@@ -479,7 +478,7 @@ int main(int argc, char **argv) {
       dbg << "detected stdlib: " << getStdLibString(target.stdlib)
           << dbg.endl();
 
-      b->resume();
+      b.resume();
     }
   }
 
@@ -526,13 +525,12 @@ int main(int argc, char **argv) {
   };
 
   if (debug) {
-    time_type diff = b->getDiff();
+    const double ms = b.getMilliseconds();
 
     if (rc == -1)
       printCommand();
 
-    dbg << "=== time spent in wrapper: " << diff / 1000000.0 << " ms"
-        << dbg.endl();
+    dbg << "=== time spent in wrapper: " << ms << " ms" << dbg.endl();
   }
 
   if (unittest == 2)

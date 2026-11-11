@@ -33,7 +33,7 @@
 #include <cstring>
 #include <climits>
 #include <cassert>
-#include <sys/time.h>
+#include <initializer_list>
 #include <sys/stat.h>
 
 #include <unistd.h>
@@ -43,9 +43,7 @@
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
-#include <CoreServices/CoreServices.h>
 #include <mach/mach.h>
-#include <mach/mach_time.h>
 #include <libproc.h>
 #endif
 
@@ -390,54 +388,20 @@ const char *getFileName(const char *file) {
 }
 
 //
-// Time
-//
-
-time_type getNanoSeconds() {
-#ifdef __APPLE__
-  union {
-    AbsoluteTime at;
-    time_type ull;
-  } tmp;
-  tmp.ull = mach_absolute_time();
-  Nanoseconds ns = AbsoluteToNanoseconds(tmp.at);
-  tmp.ull = UnsignedWideToUInt64(ns);
-  return tmp.ull;
-#elif defined(__linux__)
-  struct timespec tp;
-  if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0)
-    return static_cast<time_type>((tp.tv_sec * 1000000000LL) + tp.tv_nsec);
-#endif
-  struct timeval tv;
-  if (gettimeofday(&tv, nullptr) == 0)
-    return static_cast<time_type>((tv.tv_sec * 1000000000LL) +
-                                  (tv.tv_usec * 1000));
-  abort();
-}
-
-//
 // OSVersion
 //
 
 OSVersion parseOSVersion(const char *OSVer) {
-  const char *p = OSVer;
   OSVersion OSNum;
+  const char *p = OSVer;
 
-  OSNum.major = atoi(p);
+  for (int *part : {&OSNum.major, &OSNum.minor, &OSNum.patch}) {
+    *part = atoi(p);
+    if (!(p = strchr(p, '.')))
+      break;
+    ++p;
+  }
 
-  while (*p && *p++ != '.')
-    ;
-  if (!*p)
-    return OSNum;
-
-  OSNum.minor = atoi(p);
-
-  while (*p && *p++ != '.')
-    ;
-  if (!*p)
-    return OSNum;
-
-  OSNum.patch = atoi(p);
   return OSNum;
 }
 

@@ -42,7 +42,6 @@ ifneq (,$(findstring FreeBSD, $(PLATFORM)))
   override LDFLAGS+=-lutil
 else ifneq (,$(findstring Darwin, $(PLATFORM)))
   override CXXFLAGS+=-Wno-deprecated
-  override LDFLAGS+=-framework CoreServices -Wno-deprecated
 else ifneq (,$(findstring CYGWIN, $(PLATFORM)))
   # -std=gnu++0x doesn't work, so work around...
   override CXXFLAGS+=-U__STRICT_ANSI__
