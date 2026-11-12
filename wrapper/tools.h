@@ -46,6 +46,14 @@ size_t constexpr constexprStrLen(const char *str) {
 }
 
 //
+// Debugging
+//
+
+// The debug level set with OCDEBUG: 0 if it is unset, not a number or
+// negative, otherwise its value (1 = debug messages, 2 = more of them).
+int getDebugLevel();
+
+//
 // Terminal text colors
 //
 

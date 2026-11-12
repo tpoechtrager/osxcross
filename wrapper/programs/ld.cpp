@@ -58,7 +58,7 @@ int ld(int argc, char **argv, target::Target &target) {
     return 0;
   }
 
-  const bool debug = getenv("OCDEBUG") != nullptr;
+  const bool debug = tools::getDebugLevel() > 0;
   const char *minimumVersion = getenv("MACOSX_DEPLOYMENT_TARGET");
   bool platformVersionSeen = false;
   std::vector<std::string> args;

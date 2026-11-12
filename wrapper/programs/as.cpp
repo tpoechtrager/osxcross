@@ -51,7 +51,7 @@ int as(int argc, char **argv, target::Target &target) {
   if (sdkResult != 0)
     return sdkResult;
 
-  const bool debug = getenv("OCDEBUG") != nullptr;
+  const bool debug = tools::getDebugLevel() > 0;
   bool someInputFiles = false;
   bool outputSpecified = false;
   std::vector<const char *> givenArgs;

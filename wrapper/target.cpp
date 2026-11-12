@@ -479,9 +479,7 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
   // the last resort because it starts clang as a separate process (twice if
   // the version has to come from --version), which is much slower than
   // looking at a few directories, and this runs on every wrapper call.
-  const bool debug = getenv("OCDEBUG") != nullptr;
-
-  if (debug) {
+  if (getDebugLevel() > 0) {
     dbg << (forceresourcedir
                 ? "OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR is set"
                 : "clang intrinsic headers not found in the known directories; "

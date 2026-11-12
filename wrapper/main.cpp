@@ -245,10 +245,7 @@ const Parser parser = {{
   // specifies an additional directory to search when looking for clang's
   // intrinsic paths
   {"-foc-intrinsic-path", intrinsicpath, ValueMode::joinedWithEquals}
-}, []() {
-  const char *value = getenv("OCDEBUG");
-  return value && atoi(value) != 0;
-}()};
+}, getDebugLevel() > 0};
 
 bool parse(int argc, char **argv, Target &target) {
   target.args.reserve(argc);
@@ -471,8 +468,7 @@ int main(int argc, char **argv) {
   Target target;
   int rc = -1;
 
-  if (char *p = getenv("OCDEBUG"))
-    debug = atoi(p);
+  debug = getDebugLevel();
 
   if (char *p = getenv("OSXCROSS_UNIT_TEST")) {
     unittest = atoi(p);

@@ -61,6 +61,15 @@
 namespace tools {
 
 //
+// Debugging
+//
+
+int getDebugLevel() {
+  const char *value = getenv("OCDEBUG");
+  return value ? std::max(atoi(value), 0) : 0;
+}
+
+//
 // Terminal text colors
 //
 
