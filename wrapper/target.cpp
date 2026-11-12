@@ -435,14 +435,6 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
       dirs.push_back(clangbindir + "/" + intrinsicpath);
   }
 
-#ifdef __CYGWIN__
-#ifdef __x86_64__
-  dirs.push_back(clangbindir + "/../lib/clang/x86_64-pc-cygwin");
-#else
-  dirs.push_back(clangbindir + "/../lib/clang/i686-pc-cygwin");
-#endif
-#endif
-
   dirs.push_back(clangbindir + "/../lib/clang");
 
 #ifdef __linux__
