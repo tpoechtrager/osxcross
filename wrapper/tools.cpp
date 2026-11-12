@@ -22,6 +22,7 @@
 #include "compat.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -36,6 +37,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #ifdef __APPLE__
@@ -356,6 +360,96 @@ std::string getDirName(const std::string &file) {
     return std::string(1, PATHDIV);
 
   return file.substr(0, slash);
+}
+
+bool getProgramOutput(const std::vector<std::string> &args,
+                      std::string &output) {
+  output.clear();
+
+  if (args.empty())
+    return false;
+
+  int fds[2];
+
+  if (pipe(fds) != 0)
+    return false;
+
+  // An inherited SIG_IGN would discard the child status before waitpid().
+  // Temporarily use the default action, also clearing SA_NOCLDWAIT.
+  struct sigaction savedAction, action = {};
+  action.sa_handler = SIG_DFL;
+  sigemptyset(&action.sa_mask);
+
+  if (sigaction(SIGCHLD, &action, &savedAction) != 0) {
+    close(fds[0]);
+    close(fds[1]);
+    return false;
+  }
+
+  const pid_t pid = fork();
+
+  if (pid < 0) {
+    close(fds[0]);
+    close(fds[1]);
+    sigaction(SIGCHLD, &savedAction, nullptr);
+    return false;
+  }
+
+  if (pid == 0) {
+    close(fds[0]);
+
+    // Install stdout first: the pipe may occupy a standard descriptor
+    // when the caller started us with stdin or stderr closed.
+    if (dup2(fds[1], STDOUT_FILENO) < 0)
+      _exit(127);
+    if (fds[1] != STDOUT_FILENO)
+      close(fds[1]);
+
+    const int devnull = open("/dev/null", O_RDWR);
+
+    if (devnull < 0 || dup2(devnull, STDIN_FILENO) < 0 ||
+        dup2(devnull, STDERR_FILENO) < 0)
+      _exit(127);
+    if (devnull > STDERR_FILENO)
+      close(devnull);
+
+    std::vector<char *> argv;
+    argv.reserve(args.size() + 1);
+
+    for (const std::string &arg : args)
+      argv.push_back(const_cast<char *>(arg.c_str()));
+
+    argv.push_back(nullptr);
+    execvp(argv[0], argv.data());
+    _exit(127);
+  }
+
+  close(fds[1]);
+
+  char buf[4096];
+
+  for (;;) {
+    const ssize_t n = read(fds[0], buf, sizeof(buf));
+
+    if (n > 0)
+      output.append(buf, static_cast<size_t>(n));
+    else if (n == 0 || errno != EINTR)
+      break;
+  }
+
+  close(fds[0]);
+
+  int status;
+  pid_t waited;
+
+  do {
+    waited = waitpid(pid, &status, 0);
+  } while (waited < 0 && errno == EINTR);
+
+  const bool success =
+      waited == pid && WIFEXITED(status) && WEXITSTATUS(status) == 0;
+  sigaction(SIGCHLD, &savedAction, nullptr);
+  return success;
 }
 
 void stripFileName(std::string &path) {

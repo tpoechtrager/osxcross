@@ -361,6 +361,21 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
   std::string clangbindir = compilerpath;
   stripFileName(clangbindir);
 
+  static constexpr const char *IntrinHeader = "xmmintrin.h";
+
+  // Looks for <dir>/include/xmmintrin.h or <dir>/xmmintrin.h and stores the
+  // directory that contains it in intrindir.
+  auto findHeaderDir = [&](const std::string &dir, std::string &intrindir) {
+    for (const std::string &d : { dir + "/include", dir }) {
+      if (fileExists(d + "/" + IntrinHeader)) {
+        intrindir = d;
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Looks for <dir>/<version>/include/xmmintrin.h or
   // <dir>/<version>/xmmintrin.h; the highest version wins.
   auto tryDir = [&](const std::string &dir) {
@@ -376,15 +391,11 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
       if (cv == ClangVersion())
         continue;
 
-      for (const std::string &intrindir :
-           { dir + "/" + file + "/include", dir + "/" + file }) {
-        if (fileExists(intrindir + "/xmmintrin.h")) {
-          if (cv > bestversion) {
-            bestversion = cv;
-            bestpath = intrindir;
-          }
-          break;
-        }
+      std::string intrindir;
+
+      if (findHeaderDir(dir + "/" + file, intrindir) && cv > bestversion) {
+        bestversion = cv;
+        bestpath = intrindir;
       }
     }
 
@@ -434,12 +445,61 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
   if (!intrinsicpath.empty())
     dirs.push_back(clangbindir + intrinsicpath);
 
-  for (const std::string &dir : dirs) {
-    if (tryDir(dir))
-      return true;
+  // OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR skips the guesses and
+  // goes straight to the last resort below (for tests).
+  if (!getenv("OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR")) {
+    for (const std::string &dir : dirs) {
+      if (tryDir(dir))
+        return true;
+    }
   }
 
-  return false;
+  // Last resort: ask the compiler for its resource directory. This covers
+  // layouts the guesses above do not know, e.g. NixOS, where bin/clang is a
+  // wrapper script in a different store path than the headers. It is only
+  // the last resort because it starts clang as a separate process (twice if
+  // the version has to come from --version), which is much slower than
+  // looking at a few directories, and this runs on every wrapper call.
+  std::string resourcedir;
+
+  if (!getProgramOutput({compilerpath, "-print-resource-dir"}, resourcedir))
+    return false;
+
+  while (!resourcedir.empty() &&
+         (resourcedir.back() == '\n' || resourcedir.back() == '\r'))
+    resourcedir.pop_back();
+
+  std::string intrindir;
+
+  if (resourcedir.empty() || !findHeaderDir(resourcedir, intrindir))
+    return false;
+
+  // The resource directory is usually <prefix>/lib/clang/<version>.
+  ClangVersion cv = parseClangVersion(getFileName(resourcedir));
+
+  if (cv == ClangVersion()) {
+    // No version in the path (NixOS: .../resource-root), so parse
+    // "... clang version X.Y.Z ..." from --version. -dumpversion is not
+    // used because Clang < 14 prints 4.2.1 there.
+    static const char needle[] = "clang version ";
+    std::string version;
+
+    if (getProgramOutput({compilerpath, "--version"}, version)) {
+      const size_t pos = version.find(needle);
+
+      if (pos != std::string::npos)
+        cv = parseClangVersion(version.c_str() + pos + sizeof(needle) - 1);
+    }
+  }
+
+  if (cv == ClangVersion()) {
+    warn << "cannot determine the clang version; please report this issue "
+            "to the OSXCross project" << warn.endl();
+  }
+
+  clangversion = cv;
+  path = intrindir;
+  return true;
 }
 
 void Target::setupGCCLibs(Arch arch) {
@@ -784,7 +844,9 @@ bool Target::setup() {
       warn << "cannot find clang intrinsic headers; please report this "
               "issue to the OSXCross project" << warn.endl();
     } else {
-      if (haveArch(Arch::x86_64h) && clangversion < ClangVersion(3, 5)) {
+      // The resource-directory lookup warns when the version is unknown.
+      if (haveArch(Arch::x86_64h) && clangversion != ClangVersion() &&
+          clangversion < ClangVersion(3, 5)) {
         err << "'" << getArchName(Arch::x86_64h) << "' requires clang 3.5 "
             << "(or later)" << err.endl();
         return false;

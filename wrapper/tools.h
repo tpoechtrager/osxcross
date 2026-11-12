@@ -186,6 +186,12 @@ inline const char *getFileName(const std::string &file) {
 // a file in the root directory and "." for a name without '/'.
 std::string getDirName(const std::string &file);
 
+// Runs args[0] (looked up in PATH unless it contains a '/') with args, without
+// a shell, and stores its standard output in output. stdin and stderr are
+// redirected to /dev/null. Returns true if the program exited with status 0.
+bool getProgramOutput(const std::vector<std::string> &args,
+                      std::string &output);
+
 //
 // Argument Parsing
 //
