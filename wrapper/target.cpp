@@ -352,28 +352,43 @@ void Target::setCompilerPath() {
   }
 }
 
-bool Target::findClangIntrinsicHeaders(std::string &path) {
+bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
   assert(isClang());
 
-  if (compilerpath.empty())
+  auto warnHeadersNotFound = [](const std::string &reason) {
+    warn << "cannot find clang intrinsic headers or determine the clang "
+            "version: " << reason << warn.endl();
     return false;
+  };
+
+  auto warnVersionNotFound = [](const std::string &reason) {
+    warn << "cannot determine the clang version: " << reason << warn.endl();
+  };
+
+  if (compilerpath.empty())
+    return warnHeadersNotFound("compiler path is empty");
+
+  static constexpr const char *IntrinHeader = "xmmintrin.h";
 
   std::string clangbindir = compilerpath;
   stripFileName(clangbindir);
 
-  static constexpr const char *IntrinHeader = "xmmintrin.h";
+  // Every successful lookup ends here.
+  auto found = [&](const std::string &intrindir, const ClangVersion &cv) {
+    path = intrindir;
+    clangversion = cv;
+    return true;
+  };
 
-  // Looks for <dir>/include/xmmintrin.h or <dir>/xmmintrin.h and stores the
-  // directory that contains it in intrindir.
-  auto findHeaderDir = [&](const std::string &dir, std::string &intrindir) {
+  // Returns <dir>/include or <dir>, whichever contains xmmintrin.h, or an
+  // empty string.
+  auto findHeaderDir = [](const std::string &dir) -> std::string {
     for (const std::string &d : { dir + "/include", dir }) {
-      if (fileExists(d + "/" + IntrinHeader)) {
-        intrindir = d;
-        return true;
-      }
+      if (fileExists(d + "/" + IntrinHeader))
+        return d;
     }
 
-    return false;
+    return std::string();
   };
 
   // Looks for <dir>/<version>/include/xmmintrin.h or
@@ -391,24 +406,34 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
       if (cv == ClangVersion())
         continue;
 
-      std::string intrindir;
+      const std::string intrindir = findHeaderDir(dir + "/" + file);
 
-      if (findHeaderDir(dir + "/" + file, intrindir) && cv > bestversion) {
+      if (!intrindir.empty() && cv > bestversion) {
         bestversion = cv;
         bestpath = intrindir;
       }
     }
 
-    clangversion = bestversion;
-
     if (bestversion == ClangVersion())
       return false;
 
-    path = bestpath;
-    return true;
+    return found(bestpath, bestversion);
   };
 
   std::vector<std::string> dirs;
+
+  // -foc-intrinsic-path is an explicit choice, so it is checked first. It
+  // has always been appended to the clang bin directory as it is; that
+  // stays, and an absolute path or a relative path without a leading '/'
+  // is tried as well.
+  if (!intrinsicpath.empty()) {
+    dirs.push_back(clangbindir + intrinsicpath);
+
+    if (intrinsicpath[0] == '/')
+      dirs.push_back(intrinsicpath);
+    else
+      dirs.push_back(clangbindir + "/" + intrinsicpath);
+  }
 
 #ifdef __CYGWIN__
 #ifdef __x86_64__
@@ -433,21 +458,15 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
 #endif
 #endif
 
-#ifdef __APPLE__
-  dirs.push_back("/Library/Developer/CommandLineTools/usr/lib/clang");
-  dirs.push_back("/Applications/Contents/Developer/Toolchains/"
-                 "XcodeDefault.xctoolchain/usr/lib/clang");
-#endif
-
   dirs.push_back(clangbindir + "/../include/clang");
   dirs.push_back(clangbindir + "/usr/include/clang");
 
-  if (!intrinsicpath.empty())
-    dirs.push_back(clangbindir + intrinsicpath);
-
   // OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR skips the guesses and
   // goes straight to the last resort below (for tests).
-  if (!getenv("OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR")) {
+  const bool forceresourcedir =
+      getenv("OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR") != nullptr;
+
+  if (!forceresourcedir) {
     for (const std::string &dir : dirs) {
       if (tryDir(dir))
         return true;
@@ -460,46 +479,70 @@ bool Target::findClangIntrinsicHeaders(std::string &path) {
   // the last resort because it starts clang as a separate process (twice if
   // the version has to come from --version), which is much slower than
   // looking at a few directories, and this runs on every wrapper call.
+  const bool debug = getenv("OCDEBUG") != nullptr;
+
+  if (debug) {
+    dbg << (forceresourcedir
+                ? "OSXCROSS_FIND_INTRINSICS_VIA_PRINT_RESOURCE_DIR is set"
+                : "clang intrinsic headers not found in the known directories; "
+                  "clang version could not be determined from them")
+        << "; asking '" << compilerpath << " -print-resource-dir'"
+        << dbg.endl();
+  }
+
   std::string resourcedir;
 
   if (!getProgramOutput({compilerpath, "-print-resource-dir"}, resourcedir))
-    return false;
+    return warnHeadersNotFound("'" + compilerpath + " -print-resource-dir' failed");
 
   while (!resourcedir.empty() &&
          (resourcedir.back() == '\n' || resourcedir.back() == '\r'))
     resourcedir.pop_back();
 
-  std::string intrindir;
+  if (resourcedir.empty())
+    return warnHeadersNotFound("'" + compilerpath +
+                               " -print-resource-dir' returned an empty "
+                               "resource directory");
 
-  if (resourcedir.empty() || !findHeaderDir(resourcedir, intrindir))
-    return false;
+  const std::string intrindir = findHeaderDir(resourcedir);
+
+  if (intrindir.empty())
+    return warnHeadersNotFound("resource directory '" + resourcedir +
+                               "' returned by '" + compilerpath +
+                               " -print-resource-dir' contains no intrinsic headers");
 
   // The resource directory is usually <prefix>/lib/clang/<version>.
   ClangVersion cv = parseClangVersion(getFileName(resourcedir));
 
   if (cv == ClangVersion()) {
     // No version in the path (NixOS: .../resource-root), so parse
-    // "... clang version X.Y.Z ..." from --version. -dumpversion is not
-    // used because Clang < 14 prints 4.2.1 there.
-    static const char needle[] = "clang version ";
+    // "... clang version X.Y.Z ..." or "Apple LLVM version X.Y.Z" from
+    // --version. -dumpversion is not used because Clang < 14 prints 4.2.1.
+    static const char *const needles[] = {
+      "clang version ", "Apple LLVM version "
+    };
     std::string version;
 
-    if (getProgramOutput({compilerpath, "--version"}, version)) {
-      const size_t pos = version.find(needle);
+    if (!getProgramOutput({compilerpath, "--version"}, version)) {
+      warnVersionNotFound("'" + compilerpath + " --version' failed");
+    } else {
+      for (const char *needle : needles) {
+        const size_t pos = version.find(needle);
 
-      if (pos != std::string::npos)
-        cv = parseClangVersion(version.c_str() + pos + sizeof(needle) - 1);
+        if (pos != std::string::npos) {
+          cv = parseClangVersion(version.c_str() + pos + strlen(needle));
+          if (cv != ClangVersion())
+            break;
+        }
+      }
+
+      if (cv == ClangVersion())
+        warnVersionNotFound("unrecognized output from '" + compilerpath +
+                            " --version'");
     }
   }
 
-  if (cv == ClangVersion()) {
-    warn << "cannot determine the clang version; please report this issue "
-            "to the OSXCross project" << warn.endl();
-  }
-
-  clangversion = cv;
-  path = intrindir;
-  return true;
+  return found(intrindir, cv);
 }
 
 void Target::setupGCCLibs(Arch arch) {
@@ -839,11 +882,7 @@ bool Target::setup() {
       tmp.clear();
     }
 
-#ifndef __APPLE__
-    if (!findClangIntrinsicHeaders(ClangIntrinsicPath)) {
-      warn << "cannot find clang intrinsic headers; please report this "
-              "issue to the OSXCross project" << warn.endl();
-    } else {
+    if (findClangIntrinsicHeadersAndVersion(ClangIntrinsicPath)) {
       // The resource-directory lookup warns when the version is unknown.
       if (haveArch(Arch::x86_64h) && clangversion != ClangVersion() &&
           clangversion < ClangVersion(3, 5)) {
@@ -854,7 +893,6 @@ bool Target::setup() {
     }
 
     tmp.clear();
-#endif
 
     fargs.push_back("-isysroot");
     fargs.push_back(SDKPath);

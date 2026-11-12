@@ -191,7 +191,7 @@ struct Target {
                             const std::string &tool) const;
 
   void setCompilerPath();
-  bool findClangIntrinsicHeaders(std::string &path);
+  bool findClangIntrinsicHeadersAndVersion(std::string &path);
 
   void setupGCCLibs(Arch arch);
   void setTriple(bool useAarch64InsteadOfArm64 = false);
