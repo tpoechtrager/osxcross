@@ -622,15 +622,18 @@ void Target::setTriple(bool useAarch64InsteadOfArm64) {
 }
 
 bool Target::setup() {
+  //
+  // Architectures, SDK, triple and compiler
+  //
+
   if (targetarchs.empty())
     addArch(arch);
 
-  if (!checkArchs()) {
+  if (!checkArchs())
     return false;
-  }
 
   std::string SDKPath;
-  OSVersion SDKOSNum = getSDKOSNum();
+  const OSVersion SDKOSNum = getSDKOSNum();
 
   if (!isKnownCompiler())
     warn << "unknown compiler '" << compilername << "'" << warn.endl();
@@ -641,10 +644,12 @@ bool Target::setup() {
   setTriple();
   setCompilerPath();
 
+  // SDK versions the architectures need: i386 requires the 10.13 SDK or an
+  // earlier one (orEarlier), the others a minimum SDK version.
   constexpr struct {
     Arch arch;
     OSVersion SDKVer;
-    bool lower;
+    bool orEarlier;
   } RequiredSDKVersion[] = {
     { Arch::i386,    {10, 13}, true },
     { Arch::x86_64h, {10, 8} },
@@ -653,61 +658,60 @@ bool Target::setup() {
   };
 
   for (auto &RequiredSDK : RequiredSDKVersion) {
-    if (haveArch(RequiredSDK.arch)) {
+    if (!haveArch(RequiredSDK.arch))
+      continue;
 
-      if (RequiredSDK.lower) {
-        if (SDKOSNum > RequiredSDK.SDKVer) {
-          err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
-              << "macOS " << RequiredSDK.SDKVer.shortStr() << " SDK (or earlier)"
-              << err.endl();
-          return false;
-        }
-      } else {
-        if (SDKOSNum < RequiredSDK.SDKVer) {
-          err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
-              << "macOS " << RequiredSDK.SDKVer.shortStr() << " SDK (or later)"
-              << err.endl();
-          return false;
-        }
-      }
+    const bool SDKSupported = RequiredSDK.orEarlier
+                                  ? SDKOSNum <= RequiredSDK.SDKVer
+                                  : SDKOSNum >= RequiredSDK.SDKVer;
 
+    if (!SDKSupported) {
+      err << "Architecture '" << getArchName(RequiredSDK.arch) << "' requires "
+          << "macOS " << RequiredSDK.SDKVer.shortStr() << " SDK "
+          << (RequiredSDK.orEarlier ? "(or earlier)" : "(or later)")
+          << err.endl();
+      return false;
     }
   }
 
+  //
+  // Deployment target (-mmacosx-version-min)
+  //
+
   if (!OSNum.Num()) {
-    OSVersion defaultMinTarget = getDefaultMinTarget();
+    const OSVersion defaultMinTarget = getDefaultMinTarget();
 
     if (defaultMinTarget != OSVersion()) {
-      // Default version is given via -DOSXCROSS_OSX_VERSION_MIN=XX
+      // Default version is given via -DOSXCROSS_OSX_VERSION_MIN=XX,
+      // raised to what the architectures and the C++ library need.
+      OSNum = defaultMinTarget;
 
       if (haveArch(Arch::arm64) || haveArch(Arch::arm64e)) {
         // Default to >= 11.0 for arm64
-        OSNum = std::max(defaultMinTarget, OSVersion(11, 0));
+        OSNum = std::max(OSNum, OSVersion(11, 0));
       }
 
       if (haveArch(Arch::x86_64h)) {
         // Default to >= 10.8 for x86_64h
-        OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 8)));
+        OSNum = std::max(OSNum, OSVersion(10, 8));
       }
 
       if (stdlib == StdLib::libcxx) {
         // Default to >= 10.7 for libc++
-        OSNum = std::max(OSNum, std::max(defaultMinTarget, OSVersion(10, 7)));
+        OSNum = std::max(OSNum, OSVersion(10, 7));
       }
-    }
-
-    if (!OSNum.Num()) {
-      // Default min version = -DOSXCROSS_OSX_VERSION_MIN=XX or SDK version
-      OSNum = defaultMinTarget != OSVersion() ? defaultMinTarget : SDKOSNum;
+    } else {
+      // No -DOSXCROSS_OSX_VERSION_MIN=XX: default to the SDK version
+      OSNum = SDKOSNum;
     }
   }
 
+  //
+  // C++ standard library
+  //
+
   if (stdlib == StdLib::unset) {
-    if (libCXXIsDefaultCXXLib()) {
-      stdlib = StdLib::libcxx;
-    } else {
-      stdlib = StdLib::libstdcxx;
-    }
+    stdlib = libCXXIsDefaultCXXLib() ? StdLib::libcxx : StdLib::libstdcxx;
   } else if (stdlib == StdLib::libcxx) {
     if (!hasLibCXX()) {
       err << "libc++ requires macOS SDK 10.7 (or later)" << err.endl();
@@ -721,33 +725,37 @@ bool Target::setup() {
     }
   }
 
-  if (SDKOSNum >= OSVersion(10, 14)) {
-    if (!isGCC() && !usegcclibs && stdlib == StdLib::libstdcxx) {
-        err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
-            << err.endl();
-        return false;
-    }
+  if (SDKOSNum >= OSVersion(10, 14) && stdlib == StdLib::libstdcxx &&
+      !isGCC() && !usegcclibs) {
+    err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
+        << err.endl();
+    return false;
   }
 
   if (OSNum > SDKOSNum) {
     err << "targeted macOS version must be <= " << SDKOSNum.Str() << " (SDK)"
         << err.endl();
     return false;
-  } else if (OSNum < OSVersion(10, 4)) {
+  }
+
+  if (OSNum < OSVersion(10, 4)) {
     err << "targeted macOS version must be >= 10.4" << err.endl();
     return false;
   }
 
-  std::string CXXHeaderPath = SDKPath;
-  string_vector AdditionalCXXHeaderPaths;
+  // The libstdc++ and libgcc installed by ./build_gcc.sh
+  // (clang++-gstdc++, -foc-use-gcc-libstdc++).
+  const bool useGCCLibstdcxx = stdlib == StdLib::libstdcxx && usegcclibs;
 
-  auto addCXXPath = [&](const std::string &path) {
-    std::string tmp;
-    tmp = CXXHeaderPath;
-    tmp += "/";
-    tmp += path;
-    AdditionalCXXHeaderPaths.push_back(tmp);
-  };
+  //
+  // C++ standard library headers
+  //
+  // They are added as -isystem <CXXHeaderPath> and, for each entry of
+  // CXXHeaderSubDirs, as -isystem <CXXHeaderPath>/<subdir>.
+  //
+
+  std::string CXXHeaderPath = SDKPath;
+  string_vector CXXHeaderSubDirs;
 
   switch (stdlib) {
   case StdLib::libcxx: {
@@ -760,6 +768,8 @@ bool Target::setup() {
     break;
   }
   case StdLib::libstdcxx: {
+    // GCC brings its own libstdc++ headers; CXXHeaderPath stays the SDK
+    // directory.
     if (isGCC())
       break;
 
@@ -801,6 +811,7 @@ bool Target::setup() {
       CXXHeaderPath += CXXBuildTriple;
       CXXHeaderPath += "/include/c++";
 
+      // The highest installed GCC version wins.
       std::vector<GCCVersion> v;
 
       for (const std::string &entry : listFiles(CXXHeaderPath)) {
@@ -815,13 +826,13 @@ bool Target::setup() {
       }
 
       std::sort(v.begin(), v.end());
-      gccversion = v[v.size() - 1];
+      gccversion = v.back();
       gcctriple = CXXBuildTriple;
 
       CXXHeaderPath += "/";
       CXXHeaderPath += gccversion.Str();
 
-      addCXXPath(CXXBuildTriple);
+      CXXHeaderSubDirs.push_back(CXXBuildTriple);
     } else {
       // Use SDK libs
       if (SDKOSNum <= OSVersion(10, 5))
@@ -829,10 +840,10 @@ bool Target::setup() {
       else
         CXXHeaderPath += "/usr/include/c++/4.2.1";
 
-      addCXXPath(makeTriple(arch, vendor, target));
+      CXXHeaderSubDirs.push_back(makeTriple(arch, vendor, target));
     }
 
-    addCXXPath("backward");
+    CXXHeaderSubDirs.push_back("backward");
 
     if (!dirExists(CXXHeaderPath)) {
       err << "cannot find " << getStdLibString(stdlib) << " headers"
@@ -846,25 +857,26 @@ bool Target::setup() {
     abort();
   }
 
+  //
+  // Compiler arguments
+  //
+  // fargs come first, the user's arguments (args) follow them, so the user
+  // can override most of what is set here.
+  //
+
   fargs.push_back(compilerexecname);
 
   std::string ClangIntrinsicPath;
 
   if (isClang()) {
-    std::string tmp;
-
     fargs.push_back("-target");
     fargs.push_back(getTriple());
 
     const char *linkerVersion = getLinkerVersion();
 
     // -mlinker-version= is only relevant for ld64.
-    if (!buildFlavor.IsLLVM() && linkerVersion && linkerVersion[0]) {
-      tmp = "-mlinker-version=";
-      tmp += linkerVersion;
-      fargs.push_back(tmp);
-      tmp.clear();
-    }
+    if (!buildFlavor.IsLLVM() && linkerVersion && linkerVersion[0])
+      fargs.push_back(std::string("-mlinker-version=") + linkerVersion);
 
     if (findClangIntrinsicHeadersAndVersion(ClangIntrinsicPath)) {
       // The resource-directory lookup warns when the version is unknown.
@@ -876,31 +888,27 @@ bool Target::setup() {
       }
     }
 
-    tmp.clear();
-
     fargs.push_back("-isysroot");
     fargs.push_back(SDKPath);
 
     if (isCXX()) {
-      tmp = "-stdlib=";
-      tmp += getStdLibString(stdlib);
-      fargs.push_back(tmp);
+      fargs.push_back(std::string("-stdlib=") + getStdLibString(stdlib));
 
-      if (stdlib == StdLib::libcxx ||
-          (stdlib == StdLib::libstdcxx && usegcclibs)) {
+      if (stdlib == StdLib::libcxx || useGCCLibstdcxx) {
+        // The C++ headers are added with -isystem below.
+        // -Qunused-arguments: -nostdinc++ is unused when linking.
         fargs.push_back("-nostdinc++");
         fargs.push_back("-Qunused-arguments");
       }
 
-      if (stdlib == StdLib::libstdcxx && usegcclibs) {
+      if (useGCCLibstdcxx) {
         // Match the TLS ABI of the libstdc++ built by build_gcc.sh.
         // User arguments follow fargs, so -fno-emulated-tls can override this.
         fargs.push_back("-femulated-tls");
-      }
 
-      if (stdlib == StdLib::libstdcxx && usegcclibs && !isGCH()) {
-        // Use libs from './build_gcc' installation
-        addGCCRuntimeLibs(SDKPath, targetarchs[0]);
+        // Use libs from './build_gcc.sh' installation
+        if (!isGCH())
+          addGCCRuntimeLibs(SDKPath, targetarchs[0]);
       }
     }
   } else if (isGCC()) {
@@ -933,8 +941,8 @@ bool Target::setup() {
 
   addCXXHeaderPath(CXXHeaderPath);
 
-  for (auto &path : AdditionalCXXHeaderPaths)
-    addCXXHeaderPath(path);
+  for (auto &subDir : CXXHeaderSubDirs)
+    addCXXHeaderPath(CXXHeaderPath + "/" + subDir);
 
   if (getenv("OSXCROSS_MP_INC")) {
     std::string MacPortsIncludeDir;
@@ -963,66 +971,65 @@ bool Target::setup() {
     }
   }
 
+  // Clang's intrinsic headers (see findClangIntrinsicHeadersAndVersion()).
   if (isClang() && !ClangIntrinsicPath.empty()) {
     fargs.push_back("-isystem");
     fargs.push_back(ClangIntrinsicPath);
   }
 
   if (OSNum.Num()) {
-    std::string tmp;
-    tmp = "-mmacosx-version-min=";
+    std::string versionMin = OSNum.Str();
+
     if (isClang() && clangversion < ClangVersion(11, 0) &&
         OSNum >= OSVersion(11, 0)) {
       // Clang <= 10 can't parse -mmacosx-version-min=11.x
-      warn << "your clang installation is outdated and can't parse '-mmacosx-version-min=" << OSNum.shortStr() << "'. "
-           << "setting it to 10.16."  << warn.endl();
-      tmp += "10.16";
-    } else {
-      tmp += OSNum.Str();
+      warn << "your clang installation is outdated and can't parse "
+              "'-mmacosx-version-min=" << OSNum.shortStr() << "'. "
+           << "setting it to 10.16." << warn.endl();
+      versionMin = "10.16";
     }
-    fargs.push_back(tmp);
+
+    fargs.push_back("-mmacosx-version-min=" + versionMin);
   }
 
   for (auto arch : targetarchs) {
-    bool is32bit = false;
-    bool isArm = false;
-
     switch (arch) {
     case Arch::i386:
     case Arch::i486:
     case Arch::i586:
     case Arch::i686:
-      is32bit = true;
-      // falls through
     case Arch::arm64:
     case Arch::arm64e:
     case Arch::x86_64:
     case Arch::x86_64h:
-      isArm = arch == Arch::arm64 || arch == Arch::arm64e;
-      if (isGCC()) {
-        if (arch != Arch::x86_64 && arch != Arch::i386 &&
-            arch != Arch::arm64) {
-          err << "gcc does not support architecture '" << getArchName(arch)
-              << "'" << err.endl();
-          return false;
-        }
-
-        if (targetarchs.size() > 1)
-          break;
-
-        if (!isArm)
-          fargs.push_back(is32bit ? "-m32" : "-m64");
-      } else if (isClang()) {
-        if (usegcclibs && targetarchs.size() > 1)
-          break;
-        fargs.push_back("-arch");
-        fargs.push_back(getArchName(arch));
-      }
       break;
     default:
       err << "unsupported architecture: '" << getArchName(arch) << "'"
           << err.endl();
       return false;
+    }
+
+    if (isGCC()) {
+      if (arch != Arch::x86_64 && arch != Arch::i386 &&
+          arch != Arch::arm64) {
+        err << "gcc does not support architecture '" << getArchName(arch)
+            << "'" << err.endl();
+        return false;
+      }
+
+      if (targetarchs.size() > 1)
+        continue;
+
+      // arm64 needs neither -m32 nor -m64.
+      if (arch != Arch::arm64)
+        fargs.push_back(arch == Arch::i386 ? "-m32" : "-m64");
+    } else if (isClang()) {
+      // -foc-use-gcc-libstdc++ does not support multiple architectures.
+      if (usegcclibs && targetarchs.size() > 1)
+        continue;
+
+      fargs.push_back("-arch");
+      fargs.push_back(getArchName(arch));
     }
   }
 
@@ -1034,10 +1041,14 @@ bool Target::setup() {
 #endif
 
   if (isClang()) {
-    if (buildFlavor.IsLLVM() &&
-        std::find(args.begin(), args.end(), "-c") == args.end() &&
-        std::find(args.begin(), args.end(), "-E") == args.end() &&
-        std::find(args.begin(), args.end(), "-S") == args.end()) {
+    auto hasArg = [&](const char *arg) {
+      return std::find(args.begin(), args.end(), arg) != args.end();
+    };
+
+    // Link with ld64.lld; not needed when only compiling (-c), preprocessing
+    // (-E) or generating assembly (-S).
+    if (buildFlavor.IsLLVM() && !hasArg("-c") && !hasArg("-E") &&
+        !hasArg("-S")) {
       fargs.push_back("-fuse-ld=lld");
     }
 
@@ -1073,34 +1084,41 @@ bool Target::setup() {
       // described in #135.
       //
 
-      while (fargs.size() > 1)
-        fargs.erase(fargs.end() - 1);
+      fargs.resize(1);
     }
   }
 
-  bool isgcclibstdcxx =
-      (isGCC() || (isClang() && usegcclibs && stdlib == StdLib::libstdcxx));
+  //
+  // Legacy deployment targets and the environment of the invoked tools
+  //
+
+  // GCC or clang++-gstdc++: GCC's libstdc++ is used.
+  const bool isgcclibstdcxx = isGCC() || (isClang() && useGCCLibstdcxx);
 
   if (OSNum <= OSVersion(10, 5)) {
-    bool error = false;
-    bool nowarning = false;
+    auto suggestOldBranch = []() {
+      info << "use 'osxcross-1.1' branch instead" << info.endl();
+    };
 
     if (isgcclibstdcxx) {
       err << "building for macOS '<= 10.5' with GCC (or clang++-gstdc++) "
              "is no longer supported" << err.endl();
-      error = true;
-    } else if (isClang()) {
-      nowarning = !!getenv("OSXCROSS_NO_10_5_DEPRECATION_WARNING");
-      if (!nowarning)
-        warn << "building for macOS '<= 10.5' "
-                "is no longer supported"  << warn.endl();
+      suggestOldBranch();
+      return false;
     }
 
-    if (!nowarning)
-      info << "use 'osxcross-1.1' branch instead" << info.endl();
-
-    if (error)
-      return false;
+    if (isClang()) {
+      // OSXCROSS_NO_10_5_DEPRECATION_WARNING silences the warning and the
+      // hint.
+      if (!getenv("OSXCROSS_NO_10_5_DEPRECATION_WARNING")) {
+        warn << "building for macOS '<= 10.5' "
+                "is no longer supported" << warn.endl();
+        suggestOldBranch();
+      }
+    } else {
+      // Unknown compiler: only the hint.
+      suggestOldBranch();
+    }
   }
 
   if (buildFlavor.IsLLVM() && isGCC()) {
