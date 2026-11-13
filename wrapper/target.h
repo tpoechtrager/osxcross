@@ -152,7 +152,7 @@ struct Target {
 
   // The SDK in use is the SDK override (OSXCROSS_SDKROOT, which xcrun -sdk
   // and SDKROOT also set) if there is one, otherwise the default SDK in
-  // <execpath>/../SDK, which is named after the macOS version that belongs
+  // <execDir>/../SDK, which is named after the macOS version that belongs
   // to the target.
   OSVersion getSDKOSNum() const;
   std::string getDefaultSDKPath(bool majorVersionOnly) const;
@@ -181,11 +181,13 @@ struct Target {
 
   bool isKnownCompiler() const;
 
-  const std::string &buildDefaultTriple(std::string &triple, bool GCC = false, bool useAarch64InsteadOfArm64 = false) const;
+  const std::string &buildDefaultTriple(
+    std::string &triple,
+    bool GCC = false, bool useAarch64InsteadOfArm64 = false) const;
 
   const std::string &getTriple() const { return triple; }
 
-  // <execpath>/<triple>-<tool>, by default for the current triple.
+  // <execDir>/<triple>-<tool>, by default for the current triple.
   std::string buildToolPath(const std::string &tool) const;
   std::string buildToolPath(const std::string &toolTriple,
                             const std::string &tool) const;
@@ -197,28 +199,51 @@ struct Target {
   void setTriple(bool useAarch64InsteadOfArm64 = false);
   bool setup();
 
-  const char *vendor;
-  std::vector<Arch> supportedarchs;
-  Arch arch;
-  std::vector<Arch> targetarchs;
-  std::string target;
-  OSVersion OSNum;
-  StdLib stdlib;
-  ClangVersion clangversion;
-  GCCVersion gccversion;
-  std::string gcctriple; // of the GCC installed by ./build_gcc.sh
-  bool usegcclibs;
+  //
+  // Fixed per wrapper build and installation
+  //
+  BuildFlavor buildFlavor;          // stable | latest | llvm
+  const char *vendor;               // "apple"
+  std::vector<Arch> supportedArchs; // SUPPORTED_ARCHS of this build
+  std::string execDir;              // directory of the running executable
+
+  //
+  // Target (from the tool name and the command line)
+  //
+  std::string targetOS;       // darwin20.1, the OS part of the triple
+  Arch primaryArch;           // from the tool name (x86_64-..., o64-...);
+                              // GCC: also -arch, -m32, -m64
+  std::vector<Arch> archs;    // -arch, -m32, -m64 (Clang); if empty,
+                              // setup() adds primaryArch
+  std::string triple;         // <primaryArch>-<vendor>-<targetOS>
+  OSVersion deploymentTarget; // -mmacosx-version-min= or
+                              // MACOSX_DEPLOYMENT_TARGET; 0: not set,
+                              // setup() sets the default
+
+  //
+  // Compiler
+  //
   Compiler compiler;
-  std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc
-  std::string compilername;     // clang | gcc
-  std::string compilerexecname; // clang | *-apple-darwin-gcc
-  std::string triple;
-  string_vector fargs;
-  string_vector args;
-  const char *language;
-  std::string execpath; // directory of the running executable
-  std::string intrinsicpath;
-  BuildFlavor buildFlavor;
+  std::string compilerName;  // clang | gcc
+  std::string compilerPath;  // /usr/bin/clang | [...]/target/bin/*-gcc
+  std::string compilerArgv0; // clang | *-apple-darwin-gcc
+  ClangVersion clangVersion; // see findClangIntrinsicHeadersAndVersion()
+
+  //
+  // C++ standard library
+  //
+  StdLib stdlib;         // -stdlib= or the tool name; setup() resolves unset
+  bool useGCCLibs;       // -foc-use-gcc-libstdc++, clang++-gstdc++
+  GCCVersion gccVersion; // of the GCC installed by ./build_gcc.sh
+  std::string gccTriple; // of the GCC installed by ./build_gcc.sh
+
+  //
+  // Command line
+  //
+  const char *language;            // -x <language>; nullptr: not given
+  std::string intrinsicPathOption; // -foc-intrinsic-path=
+  string_vector wrapperArgs;       // built by setup(); [0] is compilerArgv0
+  string_vector userArgs;          // the user's arguments, after wrapperArgs
 };
 
 } // namespace target

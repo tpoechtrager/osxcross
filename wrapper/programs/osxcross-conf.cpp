@@ -47,7 +47,7 @@ int conf(int, char **, Target &target) {
   std::string BuildDir = getBuildDir();
 
   if (BuildDir.empty()) {
-    BuildDir += target.execpath;
+    BuildDir += target.execDir;
     BuildDir += "/../../build";
   }
 
@@ -70,10 +70,10 @@ int conf(int, char **, Target &target) {
   print("SDK_VERSION", target.getSDKOSNum().shortStr());
   print("TARBALL_DIR", BuildDir + "/../tarballs");
   print("PATCH_DIR", BuildDir + "/../patches");
-  print("TARGET_DIR", std::string(target.execpath) + "/..");
+  print("TARGET_DIR", std::string(target.execDir) + "/..");
   print("DIR_SDK_TOOLS", SDKPath + "/../tools");
   print("BUILD_DIR", BuildDir);
-  print("CCTOOLS_PATH", target.execpath);
+  print("CCTOOLS_PATH", target.execDir);
   print("LIBLTO_PATH", ltopath);
   print("LINKER_VERSION", getLinkerVersion());
   print("SUPPORTED_ARCHS", getSupportedArchsString());

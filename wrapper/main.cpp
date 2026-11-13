@@ -62,10 +62,10 @@ typedef bool (*optFun)(Target &target, const char *opt, const char *val,
                       char **);
 
 bool versionmin(Target &target, const char *, const char *val, char **) {
-  target.OSNum = parseOSVersion(val);
+  target.deploymentTarget = parseOSVersion(val);
 
-  if (!target.OSNum.matchesString(val))
-    warn << "'-mmacosx-version-min=' (" << target.OSNum.Str()
+  if (!target.deploymentTarget.matchesString(val))
+    warn << "'-mmacosx-version-min=' (" << target.deploymentTarget.Str()
          << " != " << val << ")" << warn.endl();
 
   return true;
@@ -101,7 +101,7 @@ bool arch(Target &target, const char *opt, const char *val, char **) {
   if (target.isClang())
     target.addArch(arch);
   else
-    target.arch = arch;
+    target.primaryArch = arch;
 
   return true;
 }
@@ -146,17 +146,17 @@ bool language(Target &target, const char *, const char *val, char **) {
 
 bool usegcclibstdcxx(Target &target, const char *, const char *, char **) {
   target.stdlib = StdLib::libstdcxx;
-  target.usegcclibs = true;
+  target.useGCCLibs = true;
   return true;
 }
 
 bool compilerpath(Target &target, const char *, const char *path, char **) {
-  target.compilerpath = path;
+  target.compilerPath = path;
   return true;
 }
 
 bool intrinsicpath(Target &target, const char *, const char *path, char **) {
-  target.intrinsicpath = path;
+  target.intrinsicPathOption = path;
   return true;
 }
 
@@ -248,10 +248,10 @@ const Parser parser = {{
 }, getDebugLevel() > 0};
 
 bool parse(int argc, char **argv, Target &target) {
-  target.args.reserve(argc);
+  target.userArgs.reserve(argc);
 
   if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
-    target.OSNum = parseOSVersion(p);
+    target.deploymentTarget = parseOSVersion(p);
     unsetenv("MACOSX_DEPLOYMENT_TARGET");
   }
 
@@ -259,14 +259,14 @@ bool parse(int argc, char **argv, Target &target) {
     char *arg = argv[i];
 
     if (*arg != '-') {
-      target.args.push_back(arg);
+      target.userArgs.push_back(arg);
       continue;
     }
 
     const Parser::Option *opt = parser.parse(arg);
 
     if (!opt) {
-      target.args.push_back(arg);
+      target.userArgs.push_back(arg);
       continue;
     }
 
@@ -304,7 +304,7 @@ bool parse(int argc, char **argv, Target &target) {
 
     if (pusharg) {
       for (int j = firstArg; j <= i; ++j)
-        target.args.push_back(argv[j]);
+        target.userArgs.push_back(argv[j]);
     }
   }
 
@@ -314,21 +314,21 @@ bool parse(int argc, char **argv, Target &target) {
 } // namespace commandopts
 
 void detectCXXLib(Target &target) {
-  if (target.compilername.size() <= 7)
+  if (target.compilerName.size() <= 7)
     return;
 
   StdLib prevstdlib = target.stdlib;
 
-  if (endsWith(target.compilername, "-stdc++")) {
+  if (endsWith(target.compilerName, "-stdc++")) {
     target.stdlib = StdLib::libstdcxx;
-    target.compilername.resize(target.compilername.size() - 7);
-  } else if (endsWith(target.compilername, "-gstdc++")) {
+    target.compilerName.resize(target.compilerName.size() - 7);
+  } else if (endsWith(target.compilerName, "-gstdc++")) {
     target.stdlib = StdLib::libstdcxx;
-    target.usegcclibs = true;
-    target.compilername.resize(target.compilername.size() - 8);
-  } else if (endsWith(target.compilername, "-libc++")) {
+    target.useGCCLibs = true;
+    target.compilerName.resize(target.compilerName.size() - 8);
+  } else if (endsWith(target.compilerName, "-libc++")) {
     target.stdlib = StdLib::libcxx;
-    target.compilername.resize(target.compilername.size() - 7);
+    target.compilerName.resize(target.compilerName.size() - 7);
   }
 
   if (prevstdlib != StdLib::unset && prevstdlib != target.stdlib)
@@ -363,9 +363,9 @@ bool detectTarget(int argc, char **argv, Target &target) {
   memcpy(archName, cmd, len);
   archName[len] = '\0';
 
-  target.arch = parseArch(archName);
+  target.primaryArch = parseArch(archName);
 
-  if (target.arch != Arch::unknown) {
+  if (target.primaryArch != Arch::unknown) {
     cmd += len;
 
     if (*cmd++ != '-')
@@ -382,21 +382,21 @@ bool detectTarget(int argc, char **argv, Target &target) {
     if (!(p = strchr(cmd, '-')))
       return false;
 
-    target.target = std::string(cmd, p - cmd);
+    target.targetOS = std::string(cmd, p - cmd);
     target.compiler = getCompilerIdentifier(&p[1]);
-    target.compilername = &p[1];
+    target.compilerName = &p[1];
 
-    if (target.compilername == "cc") {
+    if (target.compilerName == "cc") {
       target.compiler = getDefaultCompilerIdentifier();
-      target.compilername = getDefaultCompilerName();
-    } else if (target.compilername == "c++") {
+      target.compilerName = getDefaultCompilerName();
+    } else if (target.compilerName == "c++") {
       target.compiler = getDefaultCXXCompilerIdentifier();
-      target.compilername = getDefaultCXXCompilerName();
-    } else if (auto *prog = program::getprog(target.compilername)) {
+      target.compilerName = getDefaultCXXCompilerName();
+    } else if (auto *prog = program::getprog(target.compilerName)) {
       (*prog)(argc, argv, target);
     }
 
-    if (target.target != getDefaultTarget())
+    if (target.targetOS != getDefaultTarget())
       warn << "this wrapper was built for target "
             << "'" << getDefaultTarget() << "'" << warn.endl();
 
@@ -408,22 +408,22 @@ bool detectTarget(int argc, char **argv, Target &target) {
   }
 
   if (!strncmp(cmd, "o32", 3))
-    target.arch = Arch::i386;
+    target.primaryArch = Arch::i386;
   else if (!strncmp(cmd, "o64h", 4))
-    target.arch = Arch::x86_64h;
+    target.primaryArch = Arch::x86_64h;
   else if (!strncmp(cmd, "o64", 3))
-    target.arch = Arch::x86_64;
+    target.primaryArch = Arch::x86_64;
   else if (!strncmp(cmd, "oa64e", 5))
-    target.arch = Arch::arm64e;
+    target.primaryArch = Arch::arm64e;
   else if (!strncmp(cmd, "oa64", 4))
-    target.arch = Arch::arm64;
+    target.primaryArch = Arch::arm64;
   else
     return false;
 
   if (const char *p = strchr(cmd, '-')) {
     const char *compilername = &cmd[p - cmd + 1];
     target.compiler = getCompilerIdentifier(compilername);
-    target.compilername = compilername;
+    target.compilerName = compilername;
   }
 
   if (!commandopts::parse(argc, argv, target))
@@ -487,7 +487,7 @@ int main(int argc, char **argv) {
 
     if (debug >= 2) {
       dbg << "detected target triple: " << target.getTriple() << dbg.endl();
-      dbg << "detected compiler: " << target.compilername << dbg.endl();
+      dbg << "detected compiler: " << target.compilerName << dbg.endl();
 
       dbg << "detected stdlib: " << getStdLibString(target.stdlib)
           << dbg.endl();
@@ -498,9 +498,9 @@ int main(int argc, char **argv) {
 
 #ifdef __DragonFly__
   // Escape DragonFlyBSD's weird PFS paths.
-  prependEnvVariable("COMPILER_PATH", escapePath(target.execpath));
+  prependEnvVariable("COMPILER_PATH", escapePath(target.execDir));
 #else
-  prependEnvVariable("COMPILER_PATH", target.execpath);
+  prependEnvVariable("COMPILER_PATH", target.execDir);
 #endif
 
   auto printCommand = [&]() {
@@ -512,22 +512,22 @@ int main(int argc, char **argv) {
       in += " ";
     }
 
-    out += target.compilerpath;
+    out += target.compilerPath;
 
-    if (target.compilerpath != target.fargs[0]) {
+    if (target.compilerPath != target.wrapperArgs[0]) {
       out += " (";
-      out += target.fargs[0];
+      out += target.wrapperArgs[0];
       out += ") ";
     } else {
       out += " ";
     }
 
-    for (size_t i = 1; i < target.fargs.size(); ++i) {
-      out += target.fargs[i];
+    for (size_t i = 1; i < target.wrapperArgs.size(); ++i) {
+      out += target.wrapperArgs[i];
       out += " ";
     }
 
-    for (auto &arg : target.args) {
+    for (auto &arg : target.userArgs) {
       out += arg;
       out += " ";
     }
@@ -551,10 +551,10 @@ int main(int argc, char **argv) {
     return 0;
 
   if (rc == -1) {
-    string_vector cargs = target.fargs;
-    cargs.insert(cargs.end(), target.args.begin(), target.args.end());
+    string_vector cargs = target.wrapperArgs;
+    cargs.insert(cargs.end(), target.userArgs.begin(), target.userArgs.end());
 
-    program::execProgram(target.compilerpath, cargs);
+    program::execProgram(target.compilerPath, cargs);
 
     if (!debug)
       printCommand();

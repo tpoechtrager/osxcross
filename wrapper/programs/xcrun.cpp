@@ -228,7 +228,7 @@ int showSDKVersion(Target *target, char**) {
 }
 
 int showPlatformPath(Target *target, char**) {
-  std::cout << target->execpath << "/.." << std::endl;
+  std::cout << target->execDir << "/.." << std::endl;
   return 0;
 }
 

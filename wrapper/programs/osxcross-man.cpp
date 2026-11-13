@@ -45,7 +45,7 @@ int man(int argc, char **argv, Target &target) {
   std::vector<std::string> manpaths;
 
   manpaths.push_back(SDKPath + "/usr/share/man");
-  manpaths.push_back(std::string(target.execpath) + "/../share/man");
+  manpaths.push_back(std::string(target.execDir) + "/../share/man");
 
   unsetenv("MANPATH");
 
