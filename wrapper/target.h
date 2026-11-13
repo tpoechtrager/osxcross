@@ -193,7 +193,7 @@ struct Target {
   void setCompilerPath();
   bool findClangIntrinsicHeadersAndVersion(std::string &path);
 
-  void setupGCCLibs(Arch arch);
+  void addGCCRuntimeLibs(const std::string &SDKPath, Arch arch);
   void setTriple(bool useAarch64InsteadOfArm64 = false);
   bool setup();
 
@@ -206,6 +206,7 @@ struct Target {
   StdLib stdlib;
   ClangVersion clangversion;
   GCCVersion gccversion;
+  std::string gcctriple; // of the GCC installed by ./build_gcc.sh
   bool usegcclibs;
   Compiler compiler;
   std::string compilerpath;     // /usr/bin/clang | [...]/target/bin/*-gcc

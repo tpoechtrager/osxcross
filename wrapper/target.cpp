@@ -535,71 +535,64 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
   return found(intrindir, cv);
 }
 
-void Target::setupGCCLibs(Arch arch) {
-  assert(stdlib == StdLib::libstdcxx);
+// The GCC runtime is linked statically, unless the user asks for the shared
+// one.
+static bool useStaticGCCRuntime() {
+  return !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
+}
+
+// Links the libstdc++ and libgcc installed by ./build_gcc.sh (clang++-gstdc++)
+// instead of the default libraries. They are found relative to the SDK:
+//
+//   <SDK>/../../<gcctriple>/lib[/i386]                  libstdc++, libsupc++
+//   <SDK>/../../lib/gcc/<gcctriple>/<version>[/i386]    libgcc, libemutls_w ...
+//
+// The i386 libraries are a multilib of the x86_64 GCC installation.
+void Target::addGCCRuntimeLibs(const std::string &SDKPath, Arch arch) {
+  assert(stdlib == StdLib::libstdcxx && usegcclibs);
+  assert(!gcctriple.empty());
+
+  const std::string multilib = arch == Arch::i386 ? "/i386" : "";
+  const std::string libgccDir = SDKPath + "/../../lib/gcc/" + gcctriple + "/" +
+                                gccversion.Str() + multilib;
+  const std::string libstdcxxDir = SDKPath + "/../../" + gcctriple + "/lib" +
+                                   multilib;
+  const bool dynamic = !useStaticGCCRuntime();
+
   fargs.push_back("-nodefaultlibs");
-
-  std::string SDKPath;
-  std::stringstream GCCLibSTDCXXPath;
-  std::stringstream GCCLibPath;
-
-  const bool dynamic = !!getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
-  // The i386 runtime is a multilib of the x86_64 GCC installation.
-  const std::string GCCTriple = makeTriple(
-      arch == Arch::arm64 ? Arch::aarch64 : Arch::x86_64, vendor, target);
-
-  getSDKPath(SDKPath);
-
-  GCCLibPath << SDKPath << "/../../lib/gcc/" << GCCTriple << "/"
-             << gccversion.Str();
-
-  GCCLibSTDCXXPath << SDKPath << "/../../" << GCCTriple << "/lib";
-
-  switch (arch) {
-  case Arch::i386:
-  case Arch::i486:
-  case Arch::i586:
-  case Arch::i686:
-    GCCLibPath << "/" << getArchName(Arch::i386);
-    GCCLibSTDCXXPath << "/" << getArchName(Arch::i386);
-    break;
-  default:
-    ;
-  }
 
   if (dynamic) {
     fargs.push_back("-L");
-    fargs.push_back(GCCLibPath.str());
+    fargs.push_back(libgccDir);
     fargs.push_back("-L");
-    fargs.push_back(GCCLibSTDCXXPath.str());
+    fargs.push_back(libstdcxxDir);
   }
 
-  auto addLib = [&](const std::stringstream &path, const char *lib) {
+  auto addLib = [&](const std::string &dir, const char *lib) {
     if (dynamic) {
       fargs.push_back("-l");
       fargs.push_back(lib);
     } else {
-      fargs.push_back(path.str() + "/lib" + lib + ".a");
+      fargs.push_back(dir + "/lib" + lib + ".a");
     }
   };
 
   fargs.push_back("-Qunused-arguments");
 
-  addLib(GCCLibSTDCXXPath, "stdc++");
-  addLib(GCCLibSTDCXXPath, "supc++");
-  addLib(GCCLibPath, "gcc");
+  addLib(libstdcxxDir, "stdc++");
+  addLib(libstdcxxDir, "supc++");
+  addLib(libgccDir, "gcc");
   // Fix #484: use the system unwinder with modern Darwin GCC runtimes.
   // https://github.com/tpoechtrager/osxcross/issues/484
   // Older GCC installations do not provide the weak emulated-TLS archive.
-  const bool useSystemUnwinder =
-      fileExists(GCCLibPath.str() + "/libemutls_w.a");
+  const bool useSystemUnwinder = fileExists(libgccDir + "/libemutls_w.a");
   if (useSystemUnwinder) {
-    addLib(GCCLibPath, "emutls_w");
+    addLib(libgccDir, "emutls_w");
     // Heap trampoline support is not present in every GCC version.
-    if (fileExists(GCCLibPath.str() + "/libheapt_w.a"))
-      addLib(GCCLibPath, "heapt_w");
+    if (fileExists(libgccDir + "/libheapt_w.a"))
+      addLib(libgccDir, "heapt_w");
   } else {
-    addLib(GCCLibPath, "gcc_eh");
+    addLib(libgccDir, "gcc_eh");
   }
 
   fargs.push_back("-lc");
@@ -823,6 +816,7 @@ bool Target::setup() {
 
       std::sort(v.begin(), v.end());
       gccversion = v[v.size() - 1];
+      gcctriple = CXXBuildTriple;
 
       CXXHeaderPath += "/";
       CXXHeaderPath += gccversion.Str();
@@ -904,10 +898,9 @@ bool Target::setup() {
         fargs.push_back("-femulated-tls");
       }
 
-      if (stdlib == StdLib::libstdcxx && usegcclibs && targetarchs.size() < 2 &&
-          !isGCH()) {
+      if (stdlib == StdLib::libstdcxx && usegcclibs && !isGCH()) {
         // Use libs from './build_gcc' installation
-        setupGCCLibs(targetarchs[0]);
+        addGCCRuntimeLibs(SDKPath, targetarchs[0]);
       }
     }
   } else if (isGCC()) {
@@ -924,7 +917,7 @@ bool Target::setup() {
         }
       }
     } else if (stdlib != StdLib::libcxx && !isGCH() &&
-               !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME")) {
+               useStaticGCCRuntime()) {
       fargs.push_back("-static-libgcc");
       fargs.push_back("-static-libstdc++");
     }
