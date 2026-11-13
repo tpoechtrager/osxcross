@@ -38,18 +38,18 @@
 using namespace tools;
 using namespace target;
 
-int unittest = 0;
+int unitTest = 0;
 int debug = 0;
 
 namespace {
 
 void warnExtension(const char *extension) {
-  static bool noextwarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
-  if (noextwarnings)
+  static bool noExtWarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
+  if (noExtWarnings)
     return;
   warn << extension << " is an osxcross extension" << warn.endl();
-  warninfo << "you can silence this warning via "
-           << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warninfo.endl();
+  warnInfo << "you can silence this warning via "
+           << "'OSXCROSS_NO_EXTENSION_WARNINGS=1' (env)" << warnInfo.endl();
 }
 
 //
@@ -58,14 +58,14 @@ void warnExtension(const char *extension) {
 
 namespace commandopts {
 
-typedef bool (*optFun)(Target &target, const char *opt, const char *val,
+typedef bool (*OptFun)(Target &target, const char *opt, const char *val,
                       char **);
 
-bool versionmin(Target &target, const char *, const char *val, char **) {
+bool versionMin(Target &target, const char *, const char *val, char **) {
   target.deploymentTarget = parseOSVersion(val);
 
   if (!target.deploymentTarget.matchesString(val))
-    warn << "'-mmacosx-version-min=' (" << target.deploymentTarget.Str()
+    warn << "'-mmacosx-version-min=' (" << target.deploymentTarget.str()
          << " != " << val << ")" << warn.endl();
 
   return true;
@@ -77,7 +77,7 @@ bool arch(Target &target, const char *opt, const char *val, char **) {
   if (!strcmp(opt, "-arch")) {
     arch = parseArch(val);
 
-    if (arch == Arch::unknown)
+    if (arch == Arch::UNKNOWN_ARCH)
       warn << "'-arch': unknown architecture '" << val << "'"
            << warn.endl();
 
@@ -90,9 +90,9 @@ bool arch(Target &target, const char *opt, const char *val, char **) {
       err << "'" << opt << "' is not supported" << err.endl();
       return false;
     } else if (!strcmp(opt, "-m32")) {
-      arch = Arch::i386;
+      arch = Arch::I386;
     } else if (!strcmp(opt, "-m64")) {
-      arch = Arch::x86_64;
+      arch = Arch::X86_64;
     } else {
       __builtin_unreachable();
     }
@@ -112,19 +112,19 @@ bool stdlib(Target &target, const char *, const char *val, char **) {
 
   size_t i = 0;
 
-  for (auto stdlibname : StdLibNames) {
-    if (!strcmp(val, stdlibname)) {
-      target.stdlib = static_cast<StdLib>(i);
+  for (auto stdlibName : StdlibNames) {
+    if (!strcmp(val, stdlibName)) {
+      target.stdlib = static_cast<Stdlib>(i);
       break;
     }
     ++i;
   }
 
-  if (i == (sizeof(StdLibNames) / sizeof(StdLibNames[0]))) {
+  if (i == (sizeof(StdlibNames) / sizeof(StdlibNames[0]))) {
     err << "value of '-stdlib=' must be ";
 
     for (size_t j = 0; j < i; ++j) {
-      err << "'" << StdLibNames[j] << "'";
+      err << "'" << StdlibNames[j] << "'";
 
       if (j == i - 2)
         err << " or ";
@@ -144,30 +144,30 @@ bool language(Target &target, const char *, const char *val, char **) {
   return true;
 }
 
-bool usegcclibstdcxx(Target &target, const char *, const char *, char **) {
-  target.stdlib = StdLib::libstdcxx;
+bool useGCCLibstdcxx(Target &target, const char *, const char *, char **) {
+  target.stdlib = Stdlib::LIBSTDCXX;
   target.useGCCLibs = true;
   return true;
 }
 
-bool compilerpath(Target &target, const char *, const char *path, char **) {
+bool compilerPath(Target &target, const char *, const char *path, char **) {
   target.compilerPath = path;
   return true;
 }
 
-bool intrinsicpath(Target &target, const char *, const char *path, char **) {
+bool intrinsicPath(Target &target, const char *, const char *path, char **) {
   target.intrinsicPathOption = path;
   return true;
 }
 
-bool runprog(Target &target, const char *, const char *progname, char **cargs) {
-  auto *prog = program::getprog(progname);
+bool runProg(Target &target, const char *, const char *progName, char **cargs) {
+  auto *prog = program::getProg(progName);
 
   if (!prog)
     exit(EXIT_FAILURE);
 
   std::vector<char *> args;
-  args.push_back(const_cast<char *>(progname));
+  args.push_back(const_cast<char *>(progName));
 
   while (*cargs)
     args.push_back(*cargs++);
@@ -176,20 +176,20 @@ bool runprog(Target &target, const char *, const char *progname, char **cargs) {
   (*prog)(args.size() - 1, args.data(), target);
 }
 
-bool checkincludepath(Target &, const char *opt, const char *path, char **) {
+bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
 #ifndef __APPLE__
-  constexpr const char *DangerousIncludePaths[] = { "/usr/include",
+  constexpr const char *dangerousIncludePaths[] = { "/usr/include",
                                                     "/usr/local/include" };
 
-  static bool noinccheck = !!getenv("OSXCROSS_NO_INCLUDE_PATH_WARNINGS");
+  static bool noIncCheck = !!getenv("OSXCROSS_NO_INCLUDE_PATH_WARNINGS");
 
-  if (noinccheck)
+  if (noIncCheck)
     return true;
 
   char *resolved = realpath(path, nullptr);
   const char *rpath = resolved ? resolved : path;
 
-  for (const char *dpath : DangerousIncludePaths) {
+  for (const char *dpath : dangerousIncludePaths) {
     if (!strncmp(rpath, dpath, strlen(dpath))) {
       warn << "possibly dangerous include path specified: '" << opt << " "
            << path << "'";
@@ -199,9 +199,9 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
 
       warn << warn.endl();
 
-      warninfo << "you can silence this warning via "
+      warnInfo << "you can silence this warning via "
                << "'OSXCROSS_NO_INCLUDE_PATH_WARNINGS=1' (env)"
-               << warninfo.endl();
+               << warnInfo.endl();
     }
   }
 
@@ -214,37 +214,37 @@ bool checkincludepath(Target &, const char *opt, const char *path, char **) {
   return true;
 }
 
-typedef OptParser<optFun, 17> Parser;
+typedef OptParser<OptFun, 17> Parser;
 typedef Parser::ValueMode ValueMode;
 typedef Parser::Forwarding Forwarding;
 
 const Parser parser = {{
-  {"-mmacos-version-min", versionmin, ValueMode::joinedWithEquals},
-  {"-mmacosx-version-min", versionmin, ValueMode::joinedWithEquals},
-  {"-stdlib", stdlib, ValueMode::joinedWithEquals},
-  {"-arch", arch, ValueMode::separate},
+  {"-mmacos-version-min", versionMin, ValueMode::JOINED_WITH_EQUALS},
+  {"-mmacosx-version-min", versionMin, ValueMode::JOINED_WITH_EQUALS},
+  {"-stdlib", stdlib, ValueMode::JOINED_WITH_EQUALS},
+  {"-arch", arch, ValueMode::SEPARATE},
   {"-m16", arch},
   {"-m32", arch},
   {"-mx32", arch},
   {"-m64", arch},
-  {"-x", language, ValueMode::joinedOrSeparate, Forwarding::keep},
-  {"-foc-use-gcc-libstdc++", usegcclibstdcxx},
+  {"-x", language, ValueMode::JOINED_OR_SEPARATE, Forwarding::KEEP},
+  {"-foc-use-gcc-libstdc++", useGCCLibstdcxx},
   // for internal use only
-  {"-foc-run-prog", runprog, ValueMode::joinedWithEquals},
-  {"-isystem", checkincludepath, ValueMode::joinedOrSeparate,
-   Forwarding::keep},
-  {"-icxx-isystem", checkincludepath, ValueMode::joinedOrSeparate,
-   Forwarding::keep},
-  {"-cxx-isystem", checkincludepath, ValueMode::joinedOrSeparate,
-   Forwarding::keep},
-  {"-I", checkincludepath, ValueMode::joinedOrSeparate, Forwarding::keep},
+  {"-foc-run-prog", runProg, ValueMode::JOINED_WITH_EQUALS},
+  {"-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
+   Forwarding::KEEP},
+  {"-icxx-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
+   Forwarding::KEEP},
+  {"-cxx-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
+   Forwarding::KEEP},
+  {"-I", checkIncludePath, ValueMode::JOINED_OR_SEPARATE, Forwarding::KEEP},
 
   // sets a custom path for the compiler
-  {"-foc-compiler-path", compilerpath, ValueMode::joinedWithEquals},
+  {"-foc-compiler-path", compilerPath, ValueMode::JOINED_WITH_EQUALS},
 
   // specifies an additional directory to search when looking for clang's
   // intrinsic paths
-  {"-foc-intrinsic-path", intrinsicpath, ValueMode::joinedWithEquals}
+  {"-foc-intrinsic-path", intrinsicPath, ValueMode::JOINED_WITH_EQUALS}
 }, getDebugLevel() > 0};
 
 bool parse(int argc, char **argv, Target &target) {
@@ -270,14 +270,14 @@ bool parse(int argc, char **argv, Target &target) {
       continue;
     }
 
-    const bool pusharg = opt->forwarding == Forwarding::keep;
+    const bool pushArg = opt->forwarding == Forwarding::KEEP;
     const int firstArg = i;
     const char *val = nullptr;
 
-    if (opt->valueMode != ValueMode::none) {
-      val = arg + opt->namelen;
+    if (opt->valueMode != ValueMode::NONE) {
+      val = arg + opt->nameLen;
 
-      if (opt->valueMode == ValueMode::joinedWithEquals) {
+      if (opt->valueMode == ValueMode::JOINED_WITH_EQUALS) {
         if (*val != '=') {
           err << "expected '" << opt->name << "=<val>' "
               << "instead of '" << arg << "'" << err.endl();
@@ -287,7 +287,7 @@ bool parse(int argc, char **argv, Target &target) {
         ++val;
       }
 
-      if (opt->valueMode != ValueMode::joinedWithEquals &&
+      if (opt->valueMode != ValueMode::JOINED_WITH_EQUALS &&
           !*val && i < argc - 1)
         val = argv[++i];
 
@@ -302,7 +302,7 @@ bool parse(int argc, char **argv, Target &target) {
     if (opt->fun && !opt->fun(target, opt->name, val, &argv[i + 1]))
       return false;
 
-    if (pusharg) {
+    if (pushArg) {
       for (int j = firstArg; j <= i; ++j)
         target.userArgs.push_back(argv[j]);
     }
@@ -317,22 +317,22 @@ void detectCXXLib(Target &target) {
   if (target.compilerName.size() <= 7)
     return;
 
-  StdLib prevstdlib = target.stdlib;
+  Stdlib prevStdlib = target.stdlib;
 
   if (endsWith(target.compilerName, "-stdc++")) {
-    target.stdlib = StdLib::libstdcxx;
+    target.stdlib = Stdlib::LIBSTDCXX;
     target.compilerName.resize(target.compilerName.size() - 7);
   } else if (endsWith(target.compilerName, "-gstdc++")) {
-    target.stdlib = StdLib::libstdcxx;
+    target.stdlib = Stdlib::LIBSTDCXX;
     target.useGCCLibs = true;
     target.compilerName.resize(target.compilerName.size() - 8);
   } else if (endsWith(target.compilerName, "-libc++")) {
-    target.stdlib = StdLib::libcxx;
+    target.stdlib = Stdlib::LIBCXX;
     target.compilerName.resize(target.compilerName.size() - 7);
   }
 
-  if (prevstdlib != StdLib::unset && prevstdlib != target.stdlib)
-    warn << "ignoring '-stdlib=" << getStdLibString(prevstdlib) << "'"
+  if (prevStdlib != Stdlib::UNSET && prevStdlib != target.stdlib)
+    warn << "ignoring '-stdlib=" << getStdlibString(prevStdlib) << "'"
          << warn.endl();
 }
 
@@ -350,7 +350,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
   if (p)
     cmd = &p[1];
 
-  if (auto *prog = program::getprog(cmd))
+  if (auto *prog = program::getProg(cmd))
     (*prog)(argc, argv, target);
 
   // -> x86_64 <- -apple-darwin13
@@ -365,7 +365,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   target.primaryArch = parseArch(archName);
 
-  if (target.primaryArch != Arch::unknown) {
+  if (target.primaryArch != Arch::UNKNOWN_ARCH) {
     cmd += len;
 
     if (*cmd++ != '-')
@@ -392,7 +392,7 @@ bool detectTarget(int argc, char **argv, Target &target) {
     } else if (target.compilerName == "c++") {
       target.compiler = getDefaultCXXCompilerIdentifier();
       target.compilerName = getDefaultCXXCompilerName();
-    } else if (auto *prog = program::getprog(target.compilerName)) {
+    } else if (auto *prog = program::getProg(target.compilerName)) {
       (*prog)(argc, argv, target);
     }
 
@@ -408,22 +408,22 @@ bool detectTarget(int argc, char **argv, Target &target) {
   }
 
   if (!strncmp(cmd, "o32", 3))
-    target.primaryArch = Arch::i386;
+    target.primaryArch = Arch::I386;
   else if (!strncmp(cmd, "o64h", 4))
-    target.primaryArch = Arch::x86_64h;
+    target.primaryArch = Arch::X86_64H;
   else if (!strncmp(cmd, "o64", 3))
-    target.primaryArch = Arch::x86_64;
+    target.primaryArch = Arch::X86_64;
   else if (!strncmp(cmd, "oa64e", 5))
-    target.primaryArch = Arch::arm64e;
+    target.primaryArch = Arch::ARM64E;
   else if (!strncmp(cmd, "oa64", 4))
-    target.primaryArch = Arch::arm64;
+    target.primaryArch = Arch::ARM64;
   else
     return false;
 
   if (const char *p = strchr(cmd, '-')) {
-    const char *compilername = &cmd[p - cmd + 1];
-    target.compiler = getCompilerIdentifier(compilername);
-    target.compilerName = compilername;
+    const char *compilerName = &cmd[p - cmd + 1];
+    target.compiler = getCompilerIdentifier(compilerName);
+    target.compilerName = compilerName;
   }
 
   if (!commandopts::parse(argc, argv, target))
@@ -438,23 +438,23 @@ bool detectTarget(int argc, char **argv, Target &target) {
 //
 
 // Measures the elapsed time, excluding the time between halt() and resume().
-class benchmark {
-  typedef std::chrono::steady_clock clock;
+class Benchmark {
+  typedef std::chrono::steady_clock Clock;
 
 public:
-  benchmark() : start(clock::now()) {}
+  Benchmark() : start(Clock::now()) {}
 
   double getMilliseconds() const {
-    return std::chrono::duration<double, std::milli>(clock::now() - start)
+    return std::chrono::duration<double, std::milli>(Clock::now() - start)
         .count();
   }
 
-  void halt() { haltTime = clock::now(); }
-  void resume() { start += clock::now() - haltTime; }
+  void halt() { haltTime = Clock::now(); }
+  void resume() { start += Clock::now() - haltTime; }
 
 private:
-  clock::time_point start;
-  clock::time_point haltTime;
+  Clock::time_point start;
+  Clock::time_point haltTime;
 };
 
 } // unnamed namespace
@@ -464,14 +464,14 @@ private:
 //
 
 int main(int argc, char **argv) {
-  benchmark b;
+  Benchmark b;
   Target target;
   int rc = -1;
 
   debug = getDebugLevel();
 
   if (char *p = getenv("OSXCROSS_UNIT_TEST")) {
-    unittest = atoi(p);
+    unitTest = atoi(p);
 
     if ((p = getenv("OSXCROSS_PROG_NAME")))
       argv[0] = p;
@@ -489,7 +489,7 @@ int main(int argc, char **argv) {
       dbg << "detected target triple: " << target.getTriple() << dbg.endl();
       dbg << "detected compiler: " << target.compilerName << dbg.endl();
 
-      dbg << "detected stdlib: " << getStdLibString(target.stdlib)
+      dbg << "detected stdlib: " << getStdlibString(target.stdlib)
           << dbg.endl();
 
       b.resume();
@@ -532,7 +532,7 @@ int main(int argc, char **argv) {
       out += " ";
     }
 
-    if (!unittest)
+    if (!unitTest)
       dbg << "--> " << in << dbg.endl();
 
     dbg << "<-- " << out << dbg.endl();
@@ -547,11 +547,11 @@ int main(int argc, char **argv) {
     dbg << "=== time spent in wrapper: " << ms << " ms" << dbg.endl();
   }
 
-  if (unittest == 2)
+  if (unitTest == 2)
     return 0;
 
   if (rc == -1) {
-    string_vector cargs = target.wrapperArgs;
+    StringVector cargs = target.wrapperArgs;
     cargs.insert(cargs.end(), target.userArgs.begin(), target.userArgs.end());
 
     program::execProgram(target.compilerPath, cargs);

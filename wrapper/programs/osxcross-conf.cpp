@@ -37,44 +37,45 @@ namespace osxcross {
 template<typename A>
 
 void print(const char *var, const A &val) {
-  std::cout << "export OSXCROSS_" << var << "=" << "\"" << val << "\"" << std::endl;
+  std::cout << "export OSXCROSS_" << var << "=" << "\"" << val << "\""
+            << std::endl;
 }
 
 int conf(int, char **, Target &target) {
-  std::string SDKPath;
-  OSVersion OSXVersionMin = getDefaultMinTarget();
-  const char *ltopath = getLibLTOPath();
-  std::string BuildDir = getBuildDir();
+  std::string sdkPath;
+  OSVersion osxVersionMin = getDefaultMinTarget();
+  const char *ltoPath = getLibLTOPath();
+  std::string buildDir = getBuildDir();
 
-  if (BuildDir.empty()) {
-    BuildDir += target.execDir;
-    BuildDir += "/../../build";
+  if (buildDir.empty()) {
+    buildDir += target.execDir;
+    buildDir += "/../../build";
   }
 
-  if (!target.getSDKPath(SDKPath))
+  if (!target.getSDKPath(sdkPath))
     return 1;
 
-  if (!OSXVersionMin.Num())
-    OSXVersionMin = target.getSDKOSNum();
+  if (!osxVersionMin.num())
+    osxVersionMin = target.getSDKOSNum();
 
-  if (!ltopath)
-    ltopath = "";
+  if (!ltoPath)
+    ltoPath = "";
 
   print("VERSION", getOSXCrossVersion());
   print("BUILD_FLAVOR", getBuildFlavor());
-  print("OSX_VERSION_MIN", OSXVersionMin.shortStr());
+  print("OSX_VERSION_MIN", osxVersionMin.shortStr());
   print("TARGET", getDefaultTarget());
-  print("BASE_DIR", BuildDir + "/..");
-  print("SDK", SDKPath);
-  print("SDK_DIR", SDKPath + "/..");
+  print("BASE_DIR", buildDir + "/..");
+  print("SDK", sdkPath);
+  print("SDK_DIR", sdkPath + "/..");
   print("SDK_VERSION", target.getSDKOSNum().shortStr());
-  print("TARBALL_DIR", BuildDir + "/../tarballs");
-  print("PATCH_DIR", BuildDir + "/../patches");
+  print("TARBALL_DIR", buildDir + "/../tarballs");
+  print("PATCH_DIR", buildDir + "/../patches");
   print("TARGET_DIR", std::string(target.execDir) + "/..");
-  print("DIR_SDK_TOOLS", SDKPath + "/../tools");
-  print("BUILD_DIR", BuildDir);
+  print("DIR_SDK_TOOLS", sdkPath + "/../tools");
+  print("BUILD_DIR", buildDir);
   print("CCTOOLS_PATH", target.execDir);
-  print("LIBLTO_PATH", ltopath);
+  print("LIBLTO_PATH", ltoPath);
   print("LINKER_VERSION", getLinkerVersion());
   print("SUPPORTED_ARCHS", getSupportedArchsString());
   print("GCC_TARGET_ARCHS", getSupportedArchsString(true));

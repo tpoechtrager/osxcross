@@ -39,9 +39,9 @@ namespace program {
 namespace osxcross {
 
 int env(int argc, char **argv, Target &) {
-  const char *oldpath = getenv("PATH");
+  const char *oldPath = getenv("PATH");
 
-  if (!oldpath)
+  if (!oldPath)
     abort();
 
   const std::string epath = getExecutableDir();
@@ -61,7 +61,7 @@ int env(int argc, char **argv, Target &) {
     }
   }
 
-  std::vector<std::string> path = splitPath(oldpath);
+  std::vector<std::string> path = splitPath(oldPath);
   std::map<std::string, std::string> vars;
 
   if (!hasPath(path, epath))

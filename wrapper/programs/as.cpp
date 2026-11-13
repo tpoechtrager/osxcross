@@ -40,7 +40,7 @@ using tools::err;
 // Darwin as(1) arguments for Clang's integrated assembler and must not be used
 // by the cctools-based stable or latest flavors.
 int as(int argc, char **argv, target::Target &target) {
-  if (!target.buildFlavor.IsLLVM()) {
+  if (!target.buildFlavor.isLLVM()) {
     err << "as: This wrapper is only intended to be used "
         << "with the OSXCross build flavor LLVM."
         << err.endl();
@@ -122,8 +122,9 @@ int as(int argc, char **argv, target::Target &target) {
   // Darwin as(1) accepts driver options that may be unused after translation.
   args.push_back("-Wno-unused-command-line-argument");
 
-  // The GCC wrapper communicates its selected deployment target through the environment;
-  // the standalone assembler invocation cannot otherwise recover that value.
+  // The GCC wrapper communicates its selected deployment target through the
+  // environment; the standalone assembler invocation cannot otherwise recover
+  // that value.
   if (const char *version = getenv("OSXCROSS_AS_TARGET_VERSION"))
     args.push_back(std::string("-mmacos-version-min=") + version);
 

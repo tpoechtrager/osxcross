@@ -36,14 +36,14 @@ using namespace tools;
 namespace program {
 namespace osxcross {
 
-struct envvar {
+struct EnvVar {
   std::string name;
   std::string value;
-  envvar() {}
-  envvar(std::string name, std::string value) : name(name), value(value) {}
+  EnvVar() {}
+  EnvVar(std::string name, std::string value) : name(name), value(value) {}
 };
 
-static envvar &var(const char *p, envvar &evar, const bool skipval = false) {
+static EnvVar &var(const char *p, EnvVar &evar, const bool skipVal = false) {
   if (!p)
     return evar;
 
@@ -53,45 +53,45 @@ static envvar &var(const char *p, envvar &evar, const bool skipval = false) {
 
   evar.name.assign(p, separator - p);
 
-  if (!skipval)
+  if (!skipVal)
     evar.value.assign(separator + 1);
 
   return evar;
 }
 
 int pkg_config(int argc, char **argv, Target &target) {
-  std::vector<envvar> envvars;
-  std::vector<envvar> unset;
-  envvar evar;
-  bool usenativevariables = getenv("OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES");
+  std::vector<EnvVar> envVars;
+  std::vector<EnvVar> unset;
+  EnvVar evar;
+  bool useNativeVariables = getenv("OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES");
 
   if (!getenv("OSXCROSS_PKG_CONFIG_NO_MP_INC")) {
-    std::string MacPortsSysRoot;
+    std::string macPortsSysRoot;
 
-    if (target.getMacPortsSysRootDir(MacPortsSysRoot)) {
-      prependEnvVariable(usenativevariables ? "PKG_CONFIG_SYSROOT_DIR"
+    if (target.getMacPortsSysRootDir(macPortsSysRoot)) {
+      prependEnvVariable(useNativeVariables ? "PKG_CONFIG_SYSROOT_DIR"
                                             : "OSXCROSS_PKG_CONFIG_SYSROOT_DIR",
-                         MacPortsSysRoot);
+                         macPortsSysRoot);
 
-      std::string MacPortsPkgConfigPath;
+      std::string macPortsPkgConfigPath;
 
-      if (target.getMacPortsPkgConfigDir(MacPortsPkgConfigPath))
-        prependEnvVariable(usenativevariables ? "PKG_CONFIG_PATH"
+      if (target.getMacPortsPkgConfigDir(macPortsPkgConfigPath))
+        prependEnvVariable(useNativeVariables ? "PKG_CONFIG_PATH"
                                               : "OSXCROSS_PKG_CONFIG_PATH",
-                           MacPortsPkgConfigPath);
+                           macPortsPkgConfigPath);
     }
   } else {
     unsetenv("OSXCROSS_PKG_CONFIG_NO_MP_INC");
   }
 
-  if (!usenativevariables) {
+  if (!useNativeVariables) {
     // Map OSXCROSS_PKG_* to PKG_*.
     for (char **env = environ; *env; ++env) {
       char *p = *env;
 
       if (!strncmp(p, "OSXCROSS_PKG_CONFIG", 19)) {
         p += 9; // skip OSXCROSS_
-        envvars.push_back(var(p, evar));
+        envVars.push_back(var(p, evar));
       } else if (!strncmp(p, "PKG_CONFIG", 10)) {
         // Unset native pkg-config vars.
         unset.push_back(var(p, evar, true));
@@ -99,16 +99,16 @@ int pkg_config(int argc, char **argv, Target &target) {
     }
   }
 
-  if (usenativevariables || !envvars.empty()) {
-    if (!usenativevariables) {
-      for (const envvar &evar : unset) {
+  if (useNativeVariables || !envVars.empty()) {
+    if (!useNativeVariables) {
+      for (const EnvVar &evar : unset) {
         warn << argv[0] << ": ignoring environment variable '" << evar.name
              << "' - please see README.PKG-CONFIG.md for more" << warn.endl();
 
         unsetenv(evar.name.c_str());
       }
 
-      for (const envvar &evar : envvars)
+      for (const EnvVar &evar : envVars)
         setenv(evar.name.c_str(), evar.value.c_str(), 1);
     }
 

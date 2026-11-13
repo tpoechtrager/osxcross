@@ -39,20 +39,20 @@ int sw_vers(int argc, char **argv, Target &target) {
 
   auto getProductVer = [&]()->OSVersion {
     char *p = getenv("OSXCROSS_SW_VERS_OSX_VERSION");
-    OSVersion OSNum;
+    OSVersion osNum;
 
     if (!p)
       p = getenv("MACOSX_DEPLOYMENT_TARGET");
 
     if (p)
-      OSNum = parseOSVersion(p);
+      osNum = parseOSVersion(p);
     else
-      OSNum = getDefaultMinTarget();
+      osNum = getDefaultMinTarget();
 
-    if (!OSNum.Num())
-      OSNum = target.getSDKOSNum();
+    if (!osNum.num())
+      osNum = target.getSDKOSNum();
 
-    return OSNum;
+    return osNum;
   };
 
   if (argc == 2) {

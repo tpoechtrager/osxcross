@@ -100,13 +100,13 @@ std::string resolveArgv0(const std::string &argv0) {
     return path;
   }
 
-  const char *envpath = getenv("PATH");
+  const char *envPath = getenv("PATH");
 
-  if (!envpath)
+  if (!envPath)
     return std::string();
 
-  for (const std::string &dir : splitPath(envpath)) {
-    const std::string candidate = dir + PATHDIV + argv0;
+  for (const std::string &dir : splitPath(envPath)) {
+    const std::string candidate = dir + PathDiv + argv0;
     struct stat st;
 
     if (!stat(candidate.c_str(), &st) && (st.st_mode & S_IXUSR))
@@ -187,10 +187,10 @@ std::string getParentProcessName() {
     return name;
   }
 #else
-  const std::string procdir = "/proc/" + std::to_string(ppid);
+  const std::string procDir = "/proc/" + std::to_string(ppid);
   std::string name;
 
-  if (getFileContent(procdir + "/comm", name)) {
+  if (getFileContent(procDir + "/comm", name)) {
     if (!name.empty() && name.back() == '\n')
       name.pop_back();
 
@@ -199,7 +199,7 @@ std::string getParentProcessName() {
 
   std::vector<char> buf(PATH_MAX + 1);
   const ssize_t size =
-      readlink((procdir + "/exe").c_str(), buf.data(), buf.size() - 1);
+      readlink((procDir + "/exe").c_str(), buf.data(), buf.size() - 1);
 
   if (size > 0)
     return getFileName(buf.data());
@@ -212,14 +212,14 @@ std::string getParentProcessName() {
 //
 
 void prependEnvVariable(const char *var, const std::string &val) {
-  std::string newval = val;
+  std::string newVal = val;
 
-  if (const char *oldval = getenv(var)) {
-    newval += ':';
-    newval += oldval;
+  if (const char *oldVal = getenv(var)) {
+    newVal += ':';
+    newVal += oldVal;
   }
 
-  setenv(var, newval.c_str(), 1);
+  setenv(var, newVal.c_str(), 1);
 }
 
 std::string escapePath(const std::string &path) {
@@ -328,15 +328,15 @@ bool ignoreCCACHE(const std::string &path) {
 
 std::string findExecutableInPath(const std::string &file, bool resolve,
                                  bool (*accept)(const std::string &path)) {
-  const char *envpath = getenv("PATH");
+  const char *envPath = getenv("PATH");
 
   // splitPath() skips empty elements, so the current directory is never
   // searched.
   const std::vector<std::string> dirs =
-      envpath ? splitPath(envpath) : std::vector<std::string>();
+      envPath ? splitPath(envPath) : std::vector<std::string>();
 
   for (const std::string &dir : dirs) {
-    std::string path = dir + PATHDIV + file;
+    std::string path = dir + PathDiv + file;
     struct stat st;
 
     if (stat(path.c_str(), &st) != 0)
@@ -360,13 +360,13 @@ std::string findExecutableInPath(const std::string &file, bool resolve,
 }
 
 std::string getDirName(const std::string &file) {
-  const size_t slash = file.rfind(PATHDIV);
+  const size_t slash = file.rfind(PathDiv);
 
   if (slash == std::string::npos)
     return ".";
 
   if (slash == 0)
-    return std::string(1, PATHDIV);
+    return std::string(1, PathDiv);
 
   return file.substr(0, slash);
 }
@@ -414,13 +414,13 @@ bool getProgramOutput(const std::vector<std::string> &args,
     if (fds[1] != STDOUT_FILENO)
       close(fds[1]);
 
-    const int devnull = open("/dev/null", O_RDWR);
+    const int devNull = open("/dev/null", O_RDWR);
 
-    if (devnull < 0 || dup2(devnull, STDIN_FILENO) < 0 ||
-        dup2(devnull, STDERR_FILENO) < 0)
+    if (devNull < 0 || dup2(devNull, STDIN_FILENO) < 0 ||
+        dup2(devNull, STDERR_FILENO) < 0)
       _exit(127);
-    if (devnull > STDERR_FILENO)
-      close(devnull);
+    if (devNull > STDERR_FILENO)
+      close(devNull);
 
     std::vector<char *> argv;
     argv.reserve(args.size() + 1);
@@ -462,13 +462,13 @@ bool getProgramOutput(const std::vector<std::string> &args,
 }
 
 void stripFileName(std::string &path) {
-  size_t lastpathdiv = path.find_last_of(PATHDIV);
-  if (lastpathdiv != 0 && lastpathdiv != std::string::npos)
-    path.resize(lastpathdiv);
+  size_t lastPathDiv = path.find_last_of(PathDiv);
+  if (lastPathDiv != 0 && lastPathDiv != std::string::npos)
+    path.resize(lastPathDiv);
 }
 
 const char *getFileName(const char *file) {
-  const char *p = strrchr(file, PATHDIV);
+  const char *p = strrchr(file, PathDiv);
   return p ? p + 1 : file;
 }
 
@@ -476,28 +476,28 @@ const char *getFileName(const char *file) {
 // OSVersion
 //
 
-OSVersion parseOSVersion(const char *OSVer) {
-  OSVersion OSNum;
-  const char *p = OSVer;
+OSVersion parseOSVersion(const char *osVer) {
+  OSVersion osNum;
+  const char *p = osVer;
 
-  for (int *part : {&OSNum.major, &OSNum.minor, &OSNum.patch}) {
+  for (int *part : {&osNum.major, &osNum.minor, &osNum.patch}) {
     *part = atoi(p);
     if (!(p = strchr(p, '.')))
       break;
     ++p;
   }
 
-  return OSNum;
+  return osNum;
 }
 
-bool OSVersion::matchesString(const char *str) const {
-  switch (std::count(str, str + strlen(str), '.')) {
+bool OSVersion::matchesString(const char *versionStr) const {
+  switch (std::count(versionStr, versionStr + strlen(versionStr), '.')) {
   case 0:
-    return majorStr() == str;
+    return majorStr() == versionStr;
   case 1:
-    return shortStr() == str;
+    return shortStr() == versionStr;
   case 2:
-    return Str() == str;
+    return str() == versionStr;
   default:
     return false;
   }

@@ -37,21 +37,21 @@ namespace osxcross {
 
 int man(int argc, char **argv, Target &target) {
   bool isStandaloneOSXCrossMan = !endsWith(argv[0], "-osxcross-man");
-  std::string SDKPath;
+  std::string sdkPath;
 
-  if (!target.getSDKPath(SDKPath))
+  if (!target.getSDKPath(sdkPath))
     return 1;
 
-  std::vector<std::string> manpaths;
+  std::vector<std::string> manPaths;
 
-  manpaths.push_back(SDKPath + "/usr/share/man");
-  manpaths.push_back(std::string(target.execDir) + "/../share/man");
+  manPaths.push_back(sdkPath + "/usr/share/man");
+  manPaths.push_back(std::string(target.execDir) + "/../share/man");
 
   unsetenv("MANPATH");
 
-  for (const std::string &manpath : manpaths)
-    if (dirExists(manpath))
-      prependEnvVariable("MANPATH", manpath);
+  for (const std::string &manPath : manPaths)
+    if (dirExists(manPath))
+      prependEnvVariable("MANPATH", manPath);
 
   if (!getenv("MANPATH")) {
     err << "cannot find man pages!" << err.endl();
@@ -67,14 +67,15 @@ int man(int argc, char **argv, Target &target) {
     // Rewrite gcc to <triple>-gcc for compatibility
     // with other man pages
 
-    constexpr const char *GCCManPages[] = { "gcc", "g++", "cpp", "gcov" };
+    constexpr const char *gccManPages[] = { "gcc", "g++", "cpp", "gcov" };
 
-    for (const char *mp : GCCManPages) {
+    for (const char *mp : gccManPages) {
       if (arg == mp) {
         std::string triple;
         if (isStandaloneOSXCrossMan) {
           // osxcross-man -> use default GCC architecture for triple
-          target.buildDefaultTriple(triple, /* GCC */ true, /* useAarch64InsteadOfArm64 */ true);
+          target.buildDefaultTriple(triple, /* GCC */ true,
+                                    /* useAarch64InsteadOfArm64 */ true);
         } else {
           // <triple>-osxcross-man -> use the triple architecture for triple
           target.setTriple(/* useAarch64InsteadOfArm64 */ true);

@@ -33,13 +33,13 @@ using namespace target;
 namespace program {
 namespace {
 
-int version(Target*, char**) {
+int version(Target *, char **) {
   std::cout << "Xcode 11.0.0" << std::endl;
   std::cout << "Build version 0CFFFF" << std::endl;
   return 0;
 }
 
-int help(Target* = nullptr, char** = nullptr) {
+int help(Target * = nullptr, char ** = nullptr) {
   std::cerr << "Only '-version' is supported by this stub tool" << std::endl;
   return 0;
 }
@@ -47,9 +47,9 @@ int help(Target* = nullptr, char** = nullptr) {
 } // anonymous namespace
 
 int xcodebuild(int argc, char **argv, Target &target) {
-  auto dummy = [](Target*, char**) { return 0; };
+  auto dummy = [](Target *, char **) { return 0; };
 
-  ArgParser<int (*)(Target*, char**), 3> argParser = {{
+  ArgParser<int (*)(Target *, char **), 3> argParser = {{
     {"version", version},
     {"sdk", dummy},
     {"help", help}
@@ -65,7 +65,8 @@ int xcodebuild(int argc, char **argv, Target &target) {
 
     if (!b) {
       if (argv[i][0] == '-') {
-        err << "xcodebuild: unknown argument: '" << argv[i] << "'" << err.endl();
+        err << "xcodebuild: unknown argument: '" << argv[i] << "'"
+            << err.endl();
         retVal = 2;
         break;
       }

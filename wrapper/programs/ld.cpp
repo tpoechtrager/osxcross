@@ -41,7 +41,7 @@ using tools::err;
 // Apple ld64 arguments for ld64.lld and must not be used by the cctools-based
 // stable or latest flavors.
 int ld(int argc, char **argv, target::Target &target) {
-  if (!target.buildFlavor.IsLLVM()) {
+  if (!target.buildFlavor.isLLVM()) {
     err << "ld: This wrapper is only intended to be used "
         << "with the OSXCross build flavor LLVM."
         << err.endl();

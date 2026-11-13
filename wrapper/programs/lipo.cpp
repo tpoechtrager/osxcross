@@ -34,7 +34,7 @@ namespace llvm {
 using tools::err;
 
 int lipo(int argc, char **argv, target::Target &target) {
-  if (!target.buildFlavor.IsLLVM()) {
+  if (!target.buildFlavor.isLLVM()) {
     err << "lipo: This wrapper is only intended to be used "
         << "with the OSXCross build flavor LLVM."
         << err.endl();

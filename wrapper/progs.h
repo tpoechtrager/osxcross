@@ -51,14 +51,14 @@ void printExecProgramArgs(int argc, char **argv,
 
 // A program the wrapper provides: either a built-in function or an LLVM
 // tool that is executed with the same arguments.
-class prog {
+class Prog {
 public:
-  typedef int (*function)(int argc, char **argv, Target &target);
+  typedef int (*Function)(int argc, char **argv, Target &target);
 
-  constexpr prog(const char *name, function fun)
+  constexpr Prog(const char *name, Function fun)
       : name(name), fun(fun), tool(nullptr) {}
 
-  constexpr prog(const char *name, const char *tool)
+  constexpr Prog(const char *name, const char *tool)
       : name(name), fun(nullptr), tool(tool) {}
 
   __attribute__((noreturn))
@@ -72,7 +72,7 @@ public:
   const char *name;
 
 private:
-  function fun;
+  Function fun;
   const char *tool;
 };
 
@@ -101,7 +101,7 @@ int pkg_config(int argc, char **argv, Target &target);
 
 // The program with this name, for example "xcrun" or "otool"; nullptr if
 // there is none.
-const prog *getprog(const std::string &name);
+const Prog *getProg(const std::string &name);
 
 } // namespace program
 

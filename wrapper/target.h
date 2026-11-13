@@ -55,15 +55,15 @@ constexpr Compiler getDefaultCXXCompilerIdentifier() {
   return Compiler::CLANGXX;
 }
 
-constexpr const char *getSupportedArchsString(bool GCC = false) {
-  return GCC ? OSXCROSS_GCC_TARGET_ARCHS
+constexpr const char *getSupportedArchsString(bool gcc = false) {
+  return gcc ? OSXCROSS_GCC_TARGET_ARCHS
              : OSXCROSS_SUPPORTED_ARCHS;
 }
 
 // The architectures in SUPPORTED_ARCHS or, with GCC, GCC_TARGET_ARCHS; the
 // default architecture is the first one.
-std::vector<Arch> getSupportedArchs(bool GCC = false);
-Arch getDefaultArch(bool GCC = false);
+std::vector<Arch> getSupportedArchs(bool gcc = false);
+Arch getDefaultArch(bool gcc = false);
 
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
 
@@ -108,34 +108,34 @@ constexpr const char *getBuildFlavor() {
 
 class BuildFlavor {
 public:
-  BuildFlavor(const char *value = getBuildFlavor()) : type_(Parse(value)) {}
+  BuildFlavor(const char *value = getBuildFlavor()) : type(parse(value)) {}
 
-  bool IsStable() const { return type_ == Stable; }
-  bool IsLatest() const { return type_ == Latest; }
-  bool IsLLVM() const { return type_ == LLVM; }
-  bool IsValid() const { return type_ != Unknown; }
+  bool isStable() const { return type == STABLE; }
+  bool isLatest() const { return type == LATEST; }
+  bool isLLVM() const { return type == LLVM; }
+  bool isValid() const { return type != UNKNOWN_FLAVOR; }
 
 private:
   enum {
-    Stable,
-    Latest,
+    STABLE,
+    LATEST,
     LLVM,
-    Unknown
+    UNKNOWN_FLAVOR
   };
 
-  static int Parse(const char *value) {
+  static int parse(const char *value) {
     if (!value || !*value)
-      return Unknown;
+      return UNKNOWN_FLAVOR;
     if (!strcmp(value, "stable"))
-      return Stable;
+      return STABLE;
     if (!strcmp(value, "latest"))
-      return Latest;
+      return LATEST;
     if (!strcmp(value, "llvm"))
       return LLVM;
-    return Unknown;
+    return UNKNOWN_FLAVOR;
   }
 
-  int type_;
+  int type;
 };
 
 //
@@ -183,7 +183,7 @@ struct Target {
 
   const std::string &buildDefaultTriple(
     std::string &triple,
-    bool GCC = false, bool useAarch64InsteadOfArm64 = false) const;
+    bool gcc = false, bool useAarch64InsteadOfArm64 = false) const;
 
   const std::string &getTriple() const { return triple; }
 
@@ -195,7 +195,7 @@ struct Target {
   void setCompilerPath();
   bool findClangIntrinsicHeadersAndVersion(std::string &path);
 
-  void addGCCRuntimeLibs(const std::string &SDKPath, Arch arch);
+  void addGCCRuntimeLibs(const std::string &sdkPath, Arch arch);
   void setTriple(bool useAarch64InsteadOfArm64 = false);
   bool setup();
 
@@ -232,7 +232,7 @@ struct Target {
   //
   // C++ standard library
   //
-  StdLib stdlib;         // -stdlib= or the tool name; setup() resolves unset
+  Stdlib stdlib;         // -stdlib= or the tool name; setup() resolves unset
   bool useGCCLibs;       // -foc-use-gcc-libstdc++, clang++-gstdc++
   GCCVersion gccVersion; // of the GCC installed by ./build_gcc.sh
   std::string gccTriple; // of the GCC installed by ./build_gcc.sh
@@ -242,8 +242,8 @@ struct Target {
   //
   const char *language;            // -x <language>; nullptr: not given
   std::string intrinsicPathOption; // -foc-intrinsic-path=
-  string_vector wrapperArgs;       // built by setup(); [0] is compilerArgv0
-  string_vector userArgs;          // the user's arguments, after wrapperArgs
+  StringVector wrapperArgs;        // built by setup(); [0] is compilerArgv0
+  StringVector userArgs;           // the user's arguments, after wrapperArgs
 };
 
 } // namespace target

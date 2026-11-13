@@ -34,7 +34,7 @@ namespace tools {
 // Misc helper tools
 //
 
-typedef std::vector<std::string> string_vector;
+typedef std::vector<std::string> StringVector;
 
 inline bool endsWith(const std::string &str, const std::string &end) {
   return str.size() >= end.size() &&
@@ -106,21 +106,21 @@ private:
   const char *msg;
   Color color;
   std::ostream &os;
-  bool printprefix;
+  bool printPrefix;
 public:
   static constexpr char endl() { return '\n'; }
-  bool isendl(char c) { return c == '\n'; }
+  bool isEndl(char c) { return c == '\n'; }
   template<typename T>
-  bool isendl(T&&) { return false; }
+  bool isEndl(T&&) { return false; }
   template<typename T>
   Message &operator<<(T &&v) {
-    if (printprefix) {
+    if (printPrefix) {
       os << Color(FG_DARK_GRAY) << "osxcross: " << color << msg << ": "
          << Color(FG_DEFAULT);
-      printprefix = false;
+      printPrefix = false;
     }
-    if (isendl(v)) {
-      printprefix = true;
+    if (isEndl(v)) {
+      printPrefix = true;
       os << std::endl;
     } else {
       os << v;
@@ -128,9 +128,9 @@ public:
     return *this;
   }
   Message(const char *msg, Color color = FG_RED, std::ostream &os = std::cerr)
-      : msg(msg), color(color), os(os), printprefix(true) {}
+      : msg(msg), color(color), os(os), printPrefix(true) {}
 } warn("warning"), err("error"), dbg("debug", FG_LIGHT_MAGENTA),
-  info("info", FG_LIGHT_MAGENTA), warninfo("info", FG_LIGHT_MAGENTA);
+  info("info", FG_LIGHT_MAGENTA), warnInfo("info", FG_LIGHT_MAGENTA);
 
 //
 // Executable path
@@ -163,7 +163,7 @@ bool hasPath(const std::vector<std::string> &path, const std::string &dir);
 // Files and directories
 //
 
-constexpr char PATHDIV = '/';
+constexpr char PathDiv = '/';
 
 // Reads the whole file into content; false if it cannot be opened.
 bool getFileContent(const std::string &file, std::string &content);
@@ -177,8 +177,9 @@ std::vector<std::string> listFiles(const std::string &dir);
 // First match for <file> in the PATH directories, resolved with realpath()
 // unless resolve is false. If accept() rejects a match, the search goes on.
 // Returns an empty string if nothing is found.
-std::string findExecutableInPath(const std::string &file, bool resolve = true,
-                                 bool (*accept)(const std::string &path) = nullptr);
+std::string
+findExecutableInPath(const std::string &file, bool resolve = true,
+                     bool (*accept)(const std::string &path) = nullptr);
 // accept() for findExecutableInPath(): rejects ccache, for example a
 // /usr/lib/ccache/clang symlink that resolves to ccache.
 bool ignoreCCACHE(const std::string &path);
@@ -208,44 +209,45 @@ bool getProgramOutput(const std::vector<std::string> &args,
 template <typename T, size_t size = 0> struct OptParser {
   // Defines both how an option receives its value and which spellings match.
   enum class ValueMode {
-    none,             // Exact flag without a value, e.g. "-m64".
-    separate,         // Exact option followed by its value, e.g. "-arch arm64".
-    joinedOrSeparate, // Joined or separate value, e.g. "-Ifoo" or "-I foo".
-    joinedWithEquals  // Joined using '=', e.g. "-stdlib=libc++".
+    NONE,               // Exact flag without a value, e.g. "-m64".
+    SEPARATE,           // Exact option followed by its value,
+                        // e.g. "-arch arm64".
+    JOINED_OR_SEPARATE, // Joined or separate value, e.g. "-Ifoo" or "-I foo".
+    JOINED_WITH_EQUALS  // Joined using '=', e.g. "-stdlib=libc++".
   };
 
   // Tells the caller whether matched argument tokens must be forwarded.
   enum class Forwarding {
-    discard, // Consume the option in the wrapper.
-    keep     // Keep the option and its value for the wrapped program.
+    DISCARD, // Consume the option in the wrapper.
+    KEEP     // Keep the option and its value for the wrapped program.
   };
 
   struct Option {
     const char *name;
-    const size_t namelen;
+    const size_t nameLen;
     const T fun;
     const ValueMode valueMode;
     const Forwarding forwarding;
 
     constexpr Option(const char *name, T fun,
-                     const ValueMode valueMode = ValueMode::none,
-                     const Forwarding forwarding = Forwarding::discard)
-        : name(name), namelen(constexprStrLen(name)), fun(fun),
+                     const ValueMode valueMode = ValueMode::NONE,
+                     const Forwarding forwarding = Forwarding::DISCARD)
+        : name(name), nameLen(constexprStrLen(name)), fun(fun),
           valueMode(valueMode), forwarding(forwarding) {}
 
     bool matches(const char *arg) const {
-      if (strncmp(arg, name, namelen))
+      if (strncmp(arg, name, nameLen))
         return false;
 
-      const char *suffix = arg + namelen;
+      const char *suffix = arg + nameLen;
 
       switch (valueMode) {
-      case ValueMode::none:
-      case ValueMode::separate:
+      case ValueMode::NONE:
+      case ValueMode::SEPARATE:
         return !*suffix;
-      case ValueMode::joinedOrSeparate:
+      case ValueMode::JOINED_OR_SEPARATE:
         return true;
-      case ValueMode::joinedWithEquals:
+      case ValueMode::JOINED_WITH_EQUALS:
         // Match the bare option too, allowing the caller to diagnose a
         // missing "=<value>" instead of treating the option as unknown.
         return !*suffix || *suffix == '=';
@@ -283,7 +285,7 @@ template <typename T, size_t size = 0> struct OptParser {
       dbg << " with value '" << value << "'";
 
     dbg << " from argument '" << arg << "' ("
-        << (option.forwarding == Forwarding::keep ? "forwarded" : "consumed")
+        << (option.forwarding == Forwarding::KEEP ? "forwarded" : "consumed")
         << ")" << dbg.endl();
   }
 };
@@ -332,39 +334,40 @@ struct OSVersion {
       : major(major), minor(minor), patch(patch) {}
   constexpr OSVersion() : major(), minor(), patch() {}
 
-  constexpr int Num() const {
+  constexpr int num() const {
     return major * 10000 + minor * 100 + patch;
   }
 
-  constexpr bool operator>(const OSVersion &OSNum) const {
-    return Num() > OSNum.Num();
+  constexpr bool operator>(const OSVersion &osNum) const {
+    return num() > osNum.num();
   }
 
-  constexpr bool operator>=(const OSVersion &OSNum) const {
-    return Num() >= OSNum.Num();
+  constexpr bool operator>=(const OSVersion &osNum) const {
+    return num() >= osNum.num();
   }
 
-  constexpr bool operator<(const OSVersion &OSNum) const {
-    return Num() < OSNum.Num();
+  constexpr bool operator<(const OSVersion &osNum) const {
+    return num() < osNum.num();
   }
 
-  constexpr bool operator<=(const OSVersion &OSNum) const {
-    return Num() <= OSNum.Num();
+  constexpr bool operator<=(const OSVersion &osNum) const {
+    return num() <= osNum.num();
   }
 
-  constexpr bool operator==(const OSVersion &OSNum) const {
-    return Num() == OSNum.Num();
+  constexpr bool operator==(const OSVersion &osNum) const {
+    return num() == osNum.num();
   }
 
-  constexpr bool operator!=(const OSVersion &OSNum) const {
-    return Num() != OSNum.Num();
+  constexpr bool operator!=(const OSVersion &osNum) const {
+    return num() != osNum.num();
   }
 
-  // True if str is this version written with as many parts as str has,
-  // e.g. "10", "10.9" or "10.9.0" for 10.9.0, but not "10.09".
-  bool matchesString(const char *str) const;
+  // True if versionStr is this version written with as many parts as
+  // versionStr has, e.g. "10", "10.9" or "10.9.0" for 10.9.0, but not
+  // "10.09".
+  bool matchesString(const char *versionStr) const;
 
-  std::string Str() const { return shortStr() + "." + std::to_string(patch); }
+  std::string str() const { return shortStr() + "." + std::to_string(patch); }
 
   std::string shortStr() const {
     return std::to_string(major) + "." + std::to_string(minor);
@@ -372,7 +375,7 @@ struct OSVersion {
 
   std::string majorStr() const { return std::to_string(major); }
 
-  std::string numStr() const { return std::to_string(Num()); }
+  std::string numStr() const { return std::to_string(num()); }
 
   int major;
   int minor;
@@ -381,10 +384,12 @@ struct OSVersion {
 
 static_assert(OSVersion(10, 6) != OSVersion(10, 5), "");
 
-OSVersion parseOSVersion(const char *OSVer);
+OSVersion parseOSVersion(const char *osVer);
 
 typedef OSVersion GCCVersion;
-inline GCCVersion parseGCCVersion(const char *ver) { return parseOSVersion(ver); }
+inline GCCVersion parseGCCVersion(const char *ver) {
+  return parseOSVersion(ver);
+}
 
 typedef OSVersion ClangVersion;
 inline ClangVersion parseClangVersion(const char *ver) {
@@ -411,19 +416,19 @@ enum Compiler : int {
   CLANGXX,
   GCC,
   GXX,
-  UNKNOWN // Upper-case to avoid clash with "enum Arch"
+  UNKNOWN_COMPILER
 };
 
-inline Compiler getCompilerIdentifier(const char *compilername) {
-  if (!strncmp(compilername, "clang++", 7))
+inline Compiler getCompilerIdentifier(const char *compilerName) {
+  if (!strncmp(compilerName, "clang++", 7))
     return Compiler::CLANGXX;
-  if (!strncmp(compilername, "clang", 5))
+  if (!strncmp(compilerName, "clang", 5))
     return Compiler::CLANG;
-  if (!strncmp(compilername, "g++", 3))
+  if (!strncmp(compilerName, "g++", 3))
     return Compiler::GXX;
-  if (!strncmp(compilername, "gcc", 3))
+  if (!strncmp(compilerName, "gcc", 3))
     return Compiler::GCC;
-  return Compiler::UNKNOWN;
+  return Compiler::UNKNOWN_COMPILER;
 }
 
 //
@@ -431,16 +436,16 @@ inline Compiler getCompilerIdentifier(const char *compilername) {
 //
 
 enum Arch {
-  arm64,
-  aarch64,
-  arm64e,
-  i386,
-  i486,
-  i586,
-  i686,
-  x86_64,
-  x86_64h, // Haswell
-  unknown
+  ARM64,
+  AARCH64,
+  ARM64E,
+  I386,
+  I486,
+  I586,
+  I686,
+  X86_64,
+  X86_64H, // Haswell
+  UNKNOWN_ARCH
 };
 
 constexpr const char *ArchNames[] = {
@@ -462,37 +467,37 @@ constexpr const char *getArchName(Arch arch) {
 
 inline Arch parseArch(const char *arch) {
   if (!strcmp(arch, "aarch64")) // treat aarch64 as arm64
-    return Arch::arm64;
+    return Arch::ARM64;
 
   size_t i = 0;
-  for (auto archname : ArchNames) {
-    if (!strcmp(arch, archname)) {
+  for (auto archName : ArchNames) {
+    if (!strcmp(arch, archName)) {
       return static_cast<Arch>(i);
     }
     ++i;
   }
 
-  return Arch::unknown;
+  return Arch::UNKNOWN_ARCH;
 }
 
 //
 // Standard Library
 //
 
-enum StdLib {
-  unset,
-  libcxx,
-  libstdcxx
+enum Stdlib {
+  UNSET,
+  LIBCXX,
+  LIBSTDCXX
 };
 
-constexpr const char *StdLibNames[] = {
+constexpr const char *StdlibNames[] = {
   "default",
   "libc++",
   "libstdc++"
 };
 
-constexpr const char *getStdLibString(StdLib stdlib) {
-  return StdLibNames[stdlib];
+constexpr const char *getStdlibString(Stdlib stdlib) {
+  return StdlibNames[stdlib];
 }
 
 } // namespace tools
