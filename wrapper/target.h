@@ -147,16 +147,28 @@ private:
 std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
                        bool useAarch64InsteadOfArm64 = false);
 
+// The macOS version in the name of an SDK directory: 15.4 for
+// "/path/to/MacOSX15.4.sdk"; 0.0 if the name does not start with "MacOSX".
+OSVersion getSDKVersionFromPath(std::string sdkPath);
+
 struct Target {
   Target();
 
-  // The SDK in use is the SDK override (OSXCROSS_SDKROOT, which xcrun -sdk
-  // and SDKROOT also set) if there is one, otherwise the default SDK in
-  // <execDir>/../SDK, which is named after the macOS version that belongs
-  // to the target.
-  OSVersion getSDKOSNum() const;
-  std::string getDefaultSDKPath(bool majorVersionOnly) const;
-  bool getSDKPath(std::string &path) const;
+  // Determine the SDK in use, sdkPath and sdkVersion. The first one given
+  // wins:
+  //
+  //   -isysroot, --sysroot  commandLineIsysroot, commandLineSysroot
+  //   SDKROOT               if it is an absolute path to an existing
+  //                         directory other than "/", as with Apple's clang
+  //   OSXCROSS_SDKROOT      if it is not empty
+  //   the installed SDK     <execDir>/../SDK/MacOSX<version>.sdk, named after
+  //                         the macOS version that belongs to the target
+  //
+  // The version is taken from the name of the directory (15.4 for
+  // MacOSX15.4.sdk; 0.0 if the name has none). Prints an error, unless
+  // quiet, and returns false if the directory does not exist; sdkVersion is
+  // set anyway.
+  bool determineSDK(bool quiet = false);
 
   bool getMacPortsDir(std::string &path) const;
   bool getMacPortsSysRootDir(std::string &path) const;
@@ -195,7 +207,7 @@ struct Target {
   void setCompilerPath();
   bool findClangIntrinsicHeadersAndVersion(std::string &path);
 
-  void addGCCRuntimeLibs(const std::string &sdkPath, Arch arch);
+  void addGCCRuntimeLibs(Arch arch);
   void setTriple(bool useAarch64InsteadOfArm64 = false);
   bool setup();
 
@@ -219,6 +231,14 @@ struct Target {
   OSVersion deploymentTarget; // -mmacosx-version-min= or
                               // MACOSX_DEPLOYMENT_TARGET; 0: not set,
                               // setup() sets the default
+
+  //
+  // SDK (see determineSDK())
+  //
+  std::string commandLineIsysroot; // -isysroot; empty: not given
+  std::string commandLineSysroot;  // --sysroot; empty: not given
+  std::string sdkPath;             // the SDK in use
+  OSVersion sdkVersion;            // its macOS version; 0.0: unknown
 
   //
   // Compiler

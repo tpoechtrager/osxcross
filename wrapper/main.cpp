@@ -160,6 +160,16 @@ bool intrinsicPath(Target &target, const char *, const char *path, char **) {
   return true;
 }
 
+bool isysroot(Target &target, const char *, const char *path, char **) {
+  target.commandLineIsysroot = path;
+  return true;
+}
+
+bool sysroot(Target &target, const char *, const char *path, char **) {
+  target.commandLineSysroot = path;
+  return true;
+}
+
 bool runProg(Target &target, const char *, const char *progName,
              char **progArgs) {
   auto *prog = program::getProg(progName);
@@ -215,7 +225,7 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
   return true;
 }
 
-typedef OptParser<OptFun, 17> Parser;
+typedef OptParser<OptFun, 20> Parser;
 typedef Parser::ValueMode ValueMode;
 typedef Parser::Forwarding Forwarding;
 
@@ -239,6 +249,12 @@ const Parser Options = {{
   {"-cxx-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
    Forwarding::KEEP},
   {"-I", checkIncludePath, ValueMode::JOINED_OR_SEPARATE, Forwarding::KEEP},
+
+  // The SDK (see Target::determineSDK()). Consumed: setup() passes the SDK
+  // in use as -isysroot.
+  {"-isysroot", isysroot, ValueMode::JOINED_OR_SEPARATE},
+  {"--sysroot", sysroot, ValueMode::SEPARATE},
+  {"--sysroot", sysroot, ValueMode::JOINED_WITH_EQUALS},
 
   // sets a custom path for the compiler
   {"-foc-compiler-path", compilerPath, ValueMode::JOINED_WITH_EQUALS},

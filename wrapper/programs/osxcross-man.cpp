@@ -37,14 +37,13 @@ namespace osxcross {
 
 int man(int argc, char **argv, Target &target) {
   bool isStandaloneOSXCrossMan = !endsWith(argv[0], "-osxcross-man");
-  std::string sdkPath;
 
-  if (!target.getSDKPath(sdkPath))
+  if (!target.determineSDK())
     return 1;
 
   std::vector<std::string> manPaths;
 
-  manPaths.push_back(sdkPath + "/usr/share/man");
+  manPaths.push_back(target.sdkPath + "/usr/share/man");
   manPaths.push_back(std::string(target.execDir) + "/../share/man");
 
   unsetenv("MANPATH");

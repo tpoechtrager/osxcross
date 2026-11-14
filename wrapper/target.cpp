@@ -55,66 +55,37 @@ Arch getDefaultArch(bool gcc) {
   return parseArch(first.c_str());
 }
 
-Target::Target()
-    : vendor(getDefaultVendor()), supportedArchs(getSupportedArchs()),
-      targetOS(getDefaultTarget()), primaryArch(getDefaultArch()),
-      compiler(getDefaultCompilerIdentifier()),
-      compilerName(getDefaultCompilerName()), stdlib(Stdlib::UNSET),
-      useGCCLibs(), language() {
-  execDir = getExecutableDir();
+// The macOS version in the name of an SDK directory: 15.4 for
+// "/path/to/MacOSX15.4.sdk"; 0.0 if the name does not start with "MacOSX".
+OSVersion getSDKVersionFromPath(std::string sdkPath) {
+  // Ignore trailing slashes, as in "MacOSX15.4.sdk/".
+  while (!sdkPath.empty() && sdkPath.back() == PathDiv)
+    sdkPath.pop_back();
 
-  if (execDir.empty()) {
-    err << "cannot determine the directory of the osxcross executable"
-        << err.endl();
-    exit(EXIT_FAILURE);
+  // MacOSX.sdk may be a symlink to a versioned SDK directory.
+  // Resolve it only to determine the version, preserving the selected SDK.
+  if (!strcasecmp(getFileName(sdkPath), "MacOSX.sdk")) {
+    char *resolved = realpath(sdkPath.c_str(), nullptr);
+    if (resolved) {
+      sdkPath = resolved;
+      free(resolved);
+    }
   }
 
-  // OSXCROSS_SDK_SEARCH_DIR was removed; tell those who still set it.
-  const char *sdkSearchDir = getenv("OSXCROSS_SDK_SEARCH_DIR");
+  const char *sdkName = getFileName(sdkPath);
 
-  if (sdkSearchDir && sdkSearchDir[0]) {
-    err << "OSXCROSS_SDK_SEARCH_DIR is no longer supported; "
-           "set OSXCROSS_SDKROOT to the SDK directory" << err.endl();
-    exit(EXIT_FAILURE);
-  }
+  if (strncasecmp(sdkName, "MacOSX", 6))
+    return OSVersion();
+
+  return parseOSVersion(sdkName + 6);
 }
 
-// The macOS version of the SDK in use: with an SDK override, taken from the
-// name of its directory (15.4 for "/path/to/MacOSX15.4.sdk"); otherwise the
-// version that belongs to the Darwin target (15.4 for "darwin24.4"), which
-// the default SDK is named after (see getDefaultSDKPath()).
-OSVersion Target::getSDKOSNum() const {
-  const char *sdkOverride = getenv("OSXCROSS_SDKROOT");
-
-  if (sdkOverride && sdkOverride[0]) {
-    std::string sdkPath = sdkOverride;
-
-    // Ignore trailing slashes, as in "MacOSX15.4.sdk/".
-    while (!sdkPath.empty() && sdkPath.back() == PathDiv)
-      sdkPath.pop_back();
-
-    // MacOSX.sdk may be a symlink to a versioned SDK directory.
-    // Resolve it only to determine the version, preserving the selected SDK.
-    if (!strcasecmp(getFileName(sdkPath), "MacOSX.sdk")) {
-      char *resolved = realpath(sdkPath.c_str(), nullptr);
-      if (resolved) {
-        sdkPath = resolved;
-        free(resolved);
-      }
-    }
-
-    const char *sdkName = getFileName(sdkPath);
-
-    if (strncasecmp(sdkName, "MacOSX", 6))
-      return OSVersion();
-
-    return parseOSVersion(sdkName + 6);
-  }
-
+// The macOS version that belongs to a Darwin target, 15.4 for "darwin24.4".
+static OSVersion getMacOSVersion(const std::string &darwinTarget) {
   // The Darwin version follows "darwin", for example "24.4" in "darwin24.4".
   constexpr size_t darwinLen = constexprStrLen("darwin");
-  if (targetOS.size() <= darwinLen) return OSVersion();
-  const char *darwinVersion = targetOS.c_str() + darwinLen;
+  if (darwinTarget.size() <= darwinLen) return OSVersion();
+  const char *darwinVersion = darwinTarget.c_str() + darwinLen;
 
   const OSVersion darwin = parseOSVersion(darwinVersion);
   const int major = darwin.major;
@@ -148,39 +119,70 @@ OSVersion Target::getSDKOSNum() const {
   return OSVersion(10, major - 4);
 }
 
-// The default SDK: <execDir>/../SDK/MacOSX<version>.sdk with the macOS
-// version that belongs to the target (see getSDKOSNum()), or with only its
-// major version ("MacOSX15.sdk" instead of "MacOSX15.0.sdk").
-std::string Target::getDefaultSDKPath(bool majorVersionOnly) const {
-  std::string path = execDir + "/../SDK/MacOSX";
-  const OSVersion sdkVersion = getSDKOSNum();
-  path += majorVersionOnly ? sdkVersion.majorStr() : sdkVersion.shortStr();
+Target::Target()
+    : vendor(getDefaultVendor()), supportedArchs(getSupportedArchs()),
+      targetOS(getDefaultTarget()), primaryArch(getDefaultArch()),
+      compiler(getDefaultCompilerIdentifier()),
+      compilerName(getDefaultCompilerName()), stdlib(Stdlib::UNSET),
+      useGCCLibs(), language() {
+  execDir = getExecutableDir();
 
-  // The 10.4 SDK is named MacOSX10.4u.sdk (universal).
-  if (sdkVersion <= OSVersion(10, 4))
-    path += "u";
-
-  return path + ".sdk";
-}
-
-// The SDK in use: the SDK override if one is set, otherwise the default SDK.
-// Prints an error and returns false if its directory does not exist.
-bool Target::getSDKPath(std::string &path) const {
-  const char *sdkOverride = getenv("OSXCROSS_SDKROOT");
-
-  if (sdkOverride && sdkOverride[0]) {
-    path = sdkOverride;
-  } else {
-    path = getDefaultSDKPath(false);
-
-    // The default SDK for macOS 15.0 may also be named MacOSX15.sdk.
-    if (!dirExists(path) && getSDKOSNum().minor == 0)
-      path = getDefaultSDKPath(true);
+  if (execDir.empty()) {
+    err << "cannot determine the directory of the osxcross executable"
+        << err.endl();
+    exit(EXIT_FAILURE);
   }
 
-  if (!dirExists(path)) {
-    err << "cannot find macOS SDK (expected in: " << path << ")"
-        << err.endl();
+  // OSXCROSS_SDK_SEARCH_DIR was removed; tell those who still set it.
+  const char *sdkSearchDir = getenv("OSXCROSS_SDK_SEARCH_DIR");
+
+  if (sdkSearchDir && sdkSearchDir[0]) {
+    err << "OSXCROSS_SDK_SEARCH_DIR is no longer supported; "
+           "set OSXCROSS_SDKROOT to the SDK directory" << err.endl();
+    exit(EXIT_FAILURE);
+  }
+}
+
+bool Target::determineSDK(bool quiet) {
+  const char *sdkRoot = getenv("SDKROOT");
+  const char *sdkOverride = getenv("OSXCROSS_SDKROOT");
+
+  // As with Apple's clang, SDKROOT is used only if it is an absolute path to
+  // an existing directory other than "/"; otherwise it is ignored.
+  const bool useSDKRoot = sdkRoot && sdkRoot[0] == PathDiv && sdkRoot[1] &&
+                          dirExists(sdkRoot);
+
+  if (!commandLineIsysroot.empty())
+    sdkPath = commandLineIsysroot;
+  else if (!commandLineSysroot.empty())
+    sdkPath = commandLineSysroot;
+  else if (useSDKRoot)
+    sdkPath = sdkRoot;
+  else if (sdkOverride && sdkOverride[0])
+    sdkPath = sdkOverride;
+  else
+    sdkPath.clear();
+
+  if (!sdkPath.empty()) {
+    sdkVersion = getSDKVersionFromPath(sdkPath);
+  } else {
+    // The installed SDK. The 10.4 SDK is named MacOSX10.4u.sdk (universal);
+    // the SDK for macOS 15.0 may also be named MacOSX15.sdk.
+    sdkVersion = getMacOSVersion(targetOS);
+
+    const std::string prefix = execDir + "/../SDK/MacOSX";
+    const char *suffix = sdkVersion <= OSVersion(10, 4) ? "u.sdk" : ".sdk";
+
+    sdkPath = prefix + sdkVersion.shortStr() + suffix;
+
+    if (!dirExists(sdkPath) && sdkVersion.minor == 0)
+      sdkPath = prefix + sdkVersion.majorStr() + suffix;
+  }
+
+  if (!dirExists(sdkPath)) {
+    if (!quiet)
+      err << "cannot find macOS SDK (expected in: " << sdkPath << ")"
+          << err.endl();
     return false;
   }
 
@@ -270,18 +272,17 @@ bool Target::haveArch(const Arch arch) {
   return false;
 }
 
-bool Target::hasLibCXX() const { return getSDKOSNum() >= OSVersion(10, 7); }
+bool Target::hasLibCXX() const { return sdkVersion >= OSVersion(10, 7); }
 
 bool Target::libCXXIsDefaultCXXLib() const {
   OSVersion deploymentTarget = this->deploymentTarget;
-  OSVersion sdkOSNum = getSDKOSNum();
 
   if (!deploymentTarget.num())
-    deploymentTarget = sdkOSNum;
+    deploymentTarget = sdkVersion;
 
   return stdlib != Stdlib::LIBSTDCXX && hasLibCXX() && !isGCC() &&
          (deploymentTarget >= OSVersion(10, 9) ||
-          sdkOSNum >= OSVersion(10, 14));
+          sdkVersion >= OSVersion(10, 14));
 }
 
 bool Target::isCXX() {
@@ -554,7 +555,7 @@ static bool useStaticGCCRuntime() {
 //   <SDK>/../../lib/gcc/<gccTriple>/<version>[/i386]    libgcc, libemutls_w ...
 //
 // The i386 libraries are a multilib of the x86_64 GCC installation.
-void Target::addGCCRuntimeLibs(const std::string &sdkPath, Arch arch) {
+void Target::addGCCRuntimeLibs(Arch arch) {
   assert(stdlib == Stdlib::LIBSTDCXX && useGCCLibs);
   assert(!gccTriple.empty());
 
@@ -638,13 +639,10 @@ bool Target::setup() {
   if (!checkArchs())
     return false;
 
-  std::string sdkPath;
-  const OSVersion sdkOSNum = getSDKOSNum();
-
   if (!isKnownCompiler())
     warn << "unknown compiler '" << compilerName << "'" << warn.endl();
 
-  if (!getSDKPath(sdkPath))
+  if (!determineSDK())
     return false;
 
   setTriple();
@@ -668,8 +666,8 @@ bool Target::setup() {
       continue;
 
     const bool sdkSupported = requiredSDK.orEarlier
-                                  ? sdkOSNum <= requiredSDK.sdkVer
-                                  : sdkOSNum >= requiredSDK.sdkVer;
+                                  ? sdkVersion <= requiredSDK.sdkVer
+                                  : sdkVersion >= requiredSDK.sdkVer;
 
     if (!sdkSupported) {
       err << "Architecture '" << getArchName(requiredSDK.arch) << "' requires "
@@ -708,7 +706,7 @@ bool Target::setup() {
       }
     } else {
       // No -DOSXCROSS_OSX_VERSION_MIN=XX: default to the SDK version
-      deploymentTarget = sdkOSNum;
+      deploymentTarget = sdkVersion;
     }
   }
 
@@ -731,15 +729,15 @@ bool Target::setup() {
     }
   }
 
-  if (sdkOSNum >= OSVersion(10, 14) && stdlib == Stdlib::LIBSTDCXX &&
+  if (sdkVersion >= OSVersion(10, 14) && stdlib == Stdlib::LIBSTDCXX &&
       !isGCC() && !useGCCLibs) {
     err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
         << err.endl();
     return false;
   }
 
-  if (deploymentTarget > sdkOSNum) {
-    err << "targeted macOS version must be <= " << sdkOSNum.str() << " (SDK)"
+  if (deploymentTarget > sdkVersion) {
+    err << "targeted macOS version must be <= " << sdkVersion.str() << " (SDK)"
         << err.endl();
     return false;
   }
@@ -842,7 +840,7 @@ bool Target::setup() {
       cxxHeaderSubDirs.push_back(cxxBuildTriple);
     } else {
       // Use SDK libs
-      if (sdkOSNum <= OSVersion(10, 5))
+      if (sdkVersion <= OSVersion(10, 5))
         cxxHeaderPath = sdkPath + "/usr/include/c++/4.0.0";
       else
         cxxHeaderPath = sdkPath + "/usr/include/c++/4.2.1";
@@ -916,10 +914,15 @@ bool Target::setup() {
 
         // Use libs from './build_gcc.sh' installation
         if (!isGCH())
-          addGCCRuntimeLibs(sdkPath, archs[0]);
+          addGCCRuntimeLibs(archs[0]);
       }
     }
   } else if (isGCC()) {
+    // The SDK determined above, as for clang; without it, GCC would use its
+    // built-in sysroot, the installed SDK.
+    wrapperArgs.push_back("-isysroot");
+    wrapperArgs.push_back(sdkPath);
+
     if (isCXX() && stdlib == Stdlib::LIBCXX) {
       wrapperArgs.push_back("-nostdinc++");
       wrapperArgs.push_back("-nodefaultlibs");
@@ -927,7 +930,7 @@ bool Target::setup() {
       if (!isGCH()) {
         wrapperArgs.push_back("-lc");
         wrapperArgs.push_back("-lc++");
-        if (sdkOSNum <= OSVersion(10, 13)) {
+        if (sdkVersion <= OSVersion(10, 13)) {
           // SDK 10.14 does not have -lgcc_s anymore
           wrapperArgs.push_back("-lgcc_s.10.5");
         }
@@ -1066,7 +1069,7 @@ bool Target::setup() {
       wrapperArgs.push_back("-D__apple_build_version__=1");
     }
 
-    if (sdkOSNum >= OSVersion(14, 0) && clangVersion < ClangVersion(17, 0)) {
+    if (sdkVersion >= OSVersion(14, 0) && clangVersion < ClangVersion(17, 0)) {
       // MacOS 14 SDK uses __ENVIRONMENT_OS_VERSION_MIN_REQUIRED__ in
       // AvailabilityInternal.h
       wrapperArgs.push_back("-D__ENVIRONMENT_OS_VERSION_MIN_REQUIRED__=" +

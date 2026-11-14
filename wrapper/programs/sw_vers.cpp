@@ -49,8 +49,11 @@ int sw_vers(int argc, char **argv, Target &target) {
     else
       osNum = getDefaultMinTarget();
 
-    if (!osNum.num())
-      osNum = target.getSDKOSNum();
+    if (!osNum.num()) {
+      // The version is known even if the SDK directory does not exist.
+      target.determineSDK(true);
+      osNum = target.sdkVersion;
+    }
 
     return osNum;
   };

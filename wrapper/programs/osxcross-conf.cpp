@@ -42,7 +42,6 @@ void print(const char *var, const A &val) {
 }
 
 int conf(int, char **, Target &target) {
-  std::string sdkPath;
   OSVersion osxVersionMin = getDefaultMinTarget();
   const char *ltoPath = getLibLTOPath();
   std::string buildDir = getBuildDir();
@@ -52,11 +51,13 @@ int conf(int, char **, Target &target) {
     buildDir += "/../../build";
   }
 
-  if (!target.getSDKPath(sdkPath))
+  if (!target.determineSDK())
     return 1;
 
+  const std::string &sdkPath = target.sdkPath;
+
   if (!osxVersionMin.num())
-    osxVersionMin = target.getSDKOSNum();
+    osxVersionMin = target.sdkVersion;
 
   if (!ltoPath)
     ltoPath = "";
@@ -68,7 +69,7 @@ int conf(int, char **, Target &target) {
   print("BASE_DIR", buildDir + "/..");
   print("SDK", sdkPath);
   print("SDK_DIR", sdkPath + "/..");
-  print("SDK_VERSION", target.getSDKOSNum().shortStr());
+  print("SDK_VERSION", target.sdkVersion.shortStr());
   print("TARBALL_DIR", buildDir + "/../tarballs");
   print("PATCH_DIR", buildDir + "/../patches");
   print("TARGET_DIR", std::string(target.execDir) + "/..");

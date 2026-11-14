@@ -95,9 +95,12 @@ int ld(int argc, char **argv, target::Target &target) {
         minimumVersion ? minimumVersion
                        : target::getDefaultMinTarget().shortStr();
 
+    // The version is known even if the SDK directory does not exist.
+    target.determineSDK(true);
+
     args.insert(args.begin() + 1,
                 {"-platform_version", "macos", minimum,
-                 target.getSDKOSNum().shortStr()});
+                 target.sdkVersion.shortStr()});
   }
 
   if (debug)

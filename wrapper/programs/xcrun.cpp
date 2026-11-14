@@ -215,15 +215,16 @@ int run(Target *target, char **argv) {
 }
 
 int showSDKPath(Target *target, char **) {
-  std::string sdkPath;
-  if (!target->getSDKPath(sdkPath))
+  if (!target->determineSDK())
     return 1;
-  std::cout << sdkPath << std::endl;
+  std::cout << target->sdkPath << std::endl;
   return 0;
 }
 
 int showSDKVersion(Target *target, char **) {
-  std::cout << target->getSDKOSNum().shortStr() << std::endl;
+  // The version is known even if the SDK directory does not exist.
+  target->determineSDK(true);
+  std::cout << target->sdkVersion.shortStr() << std::endl;
   return 0;
 }
 
