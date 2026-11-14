@@ -18,8 +18,8 @@
 pushd "${0%/*}" &>/dev/null
 
 CLANG_TIDY=${CLANG_TIDY:-clang-tidy}
-SOURCES=(*.cpp programs/*.cpp)
-FILES=("${SOURCES[@]}" *.h)
+SOURCES=(*.cpp tools/*.cpp programs/*.cpp)
+FILES=("${SOURCES[@]}" *.h tools/*.h)
 status=0
 
 # report <message> <grep/awk output>: print the lines and fail if there are any

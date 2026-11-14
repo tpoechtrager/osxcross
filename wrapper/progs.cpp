@@ -28,7 +28,7 @@
 
 #include <unistd.h>
 
-#include "tools.h"
+#include "tools/tools.h"
 #include "progs.h"
 
 namespace program {

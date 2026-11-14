@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <string>
 
-#include "tools.h"
+#include "tools/tools.h"
 #include "target.h"
 #include "progs.h"
 

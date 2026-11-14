@@ -61,7 +61,7 @@ BIN=wrapper
 
 SRCS= \
  main.cpp \
- tools.cpp \
+ tools/tools.cpp \
  target.cpp \
  progs.cpp \
  programs/osxcross-version.cpp \

@@ -56,7 +56,7 @@
 #include <libutil.h>
 #endif
 
-#include "tools.h"
+#include "tools/tools.h"
 
 namespace tools {
 

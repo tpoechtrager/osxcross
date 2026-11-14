@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "tools.h"
+#include "tools/tools.h"
 #include "target.h"
 #include "progs.h"
 
