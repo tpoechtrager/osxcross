@@ -1,6 +1,6 @@
 /***********************************************************************
  *  OSXCross Compiler Wrapper                                          *
- *  Copyright (C) 2025 by Thomas Poechtrager                           *
+ *  Copyright (C) 2025-2026 by Thomas Poechtrager                      *
  *  t.poechtrager@gmail.com                                            *
  *                                                                     *
  *  This program is free software; you can redistribute it and/or      *
