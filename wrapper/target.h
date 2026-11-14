@@ -65,6 +65,14 @@ constexpr const char *getSupportedArchsString(bool gcc = false) {
 std::vector<Arch> getSupportedArchs(bool gcc = false);
 Arch getDefaultArch(bool gcc = false);
 
+// The oldest macOS version that runs the architecture: 11.0 for arm64 and
+// arm64e, 10.8 for x86_64h; 0.0 (no limit) for the others.
+constexpr OSVersion getMinMacOSVersion(Arch arch) {
+  return arch == Arch::ARM64 || arch == Arch::ARM64E ? OSVersion(11, 0)
+         : arch == Arch::X86_64H                     ? OSVersion(10, 8)
+                                                     : OSVersion();
+}
+
 constexpr const char *getLinkerVersion() { return OSXCROSS_LINKER_VERSION; }
 
 constexpr const char *getBuildDir() { return OSXCROSS_BUILD_DIR; }

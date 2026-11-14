@@ -690,15 +690,9 @@ bool Target::setup() {
       // raised to what the architectures and the C++ library need.
       deploymentTarget = defaultMinTarget;
 
-      if (haveArch(Arch::ARM64) || haveArch(Arch::ARM64E)) {
-        // Default to >= 11.0 for arm64
-        deploymentTarget = std::max(deploymentTarget, OSVersion(11, 0));
-      }
-
-      if (haveArch(Arch::X86_64H)) {
-        // Default to >= 10.8 for x86_64h
-        deploymentTarget = std::max(deploymentTarget, OSVersion(10, 8));
-      }
+      // Default to >= 11.0 for arm64 and >= 10.8 for x86_64h
+      for (Arch arch : archs)
+        deploymentTarget = std::max(deploymentTarget, getMinMacOSVersion(arch));
 
       if (stdlib == Stdlib::LIBCXX) {
         // Default to >= 10.7 for libc++

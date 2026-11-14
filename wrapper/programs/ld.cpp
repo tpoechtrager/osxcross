@@ -21,6 +21,7 @@
 
 #include "compat.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
@@ -51,56 +52,139 @@ int ld(int argc, char **argv, target::Target &target) {
   // Some build systems expect Apple's ld64 version format when probing the
   // linker. Imitate that format for compatibility. The ld64 project version
   // below is synthetic; use --version to print the actual LLD version.
-  if (argc >= 2 && !strcmp(argv[1], "-v")) {
-    std::cout << "@(#)PROGRAM:ld  PROJECT:ld64-9999.9 "
-                 "(lld - use --version to see the LLVM version)"
-              << std::endl;
+  const char *versionLine = "@(#)PROGRAM:ld  PROJECT:ld64-9999.9 "
+                            "(lld - use --version to see the LLVM version)";
+
+  if (argc == 2 && !strcmp(argv[1], "-v")) {
+    std::cout << versionLine << std::endl;
     return 0;
   }
 
   const bool debug = tools::getDebugLevel() > 0;
-  const char *minimumVersion = getenv("MACOSX_DEPLOYMENT_TARGET");
+  const char *minimumVersion = nullptr; // -macos_version_min
+  const char *sdkVersionArg = nullptr;  // -sdk_version
+  const char *sysRoot = nullptr;        // the last -syslibroot
+  const char *archName = nullptr;       // the last -arch
   bool platformVersionSeen = false;
   std::vector<std::string> args;
 
   args.push_back("ld64.lld");
 
   for (int i = 1; i < argc; ++i) {
+    const char *arg = argv[i];
+
+    // Like Apple's ld64, print the version and link. ld64.lld would print its
+    // own version and the search paths instead.
+    if (!strcmp(arg, "-v")) {
+      std::cout << versionLine << std::endl;
+      continue;
+    }
+
     // GCC and older Darwin tooling use the legacy ld64 option. LLD expects the
     // minimum version as part of -platform_version instead, so consume it here.
-    if ((!strcmp(argv[i], "-macos_version_min") ||
-         !strcmp(argv[i], "-macosx_version_min")) &&
+    if ((!strcmp(arg, "-macos_version_min") ||
+         !strcmp(arg, "-macosx_version_min")) &&
         i + 1 < argc) {
       minimumVersion = argv[++i];
       continue;
     }
 
+    // The SDK version for the legacy option; ld64.lld ignores -sdk_version
+    // with a warning, so it goes into -platform_version as well.
+    if (!strcmp(arg, "-sdk_version") && i + 1 < argc) {
+      sdkVersionArg = argv[++i];
+      continue;
+    }
+
     // GCC emits this Apple ld64 option for Darwin targets. ld64.lld does not
     // implement it and emits a warning, so deliberately do not forward it.
-    if (!strcmp(argv[i], "-no_compact_unwind"))
+    if (!strcmp(arg, "-no_compact_unwind"))
       continue;
+
+    // Select the classic or the new linker of Apple's ld64 (Xcode 15).
+    // ld64.lld would read them as -l<library>.
+    if (!strcmp(arg, "-ld_classic") || !strcmp(arg, "-ld_new"))
+      continue;
+
+    // The caller's SDK and architecture, for -platform_version below. Like
+    // ld64, the last -arch wins; the last -syslibroot gives the SDK version.
+    if ((!strcmp(arg, "-syslibroot") || !strcmp(arg, "-arch")) &&
+        i + 1 < argc) {
+      if (!strcmp(arg, "-syslibroot"))
+        sysRoot = argv[i + 1];
+      else
+        archName = argv[i + 1];
+
+      args.push_back(arg);
+      args.push_back(argv[++i]);
+      continue;
+    }
 
     // Preserve a complete caller-provided platform tuple instead of adding a
     // second, potentially conflicting -platform_version option.
-    if (!strcmp(argv[i], "-platform_version"))
+    if (!strcmp(arg, "-platform_version"))
       platformVersionSeen = true;
 
-    args.push_back(argv[i]);
+    args.push_back(arg);
+  }
+
+  // Without -syslibroot, ld64.lld searches the libraries of the host
+  // (/usr/lib, /usr/local/lib). Link against the selected SDK instead.
+  if (!sysRoot) {
+    if (!target.determineSDK())
+      return 1;
+
+    args.insert(args.begin() + 1, {"-syslibroot", target.sdkPath});
   }
 
   // ld64.lld needs both the deployment target and SDK version. Synthesize the
   // tuple when the caller only supplied the legacy option (or no version).
   if (!platformVersionSeen) {
-    const std::string minimum =
-        minimumVersion ? minimumVersion
-                       : target::getDefaultMinTarget().shortStr();
+    // The SDK version: -sdk_version, the version in the name of the caller's
+    // SDK (as in MacOSX15.4.sdk), or that of the selected SDK, which is known
+    // even if its directory does not exist.
+    tools::OSVersion sdkVersion;
 
-    // The version is known even if the SDK directory does not exist.
-    target.determineSDK(true);
+    if (sdkVersionArg)
+      sdkVersion = tools::parseOSVersion(sdkVersionArg);
+    else if (sysRoot)
+      sdkVersion = target::getSDKVersionFromPath(sysRoot);
+
+    if (!sdkVersion.num()) {
+      target.determineSDK(true);
+      sdkVersion = target.sdkVersion;
+    }
+
+    // The deployment target: -macos_version_min or MACOSX_DEPLOYMENT_TARGET,
+    // passed on as given; as in the compiler wrapper, an empty or invalid
+    // MACOSX_DEPLOYMENT_TARGET counts as not set.
+    const char *envMinimum = getenv("MACOSX_DEPLOYMENT_TARGET");
+    std::string minimum;
+
+    if (minimumVersion) {
+      minimum = minimumVersion;
+    } else if (envMinimum && tools::parseOSVersion(envMinimum).num()) {
+      minimum = envMinimum;
+    } else {
+      // The default, as in Target::setup(): the build default (the SDK
+      // version if there is none), raised to what the architecture needs.
+      tools::OSVersion defaultMinimum = target::getDefaultMinTarget();
+
+      if (!defaultMinimum.num())
+        defaultMinimum = sdkVersion;
+
+      const tools::Arch arch =
+          archName ? tools::parseArch(archName) : target.primaryArch;
+
+      defaultMinimum =
+          std::max(defaultMinimum, target::getMinMacOSVersion(arch));
+      minimum = defaultMinimum.shortStr();
+    }
 
     args.insert(args.begin() + 1,
                 {"-platform_version", "macos", minimum,
-                 target.sdkVersion.shortStr()});
+                 sdkVersionArg ? std::string(sdkVersionArg)
+                               : sdkVersion.shortStr()});
   }
 
   if (debug)
