@@ -273,10 +273,10 @@ int xcrun(int argc, char **argv, Target &target) {
       "DEVELOPER_DIR", "TOOLCHAINS", "xcrun_verbose"
     };
 
-    for (const char *evar : envVars) {
-      if (getenv(evar)) {
+    for (const char *envVar : envVars) {
+      if (getenv(envVar)) {
         warn << "xcrun: ignoring environment variable "
-            << "'" << evar << "'" << warn.endl();
+            << "'" << envVar << "'" << warn.endl();
       }
     }
   }

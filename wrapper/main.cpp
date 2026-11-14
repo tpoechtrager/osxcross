@@ -160,7 +160,8 @@ bool intrinsicPath(Target &target, const char *, const char *path, char **) {
   return true;
 }
 
-bool runProg(Target &target, const char *, const char *progName, char **cargs) {
+bool runProg(Target &target, const char *, const char *progName,
+             char **progArgs) {
   auto *prog = program::getProg(progName);
 
   if (!prog)
@@ -169,8 +170,8 @@ bool runProg(Target &target, const char *, const char *progName, char **cargs) {
   std::vector<char *> args;
   args.push_back(const_cast<char *>(progName));
 
-  while (*cargs)
-    args.push_back(*cargs++);
+  while (*progArgs)
+    args.push_back(*progArgs++);
   args.push_back(nullptr);
 
   (*prog)(args.size() - 1, args.data(), target);
@@ -187,15 +188,15 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
     return true;
 
   char *resolved = realpath(path, nullptr);
-  const char *rpath = resolved ? resolved : path;
+  const char *resolvedPath = resolved ? resolved : path;
 
-  for (const char *dpath : dangerousIncludePaths) {
-    if (!strncmp(rpath, dpath, strlen(dpath))) {
+  for (const char *dangerousPath : dangerousIncludePaths) {
+    if (!strncmp(resolvedPath, dangerousPath, strlen(dangerousPath))) {
       warn << "possibly dangerous include path specified: '" << opt << " "
            << path << "'";
 
-      if (strcmp(path, rpath))
-        warn << " (" << rpath << ")";
+      if (strcmp(path, resolvedPath))
+        warn << " (" << resolvedPath << ")";
 
       warn << warn.endl();
 
@@ -218,7 +219,7 @@ typedef OptParser<OptFun, 17> Parser;
 typedef Parser::ValueMode ValueMode;
 typedef Parser::Forwarding Forwarding;
 
-const Parser parser = {{
+const Parser Options = {{
   {"-mmacos-version-min", versionMin, ValueMode::JOINED_WITH_EQUALS},
   {"-mmacosx-version-min", versionMin, ValueMode::JOINED_WITH_EQUALS},
   {"-stdlib", stdlib, ValueMode::JOINED_WITH_EQUALS},
@@ -263,7 +264,7 @@ bool parse(int argc, char **argv, Target &target) {
       continue;
     }
 
-    const Parser::Option *opt = parser.parse(arg);
+    const Parser::Option *opt = Options.parse(arg);
 
     if (!opt) {
       target.userArgs.push_back(arg);
@@ -297,7 +298,7 @@ bool parse(int argc, char **argv, Target &target) {
       }
     }
 
-    parser.printDebug(*opt, arg, val);
+    Options.printDebug(*opt, arg, val);
 
     if (opt->fun && !opt->fun(target, opt->name, val, &argv[i + 1]))
       return false;
@@ -551,10 +552,11 @@ int main(int argc, char **argv) {
     return 0;
 
   if (rc == -1) {
-    StringVector cargs = target.wrapperArgs;
-    cargs.insert(cargs.end(), target.userArgs.begin(), target.userArgs.end());
+    StringVector compilerArgs = target.wrapperArgs;
+    compilerArgs.insert(compilerArgs.end(), target.userArgs.begin(),
+                        target.userArgs.end());
 
-    program::execProgram(target.compilerPath, cargs);
+    program::execProgram(target.compilerPath, compilerArgs);
 
     if (!debug)
       printCommand();

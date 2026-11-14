@@ -514,7 +514,7 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
     // No version in the path (NixOS: .../resource-root), so parse
     // "... clang version X.Y.Z ..." or "Apple LLVM version X.Y.Z" from
     // --version. -dumpversion is not used because Clang < 14 prints 4.2.1.
-    static const char *const needles[] = {
+    static const char *const Needles[] = {
       "clang version ", "Apple LLVM version "
     };
     std::string version;
@@ -522,7 +522,7 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
     if (!getProgramOutput({compilerPath, "--version"}, version)) {
       warnVersionNotFound("'" + compilerPath + " --version' failed");
     } else {
-      for (const char *needle : needles) {
+      for (const char *needle : Needles) {
         const size_t pos = version.find(needle);
 
         if (pos != std::string::npos) {

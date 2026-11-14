@@ -1,0 +1,43 @@
+# Naming rules of the OSXCross compiler wrapper, see CODING_STYLE.md.
+# Only names are checked here, not the formatting.
+Checks: '-*,readability-identifier-naming'
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*/wrapper/.*'
+CheckOptions:
+  # Types: PascalCase
+  - { key: readability-identifier-naming.ClassCase,             value: CamelCase }
+  - { key: readability-identifier-naming.StructCase,            value: CamelCase }
+  - { key: readability-identifier-naming.UnionCase,             value: CamelCase }
+  - { key: readability-identifier-naming.EnumCase,              value: CamelCase }
+  - { key: readability-identifier-naming.TypedefCase,           value: CamelCase }
+  - { key: readability-identifier-naming.TypeAliasCase,         value: CamelCase }
+  - { key: readability-identifier-naming.TemplateParameterCase, value: CamelCase }
+
+  # Functions and methods: camelCase; functions named after a tool keep the
+  # tool's name
+  - { key: readability-identifier-naming.FunctionCase,          value: camelBack }
+  - { key: readability-identifier-naming.FunctionIgnoredRegexp, value: '^(sw_vers|pkg_config)$' }
+  - { key: readability-identifier-naming.MethodCase,            value: camelBack }
+
+  # Variables, parameters and members: camelCase
+  - { key: readability-identifier-naming.VariableCase,          value: camelBack }
+  - { key: readability-identifier-naming.GlobalVariableCase,    value: camelBack }
+  - { key: readability-identifier-naming.LocalVariableCase,     value: camelBack }
+  - { key: readability-identifier-naming.StaticVariableCase,    value: camelBack }
+  - { key: readability-identifier-naming.ParameterCase,         value: camelBack }
+  - { key: readability-identifier-naming.ConstantParameterCase, value: camelBack }
+  - { key: readability-identifier-naming.ValueTemplateParameterCase, value: camelBack }
+  - { key: readability-identifier-naming.MemberCase,            value: camelBack }
+  - { key: readability-identifier-naming.ConstantMemberCase,    value: camelBack }
+
+  # Constants: const with static storage (namespace scope or static) is
+  # PascalCase, local const is camelCase
+  - { key: readability-identifier-naming.GlobalConstantCase,    value: CamelCase }
+  - { key: readability-identifier-naming.StaticConstantCase,    value: CamelCase }
+  - { key: readability-identifier-naming.LocalConstantCase,     value: camelBack }
+
+  # Enumerators: UPPER_CASE
+  - { key: readability-identifier-naming.EnumConstantCase,      value: UPPER_CASE }
+
+  # Namespaces: lower case
+  - { key: readability-identifier-naming.NamespaceCase,         value: lower_case }

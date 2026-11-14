@@ -43,26 +43,26 @@ struct EnvVar {
   EnvVar(std::string name, std::string value) : name(name), value(value) {}
 };
 
-static EnvVar &var(const char *p, EnvVar &evar, const bool skipVal = false) {
+static EnvVar &var(const char *p, EnvVar &envVar, const bool skipVal = false) {
   if (!p)
-    return evar;
+    return envVar;
 
   const char *separator = strchr(p, '=');
   if (!separator)
-    return evar;
+    return envVar;
 
-  evar.name.assign(p, separator - p);
+  envVar.name.assign(p, separator - p);
 
   if (!skipVal)
-    evar.value.assign(separator + 1);
+    envVar.value.assign(separator + 1);
 
-  return evar;
+  return envVar;
 }
 
 int pkg_config(int argc, char **argv, Target &target) {
   std::vector<EnvVar> envVars;
   std::vector<EnvVar> unset;
-  EnvVar evar;
+  EnvVar envVar;
   bool useNativeVariables = getenv("OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES");
 
   if (!getenv("OSXCROSS_PKG_CONFIG_NO_MP_INC")) {
@@ -91,25 +91,25 @@ int pkg_config(int argc, char **argv, Target &target) {
 
       if (!strncmp(p, "OSXCROSS_PKG_CONFIG", 19)) {
         p += 9; // skip OSXCROSS_
-        envVars.push_back(var(p, evar));
+        envVars.push_back(var(p, envVar));
       } else if (!strncmp(p, "PKG_CONFIG", 10)) {
         // Unset native pkg-config vars.
-        unset.push_back(var(p, evar, true));
+        unset.push_back(var(p, envVar, true));
       }
     }
   }
 
   if (useNativeVariables || !envVars.empty()) {
     if (!useNativeVariables) {
-      for (const EnvVar &evar : unset) {
-        warn << argv[0] << ": ignoring environment variable '" << evar.name
+      for (const EnvVar &envVar : unset) {
+        warn << argv[0] << ": ignoring environment variable '" << envVar.name
              << "' - please see README.PKG-CONFIG.md for more" << warn.endl();
 
-        unsetenv(evar.name.c_str());
+        unsetenv(envVar.name.c_str());
       }
 
-      for (const EnvVar &evar : envVars)
-        setenv(evar.name.c_str(), evar.value.c_str(), 1);
+      for (const EnvVar &envVar : envVars)
+        setenv(envVar.name.c_str(), envVar.value.c_str(), 1);
     }
 
     // Prevent pkg-config from looking for *.pc files

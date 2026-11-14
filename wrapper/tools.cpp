@@ -74,8 +74,8 @@ int getDebugLevel() {
 //
 
 bool isTerminal() {
-  static const bool val = isatty(fileno(stderr));
-  return val;
+  static const bool StderrIsTerminal = isatty(fileno(stderr));
+  return StderrIsTerminal;
 }
 
 //

@@ -44,18 +44,18 @@ int env(int argc, char **argv, Target &) {
   if (!oldPath)
     abort();
 
-  const std::string epath = getExecutableDir();
+  const std::string execDir = getExecutableDir();
 
-  if (epath.empty())
+  if (execDir.empty())
     exit(EXIT_FAILURE);
 
   if (argc <= 1) {
-    const std::string pname = getParentProcessName();
+    const std::string parentName = getParentProcessName();
 
-    if (pname == "csh" || pname == "tcsh") {
+    if (parentName == "csh" || parentName == "tcsh") {
       std::cerr << std::endl << "you are invoking this program from a C shell, "
                 << std::endl << "please use " << std::endl << std::endl
-                << "setenv PATH `" << epath << "/osxcross-env -v=PATH`"
+                << "setenv PATH `" << execDir << "/osxcross-env -v=PATH`"
                 << std::endl << std::endl << "instead." << std::endl
                 << std::endl;
     }
@@ -64,8 +64,8 @@ int env(int argc, char **argv, Target &) {
   std::vector<std::string> path = splitPath(oldPath);
   std::map<std::string, std::string> vars;
 
-  if (!hasPath(path, epath))
-    path.push_back(epath);
+  if (!hasPath(path, execDir))
+    path.push_back(execDir);
 
   vars["PATH"] = joinPath(path);
 
