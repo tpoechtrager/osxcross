@@ -155,9 +155,15 @@ private:
 std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
                        bool useAarch64InsteadOfArm64 = false);
 
-// The macOS version in the name of an SDK directory: 15.4 for
-// "/path/to/MacOSX15.4.sdk"; 0.0 if the name does not start with "MacOSX".
-OSVersion getSDKVersionFromPath(std::string sdkPath);
+// What the wrapper uses from the SDKSettings.json of an SDK (SDKs since
+// 11.0 have one).
+struct SDKSettings {
+  OSVersion version; // "Version"; 0.0 if there is none
+
+  // Read <sdkPath>/SDKSettings.json. Returns false, with the members reset,
+  // if the file does not exist or is not valid JSON.
+  bool read(const std::string &sdkPath);
+};
 
 struct Target {
   Target();
@@ -172,10 +178,10 @@ struct Target {
   //   the installed SDK     <execDir>/../SDK/MacOSX<version>.sdk, named after
   //                         the macOS version that belongs to the target
   //
-  // The version is taken from the name of the directory (15.4 for
-  // MacOSX15.4.sdk; 0.0 if the name has none). Prints an error, unless
-  // quiet, and returns false if the directory does not exist; sdkVersion is
-  // set anyway.
+  // The version comes from the SDK's SDKSettings.json; without one, from
+  // the name of the directory (15.4 for MacOSX15.4.sdk; 0.0 if the name has
+  // none). Prints an error, unless quiet, and returns false if the directory
+  // does not exist; sdkVersion is set anyway.
   bool determineSDK(bool quiet = false);
 
   bool getMacPortsDir(std::string &path) const;
@@ -247,6 +253,7 @@ struct Target {
   std::string commandLineSysroot;  // --sysroot; empty: not given
   std::string sdkPath;             // the SDK in use
   OSVersion sdkVersion;            // its macOS version; 0.0: unknown
+  SDKSettings sdkSettings;         // from its SDKSettings.json, if any
 
   //
   // Compiler

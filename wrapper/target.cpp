@@ -33,6 +33,7 @@
 #include <strings.h>
 
 #include "tools/tools.h"
+#include "tools/json.h"
 #include "target.h"
 
 namespace target {
@@ -55,9 +56,26 @@ Arch getDefaultArch(bool gcc) {
   return parseArch(first.c_str());
 }
 
-// The macOS version in the name of an SDK directory: 15.4 for
-// "/path/to/MacOSX15.4.sdk"; 0.0 if the name does not start with "MacOSX".
-OSVersion getSDKVersionFromPath(std::string sdkPath) {
+bool SDKSettings::read(const std::string &sdkPath) {
+  std::string text;
+  json::Value root;
+
+  *this = SDKSettings();
+
+  if (!getFileContent(sdkPath + "/SDKSettings.json", text) ||
+      !json::parse(text, root))
+    return false;
+
+  if (root["Version"].isString())
+    version = parseOSVersion(root["Version"].string.c_str());
+
+  return true;
+}
+
+// The macOS version in the name of an SDK directory, for SDKs without
+// SDKSettings.json: 15.4 for "/path/to/MacOSX15.4.sdk"; 0.0 if the name
+// does not start with "MacOSX".
+static OSVersion parseSDKVersionFromDirName(std::string sdkPath) {
   // Ignore trailing slashes, as in "MacOSX15.4.sdk/".
   while (!sdkPath.empty() && sdkPath.back() == PathDiv)
     sdkPath.pop_back();
@@ -146,37 +164,75 @@ Target::Target()
 bool Target::determineSDK(bool quiet) {
   const char *sdkRoot = getenv("SDKROOT");
   const char *sdkOverride = getenv("OSXCROSS_SDKROOT");
+  const char *sdkFrom;     // where the SDK and its version come from, for
+  const char *versionFrom; // the debug messages
 
   // As with Apple's clang, SDKROOT is used only if it is an absolute path to
   // an existing directory other than "/"; otherwise it is ignored.
   const bool useSDKRoot = sdkRoot && sdkRoot[0] == PathDiv && sdkRoot[1] &&
                           dirExists(sdkRoot);
 
-  if (!commandLineIsysroot.empty())
+  if (!commandLineIsysroot.empty()) {
     sdkPath = commandLineIsysroot;
-  else if (!commandLineSysroot.empty())
+    sdkFrom = "-isysroot";
+  } else if (!commandLineSysroot.empty()) {
     sdkPath = commandLineSysroot;
-  else if (useSDKRoot)
+    sdkFrom = "--sysroot";
+  } else if (useSDKRoot) {
     sdkPath = sdkRoot;
-  else if (sdkOverride && sdkOverride[0])
+    sdkFrom = "SDKROOT";
+  } else if (sdkOverride && sdkOverride[0]) {
     sdkPath = sdkOverride;
-  else
-    sdkPath.clear();
-
-  if (!sdkPath.empty()) {
-    sdkVersion = getSDKVersionFromPath(sdkPath);
+    sdkFrom = "OSXCROSS_SDKROOT";
   } else {
-    // The installed SDK. The 10.4 SDK is named MacOSX10.4u.sdk (universal);
-    // the SDK for macOS 15.0 may also be named MacOSX15.sdk.
-    sdkVersion = getMacOSVersion(targetOS);
-
+    // The SDK that's installed by build.sh. It is named after the macOS
+    // version of the target; the 10.4 SDK is named MacOSX10.4u.sdk
+    // (universal), the SDK for macOS 15.0 may also be named MacOSX15.sdk.
+    const OSVersion targetVersion = getMacOSVersion(targetOS);
     const std::string prefix = execDir + "/../SDK/MacOSX";
-    const char *suffix = sdkVersion <= OSVersion(10, 4) ? "u.sdk" : ".sdk";
+    const char *suffix = targetVersion <= OSVersion(10, 4) ? "u.sdk" : ".sdk";
 
-    sdkPath = prefix + sdkVersion.shortStr() + suffix;
+    sdkPath = prefix + targetVersion.shortStr() + suffix;
 
-    if (!dirExists(sdkPath) && sdkVersion.minor == 0)
-      sdkPath = prefix + sdkVersion.majorStr() + suffix;
+    if (!dirExists(sdkPath) && targetVersion.minor == 0)
+      sdkPath = prefix + targetVersion.majorStr() + suffix;
+
+    sdkFrom = "OSXCross";
+  }
+
+  // Read the SDK's SDKSettings.json, if it has one.
+  const bool haveSettings = sdkSettings.read(sdkPath);
+
+  // Its version is exact (MacOSX15.sdk can be 15.5); without it, the
+  // version comes from the name of the SDK directory.
+  if (haveSettings && sdkSettings.version.num()) {
+    sdkVersion = sdkSettings.version;
+    versionFrom = "SDKSettings.json";
+  } else {
+    sdkVersion = parseSDKVersionFromDirName(sdkPath);
+    versionFrom = "the SDK directory name";
+  }
+
+  if (getDebugLevel() >= 2) {
+    const std::string settingsFile = sdkPath + "/SDKSettings.json";
+
+    if (sdkRoot && sdkRoot[0] && !useSDKRoot)
+      dbg << "SDKROOT=" << sdkRoot << " ignored: not an absolute path to an "
+          << "existing directory other than /" << dbg.endl();
+
+    dbg << "SDK: " << sdkPath << " (from " << sdkFrom << ")" << dbg.endl();
+
+    if (!haveSettings && fileExists(settingsFile))
+      dbg << settingsFile << ": not readable or not valid JSON" << dbg.endl();
+    else if (haveSettings && !sdkSettings.version.num())
+      dbg << settingsFile << ": no valid \"Version\"" << dbg.endl();
+
+    if (sdkVersion.num())
+      dbg << "SDK version: " << sdkVersion.str() << " (from " << versionFrom
+          << ")" << dbg.endl();
+    else
+      dbg << "SDK version: unknown (neither SDKSettings.json nor the SDK "
+          << "directory name has one)" << dbg.endl();
   }
 
   if (!dirExists(sdkPath)) {

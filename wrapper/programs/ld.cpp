@@ -128,9 +128,14 @@ int ld(int argc, char **argv, target::Target &target) {
     args.push_back(arg);
   }
 
-  // Without -syslibroot, ld64.lld searches the libraries of the host
-  // (/usr/lib, /usr/local/lib). Link against the selected SDK instead.
-  if (!sysRoot) {
+  if (sysRoot) {
+    // The caller's SDK takes the place of -isysroot; determineSDK() gives
+    // its version. A missing directory is left to ld64.lld.
+    target.commandLineIsysroot = sysRoot;
+    target.determineSDK(true);
+  } else {
+    // Without -syslibroot, ld64.lld searches the libraries of the host
+    // (/usr/lib, /usr/local/lib). Link against the selected SDK instead.
     if (!target.determineSDK())
       return 1;
 
@@ -140,20 +145,9 @@ int ld(int argc, char **argv, target::Target &target) {
   // ld64.lld needs both the deployment target and SDK version. Synthesize the
   // tuple when the caller only supplied the legacy option (or no version).
   if (!platformVersionSeen) {
-    // The SDK version: -sdk_version, the version in the name of the caller's
-    // SDK (as in MacOSX15.4.sdk), or that of the selected SDK, which is known
-    // even if its directory does not exist.
-    tools::OSVersion sdkVersion;
-
-    if (sdkVersionArg)
-      sdkVersion = tools::parseOSVersion(sdkVersionArg);
-    else if (sysRoot)
-      sdkVersion = target::getSDKVersionFromPath(sysRoot);
-
-    if (!sdkVersion.num()) {
-      target.determineSDK(true);
-      sdkVersion = target.sdkVersion;
-    }
+    const tools::OSVersion sdkVersion =
+        sdkVersionArg ? tools::parseOSVersion(sdkVersionArg)
+                      : target.sdkVersion;
 
     // The deployment target: -macos_version_min or MACOSX_DEPLOYMENT_TARGET,
     // passed on as given; as in the compiler wrapper, an empty or invalid
@@ -181,10 +175,17 @@ int ld(int argc, char **argv, target::Target &target) {
       minimum = defaultMinimum.shortStr();
     }
 
+    // As with clang, an SDK without a known version gets the deployment
+    // target as its version.
+    std::string sdk = minimum;
+
+    if (sdkVersionArg)
+      sdk = sdkVersionArg;
+    else if (sdkVersion.num())
+      sdk = sdkVersion.shortStr();
+
     args.insert(args.begin() + 1,
-                {"-platform_version", "macos", minimum,
-                 sdkVersionArg ? std::string(sdkVersionArg)
-                               : sdkVersion.shortStr()});
+                {"-platform_version", "macos", minimum, sdk});
   }
 
   if (debug)
