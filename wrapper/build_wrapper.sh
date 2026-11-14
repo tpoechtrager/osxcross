@@ -64,20 +64,21 @@ if [ "$PLATFORM" == "Linux" ]; then
 fi
 
 # Create the installation directory, clean the previous wrapper build and
-# compile with the configured flags.
+# compile with the configured flags. The sources and the Makefile are in
+# src/; paths in FLAGS are relative to it.
 mkdir -p ${TARGET_DIR}/bin
 export PLATFORM
 export CXX
 
-verbose_cmd $MAKE clean
+verbose_cmd $MAKE -C src clean
 ADDITIONAL_CXXFLAGS="$FLAGS" \
-  verbose_cmd $MAKE wrapper -j$JOBS
+  verbose_cmd $MAKE -C src wrapper -j$JOBS
 
 if [ -n "$BWCOMPILEONLY" ]; then
   exit 0
 fi
 
-verbose_cmd mv wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper"
+verbose_cmd mv src/wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper"
 
 # ---------------------------------------------------------------------------
 # Symlink generation

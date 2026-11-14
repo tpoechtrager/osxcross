@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Check the sources of the wrapper against CODING_STYLE.md:
+# Check the sources of the wrapper (src/) against CODING_STYLE.md:
 #
 #   - names (clang-tidy, rules in .clang-tidy)
 #   - lines longer than 80 columns
@@ -15,7 +15,7 @@
 #        CLANG_TIDY=/opt/llvm/21.1.0/bin/clang-tidy ./check_coding_style.sh
 #
 
-pushd "${0%/*}" &>/dev/null
+pushd "${0%/*}/src" &>/dev/null
 
 CLANG_TIDY=${CLANG_TIDY:-clang-tidy}
 SOURCES=(*.cpp tools/*.cpp programs/*.cpp)
