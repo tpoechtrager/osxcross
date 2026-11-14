@@ -757,15 +757,16 @@ bool Target::setup() {
   // C++ standard library headers
   //
   // They are added as -isystem <cxxHeaderPath> and, for each entry of
-  // cxxHeaderSubDirs, as -isystem <cxxHeaderPath>/<subdir>.
+  // cxxHeaderSubDirs, as -isystem <cxxHeaderPath>/<subdir>. cxxHeaderPath
+  // stays empty if the compiler finds them itself (GCC with libstdc++).
   //
 
-  std::string cxxHeaderPath = sdkPath;
+  std::string cxxHeaderPath;
   StringVector cxxHeaderSubDirs;
 
   switch (stdlib) {
   case Stdlib::LIBCXX: {
-    cxxHeaderPath += "/usr/include/c++/v1";
+    cxxHeaderPath = sdkPath + "/usr/include/c++/v1";
     if (!dirExists(cxxHeaderPath)) {
       err << "cannot find " << getStdlibString(stdlib) << " headers"
           << err.endl();
@@ -774,15 +775,14 @@ bool Target::setup() {
     break;
   }
   case Stdlib::LIBSTDCXX: {
-    // GCC brings its own libstdc++ headers; cxxHeaderPath stays the SDK
-    // directory.
+    // GCC brings its own libstdc++ headers.
     if (isGCC())
       break;
 
     if (useGCCLibs) {
       // Use libs from './build_gcc.sh' installation
 
-      cxxHeaderPath += "/../../";
+      cxxHeaderPath = sdkPath + "/../../";
 
       // Build the target triple name we BUILD for - not what triple has been
       // invoked.
@@ -843,9 +843,9 @@ bool Target::setup() {
     } else {
       // Use SDK libs
       if (sdkOSNum <= OSVersion(10, 5))
-        cxxHeaderPath += "/usr/include/c++/4.0.0";
+        cxxHeaderPath = sdkPath + "/usr/include/c++/4.0.0";
       else
-        cxxHeaderPath += "/usr/include/c++/4.2.1";
+        cxxHeaderPath = sdkPath + "/usr/include/c++/4.2.1";
 
       cxxHeaderSubDirs.push_back(makeTriple(primaryArch, vendor, targetOS));
     }
@@ -947,10 +947,12 @@ bool Target::setup() {
     wrapperArgs.push_back(path);
   };
 
-  addCXXHeaderPath(cxxHeaderPath);
+  if (!cxxHeaderPath.empty()) {
+    addCXXHeaderPath(cxxHeaderPath);
 
-  for (auto &subDir : cxxHeaderSubDirs)
-    addCXXHeaderPath(cxxHeaderPath + "/" + subDir);
+    for (auto &subDir : cxxHeaderSubDirs)
+      addCXXHeaderPath(cxxHeaderPath + "/" + subDir);
+  }
 
   if (getenv("OSXCROSS_MP_INC")) {
     std::string macPortsIncludeDir;
