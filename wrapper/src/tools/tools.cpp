@@ -65,8 +65,12 @@ namespace tools {
 //
 
 int getDebugLevel() {
-  const char *value = getenv("OCDEBUG");
-  return value ? std::max(atoi(value), 0) : 0;
+  // OCDEBUG does not change while the wrapper runs, so read it once.
+  static const int DebugLevel = [] {
+    const char *value = getenv("OCDEBUG");
+    return value ? std::max(atoi(value), 0) : 0;
+  }();
+  return DebugLevel;
 }
 
 //
@@ -87,33 +91,43 @@ namespace {
 
 // OpenBSD cannot report the path of the running executable, so resolve
 // argv[0] like the shell that started us: a path starting with '/' or '.'
-// is resolved with realpath(), any other name is looked up in PATH.
+// is taken as it is, any other name is looked up in PATH. Symlinks are
+// resolved, as on Linux and FreeBSD, where the kernel reports the resolved
+// path: started through a symlink elsewhere, the directory is still the
+// installation's bin/.
 std::string resolveArgv0(const std::string &argv0) {
-  if (argv0[0] == '/' || argv0[0] == '.') {
-    char *resolved = realpath(argv0.c_str(), nullptr);
+  std::string path;
 
-    if (!resolved)
+  if (argv0[0] == '/' || argv0[0] == '.') {
+    path = argv0;
+  } else {
+    const char *envPath = getenv("PATH");
+
+    if (!envPath)
       return std::string();
 
-    std::string path = resolved;
-    free(resolved);
-    return path;
+    for (const std::string &dir : splitPath(envPath)) {
+      const std::string candidate = dir + PathDiv + argv0;
+      struct stat st;
+
+      if (!stat(candidate.c_str(), &st) && (st.st_mode & S_IXUSR)) {
+        path = candidate;
+        break;
+      }
+    }
+
+    if (path.empty())
+      return std::string();
   }
 
-  const char *envPath = getenv("PATH");
+  char *resolved = realpath(path.c_str(), nullptr);
 
-  if (!envPath)
+  if (!resolved)
     return std::string();
 
-  for (const std::string &dir : splitPath(envPath)) {
-    const std::string candidate = dir + PathDiv + argv0;
-    struct stat st;
-
-    if (!stat(candidate.c_str(), &st) && (st.st_mode & S_IXUSR))
-      return candidate;
-  }
-
-  return std::string();
+  path = resolved;
+  free(resolved);
+  return path;
 }
 
 } // unnamed namespace
@@ -126,6 +140,15 @@ std::string getExecutableDir() {
 
   if (_NSGetExecutablePath(buf.data(), &size) != 0 || !buf[0])
     return std::string();
+
+  // This is the path the program was started with, possibly a symlink.
+  // Resolve it, as on Linux and FreeBSD, where the kernel reports the
+  // resolved path.
+  if (char *resolved = realpath(buf.data(), nullptr)) {
+    const std::string dir = getDirName(resolved);
+    free(resolved);
+    return dir;
+  }
 
   return getDirName(buf.data());
 #elif defined(__FreeBSD__) || defined(__DragonFly__)

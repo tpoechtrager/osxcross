@@ -141,8 +141,8 @@ Target::Target()
     : vendor(getDefaultVendor()), supportedArchs(getSupportedArchs()),
       targetOS(getDefaultTarget()), primaryArch(getDefaultArch()),
       compiler(getDefaultCompilerIdentifier()),
-      compilerName(getDefaultCompilerName()), stdlib(Stdlib::UNSET),
-      useGCCLibs(), language() {
+      compilerName(getDefaultCompilerName()), skipIntrinsicHeaders(),
+      stdlib(Stdlib::UNSET), useGCCLibs(), language(), linking(true) {
   execDir = getExecutableDir();
 
   if (execDir.empty()) {
@@ -413,6 +413,18 @@ void Target::setCompilerPath() {
   }
 }
 
+// Returns the clang version from the name of a resource directory, e.g. 18
+// for lib/clang/18 or 15.0.7 for lib/clang/15.0.7. Other names such as
+// 64bit give 0.0 and are ignored; parseClangVersion() alone would read
+// 64bit as clang 64.
+static ClangVersion parseClangVersionFromDirName(const char *name) {
+  if (*name < '0' || *name > '9' ||
+      strspn(name, "0123456789.") != strlen(name))
+    return ClangVersion();
+
+  return parseClangVersion(name);
+}
+
 bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
   assert(isClang());
 
@@ -462,7 +474,7 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
       if (file[0] == '.' || !dirExists(dir + "/" + file))
         continue;
 
-      const ClangVersion cv = parseClangVersion(file.c_str());
+      const ClangVersion cv = parseClangVersionFromDirName(file.c_str());
 
       if (cv == ClangVersion())
         continue;
@@ -565,7 +577,7 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
                                "intrinsic headers");
 
   // The resource directory is usually <prefix>/lib/clang/<version>.
-  ClangVersion cv = parseClangVersion(getFileName(resourceDir));
+  ClangVersion cv = parseClangVersionFromDirName(getFileName(resourceDir));
 
   if (cv == ClangVersion()) {
     // No version in the path (NixOS: .../resource-root), so parse
@@ -601,14 +613,21 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
 // The GCC runtime is linked statically, unless the user asks for the shared
 // one.
 static bool useStaticGCCRuntime() {
-  return !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
+  // The variable does not change while the wrapper runs, so read it once.
+  static const bool UseStatic = !getenv("OSXCROSS_GCC_NO_STATIC_RUNTIME");
+  return UseStatic;
+}
+
+// The OSXCross target directory, where ./build_gcc.sh installs GCC.
+std::string Target::gccInstallDir() const {
+  return execDir + "/..";
 }
 
 // Links the libstdc++ and libgcc installed by ./build_gcc.sh (clang++-gstdc++)
-// instead of the default libraries. They are found relative to the SDK:
+// instead of the default libraries:
 //
-//   <SDK>/../../<gccTriple>/lib[/i386]                  libstdc++, libsupc++
-//   <SDK>/../../lib/gcc/<gccTriple>/<version>[/i386]    libgcc, libemutls_w ...
+//   <gccInstallDir>/<gccTriple>/lib[/i386]                libstdc++, libsupc++
+//   <gccInstallDir>/lib/gcc/<gccTriple>/<version>[/i386]  libgcc, libemutls_w
 //
 // The i386 libraries are a multilib of the x86_64 GCC installation.
 void Target::addGCCRuntimeLibs(Arch arch) {
@@ -616,9 +635,9 @@ void Target::addGCCRuntimeLibs(Arch arch) {
   assert(!gccTriple.empty());
 
   const std::string multilib = arch == Arch::I386 ? "/i386" : "";
-  const std::string libgccDir = sdkPath + "/../../lib/gcc/" + gccTriple + "/" +
-                                gccVersion.str() + multilib;
-  const std::string libstdcxxDir = sdkPath + "/../../" + gccTriple + "/lib" +
+  const std::string libgccDir = gccInstallDir() + "/lib/gcc/" + gccTriple +
+                                "/" + gccVersion.str() + multilib;
+  const std::string libstdcxxDir = gccInstallDir() + "/" + gccTriple + "/lib" +
                                    multilib;
   const bool dynamic = !useStaticGCCRuntime();
 
@@ -700,6 +719,15 @@ bool Target::setup() {
 
   if (!determineSDK())
     return false;
+
+  // The checks below compare against the SDK version; with an unknown one
+  // (0.0) they would fail with misleading messages.
+  if (!sdkVersion.num()) {
+    err << "cannot determine the version of the macOS SDK '" << sdkPath
+        << "' (neither SDKSettings.json nor the directory name has one)"
+        << err.endl();
+    return false;
+  }
 
   setTriple();
   setCompilerPath();
@@ -830,7 +858,7 @@ bool Target::setup() {
     if (useGCCLibs) {
       // Use libs from './build_gcc.sh' installation
 
-      cxxHeaderPath = sdkPath + "/../../";
+      cxxHeaderPath = gccInstallDir() + "/";
 
       // Build the target triple name we BUILD for - not what triple has been
       // invoked.
@@ -1034,10 +1062,17 @@ bool Target::setup() {
     }
   }
 
-  // Clang's intrinsic headers (see findClangIntrinsicHeadersAndVersion()).
+  // Add clang's intrinsic headers, unless -resource-dir, -nostdinc or
+  // -nobuiltininc is given (see skipIntrinsicHeaders).
   if (isClang() && !clangIntrinsicPath.empty()) {
-    wrapperArgs.push_back("-isystem");
-    wrapperArgs.push_back(clangIntrinsicPath);
+    if (skipIntrinsicHeaders) {
+      if (getDebugLevel() > 0)
+        dbg << "clang's intrinsic headers not added (-resource-dir, "
+            << "-nostdinc or -nobuiltininc given)" << dbg.endl();
+    } else {
+      wrapperArgs.push_back("-isystem");
+      wrapperArgs.push_back(clangIntrinsicPath);
+    }
   }
 
   if (deploymentTarget.num()) {
@@ -1104,16 +1139,10 @@ bool Target::setup() {
 #endif
 
   if (isClang()) {
-    auto hasArg = [&](const char *arg) {
-      return std::find(userArgs.begin(), userArgs.end(), arg) != userArgs.end();
-    };
-
-    // Link with ld64.lld; not needed when only compiling (-c), preprocessing
-    // (-E) or generating assembly (-S).
-    if (buildFlavor.isLLVM() && !hasArg("-c") && !hasArg("-E") &&
-        !hasArg("-S")) {
+    // Link with ld64.lld. Not if nothing is linked: clang would warn about
+    // the unused -fuse-ld=lld, which is an error with -Werror.
+    if (buildFlavor.isLLVM() && linking)
       wrapperArgs.push_back("-fuse-ld=lld");
-    }
 
     if (getenv("OSXCROSS_PRETEND_TO_BE_APPLE_CLANG")) {
       wrapperArgs.push_back("-D__apple_build_version__=1");

@@ -61,6 +61,7 @@ BIN=wrapper
 
 SRCS= \
  main.cpp \
+ passthrough-compiler-options/options.cpp \
  tools/tools.cpp \
  tools/json.cpp \
  target.cpp \

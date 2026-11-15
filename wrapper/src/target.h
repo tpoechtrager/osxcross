@@ -221,6 +221,9 @@ struct Target {
   void setCompilerPath();
   bool findClangIntrinsicHeadersAndVersion(std::string &path);
 
+  // <execDir>/.., where ./build_gcc.sh installs GCC. Not relative to the
+  // SDK: an SDK given with -isysroot and the like can be anywhere.
+  std::string gccInstallDir() const;
   void addGCCRuntimeLibs(Arch arch);
   void setTriple(bool useAarch64InsteadOfArm64 = false);
   bool setup();
@@ -263,6 +266,10 @@ struct Target {
   std::string compilerPath;  // /usr/bin/clang | [...]/target/bin/*-gcc
   std::string compilerArgv0; // clang | *-apple-darwin-gcc
   ClangVersion clangVersion; // see findClangIntrinsicHeadersAndVersion()
+  // -resource-dir, -nostdinc (--no-standard-includes) or -nobuiltininc
+  // given. They are passed on to clang and decide which builtin headers it
+  // uses, so setup() does not add the intrinsic headers itself.
+  bool skipIntrinsicHeaders;
 
   //
   // C++ standard library
@@ -276,6 +283,8 @@ struct Target {
   // Command line
   //
   const char *language;            // -x <language>; nullptr: not given
+  bool linking;                    // false: -c, -E, -fsyntax-only etc.
+                                   // given (see main.cpp)
   std::string intrinsicPathOption; // -foc-intrinsic-path=
   StringVector wrapperArgs;        // built by setup(); [0] is compilerArgv0
   StringVector userArgs;           // the user's arguments, after wrapperArgs

@@ -25,6 +25,7 @@
 
 #include "compat.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
@@ -34,6 +35,7 @@
 #include "tools/tools.h"
 #include "target.h"
 #include "progs.h"
+#include "passthrough-compiler-options/options.h"
 
 using namespace tools;
 using namespace target;
@@ -44,8 +46,9 @@ int debug = 0;
 namespace {
 
 void warnExtension(const char *extension) {
-  static bool noExtWarnings = !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
-  if (noExtWarnings)
+  static const bool NoExtensionWarnings =
+      !!getenv("OSXCROSS_NO_EXTENSION_WARNINGS");
+  if (NoExtensionWarnings)
     return;
   warn << extension << " is an osxcross extension" << warn.endl();
   warnInfo << "you can silence this warning via "
@@ -58,8 +61,10 @@ void warnExtension(const char *extension) {
 
 namespace commandopts {
 
-typedef bool (*OptFun)(Target &target, const char *opt, const char *val,
-                      char **);
+// Declared in passthrough-compiler-options/options.h
+using ::commandopts::OptFun;
+using ::commandopts::Parser;
+using ::commandopts::PassthroughCompilerOptions;
 
 bool versionMin(Target &target, const char *, const char *val, char **) {
   target.deploymentTarget = parseOSVersion(val);
@@ -170,6 +175,56 @@ bool sysroot(Target &target, const char *, const char *path, char **) {
   return true;
 }
 
+bool skipIntrinsicHeaders(Target &target, const char *, const char *,
+                          char **) {
+  target.skipIntrinsicHeaders = true;
+  return true;
+}
+
+bool noLinking(Target &target, const char *, const char *, char **) {
+  target.linking = false;
+  return true;
+}
+
+// -Xarch_<arch> <arg> changes <arg> for <arch> only. The wrapper applies the
+// SDK, the C++ library and its header setup to all architectures, so the
+// options that change them cannot be given per architecture.
+bool xarch(Target &, const char *opt, const char *archName, char **args) {
+  static const char *const Prefixes[] = {
+    "-stdlib=", "-isysroot", "--sysroot", "-foc-compiler-path=",
+    "-foc-intrinsic-path=", "-foc-run-prog="
+  };
+  static const char *const Names[] = {
+    "-nostdinc", "--no-standard-includes", "-nobuiltininc",
+    "-foc-use-gcc-libstdc++"
+  };
+
+  const char *arg = *args; // nullptr if -Xarch_<arch> is the last argument
+  const char *rejected = nullptr;
+
+  if (!arg)
+    return true;
+
+  for (const char *prefix : Prefixes) {
+    if (!strncmp(arg, prefix, strlen(prefix)))
+      rejected = prefix;
+  }
+
+  for (const char *name : Names) {
+    if (!strcmp(arg, name))
+      rejected = name;
+  }
+
+  if (!rejected)
+    return true;
+
+  err << "'" << opt << archName << " " << arg << "' is not supported"
+      << err.endl();
+  note << "osxcross applies '" << std::string(rejected, strcspn(rejected, "="))
+       << "' to all architectures (a known limitation)" << note.endl();
+  return false;
+}
+
 bool runProg(Target &target, const char *, const char *progName,
              char **progArgs) {
   auto *prog = program::getProg(progName);
@@ -192,9 +247,10 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
   constexpr const char *dangerousIncludePaths[] = { "/usr/include",
                                                     "/usr/local/include" };
 
-  static bool noIncCheck = !!getenv("OSXCROSS_NO_INCLUDE_PATH_WARNINGS");
+  static const bool NoIncludePathWarnings =
+      !!getenv("OSXCROSS_NO_INCLUDE_PATH_WARNINGS");
 
-  if (noIncCheck)
+  if (NoIncludePathWarnings)
     return true;
 
   char *resolved = realpath(path, nullptr);
@@ -225,46 +281,83 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
   return true;
 }
 
-typedef OptParser<OptFun, 20> Parser;
-typedef Parser::ValueMode ValueMode;
-typedef Parser::Forwarding Forwarding;
-
-const Parser Options = {{
-  {"-mmacos-version-min", versionMin, ValueMode::JOINED_WITH_EQUALS},
-  {"-mmacosx-version-min", versionMin, ValueMode::JOINED_WITH_EQUALS},
-  {"-stdlib", stdlib, ValueMode::JOINED_WITH_EQUALS},
+// The wrapper's own options. parse() adds the options of the compiler that
+// take a value (passthrough-compiler-options/options.cpp), so that their
+// values are not taken as options.
+Parser options = {{
+  {"-mmacos-version-min", versionMin, ValueMode::EQUALS},
+  {"-mmacosx-version-min", versionMin, ValueMode::EQUALS},
+  {"-stdlib", stdlib, ValueMode::EQUALS},
+  {"--stdlib", stdlib, ValueMode::SEPARATE | ValueMode::EQUALS},
   {"-arch", arch, ValueMode::SEPARATE},
   {"-m16", arch},
   {"-m32", arch},
   {"-mx32", arch},
   {"-m64", arch},
-  {"-x", language, ValueMode::JOINED_OR_SEPARATE, Forwarding::KEEP},
+  {"-x", language, ValueMode::JOINED | ValueMode::SEPARATE, ParseMode::FORWARD},
+  {"--language", language, ValueMode::SEPARATE | ValueMode::EQUALS,
+   ParseMode::FORWARD},
   {"-foc-use-gcc-libstdc++", useGCCLibstdcxx},
   // for internal use only
-  {"-foc-run-prog", runProg, ValueMode::JOINED_WITH_EQUALS},
-  {"-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
-   Forwarding::KEEP},
-  {"-icxx-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
-   Forwarding::KEEP},
-  {"-cxx-isystem", checkIncludePath, ValueMode::JOINED_OR_SEPARATE,
-   Forwarding::KEEP},
-  {"-I", checkIncludePath, ValueMode::JOINED_OR_SEPARATE, Forwarding::KEEP},
+  {"-foc-run-prog", runProg, ValueMode::EQUALS},
+  {"-isystem", checkIncludePath, ValueMode::JOINED | ValueMode::SEPARATE,
+   ParseMode::FORWARD},
+  {"-icxx-isystem", checkIncludePath, ValueMode::JOINED | ValueMode::SEPARATE,
+   ParseMode::FORWARD},
+  {"-cxx-isystem", checkIncludePath, ValueMode::JOINED | ValueMode::SEPARATE,
+   ParseMode::FORWARD},
+  {"-I", checkIncludePath, ValueMode::JOINED | ValueMode::SEPARATE,
+   ParseMode::FORWARD},
+  {"--include-directory", checkIncludePath,
+   ValueMode::SEPARATE | ValueMode::EQUALS, ParseMode::FORWARD},
 
   // The SDK (see Target::determineSDK()). Consumed: setup() passes the SDK
   // in use as -isysroot.
-  {"-isysroot", isysroot, ValueMode::JOINED_OR_SEPARATE},
-  {"--sysroot", sysroot, ValueMode::SEPARATE},
-  {"--sysroot", sysroot, ValueMode::JOINED_WITH_EQUALS},
+  {"-isysroot", isysroot, ValueMode::JOINED | ValueMode::SEPARATE},
+  {"--sysroot", sysroot, ValueMode::SEPARATE | ValueMode::EQUALS},
+
+  // clang's builtin headers chosen or turned off by the user (see
+  // Target::skipIntrinsicHeaders)
+  {"-resource-dir", skipIntrinsicHeaders,
+   ValueMode::SEPARATE | ValueMode::EQUALS, ParseMode::FORWARD},
+  {"-nostdinc", skipIntrinsicHeaders, ValueMode::NONE, ParseMode::FORWARD},
+  {"--no-standard-includes", skipIntrinsicHeaders, ValueMode::NONE,
+   ParseMode::FORWARD},
+  {"-nobuiltininc", skipIntrinsicHeaders, ValueMode::NONE,
+   ParseMode::FORWARD},
+
+  // Options after which nothing is linked (see Target::linking)
+  {"-c", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--compile", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"-E", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--preprocess", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"-S", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--assemble", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"-M", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--dependencies", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"-MM", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--user-dependencies", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"-fsyntax-only", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--analyze", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"--precompile", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+  {"-emit-ast", noLinking, ValueMode::NONE, ParseMode::FORWARD},
+
+  // -Xarch_<arch> <arg>: see xarch()
+  {"-Xarch_", xarch, ValueMode::JOINED_AND_SEPARATE, ParseMode::FORWARD},
 
   // sets a custom path for the compiler
-  {"-foc-compiler-path", compilerPath, ValueMode::JOINED_WITH_EQUALS},
+  {"-foc-compiler-path", compilerPath, ValueMode::EQUALS},
 
   // specifies an additional directory to search when looking for clang's
   // intrinsic paths
-  {"-foc-intrinsic-path", intrinsicPath, ValueMode::JOINED_WITH_EQUALS}
+  {"-foc-intrinsic-path", intrinsicPath, ValueMode::EQUALS},
 }, getDebugLevel() > 0};
 
 bool parse(int argc, char **argv, Target &target) {
+  // The compiler's options with a value, so that "-c" in "-o -c" is
+  // taken as the file name (passthrough-compiler-options/options.cpp)
+  options.add(PassthroughCompilerOptions);
+
   target.userArgs.reserve(argc);
 
   if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
@@ -280,46 +373,54 @@ bool parse(int argc, char **argv, Target &target) {
       continue;
     }
 
-    const Parser::Option *opt = Options.parse(arg);
+    const char *suffix = nullptr;
+    const Parser::Option *opt = options.parse(arg, &suffix);
 
     if (!opt) {
       target.userArgs.push_back(arg);
       continue;
     }
 
-    const bool pushArg = opt->forwarding == Forwarding::KEEP;
+    const ValueMode mode = opt->valueMode;
     const int firstArg = i;
     const char *val = nullptr;
+    int numArgs = 0; // following arguments that belong to the option
 
-    if (opt->valueMode != ValueMode::NONE) {
-      val = arg + opt->nameLen;
-
-      if (opt->valueMode == ValueMode::JOINED_WITH_EQUALS) {
-        if (*val != '=') {
-          err << "expected '" << opt->name << "=<val>' "
-              << "instead of '" << arg << "'" << err.endl();
-          return false;
-        }
-
-        ++val;
-      }
-
-      if (opt->valueMode != ValueMode::JOINED_WITH_EQUALS &&
-          !*val && i < argc - 1)
-        val = argv[++i];
-
-      if (!*val) {
-        err << "missing argument for '" << opt->name << "'" << err.endl();
-        return false;
-      }
+    if (hasFlag(mode, ValueMode::REMAINING_ARGS)) {
+      numArgs = argc;
+    } else if (hasFlag(mode, ValueMode::JOINED_AND_SEPARATE)) {
+      val = suffix;
+      numArgs = 1;
+    } else if (*suffix == '=' && hasFlag(mode, ValueMode::EQUALS)) {
+      val = suffix + 1;
+    } else if (*suffix) {
+      val = suffix;
+    } else if (hasFlag(mode, ValueMode::SEPARATE)) {
+      numArgs = opt->numArgs;
+      val = argv[i + 1]; // nullptr after the last argument
+    } else if (hasFlag(mode, ValueMode::EQUALS)) {
+      err << "expected '" << opt->name << "=<val>' "
+          << "instead of '" << arg << "'" << err.endl();
+      return false;
+    } else if (hasFlag(mode, ValueMode::JOINED)) {
+      val = suffix;
     }
 
-    Options.printDebug(*opt, arg, val);
+    // Only for the wrapper's own options; the compiler reports the others.
+    if (opt->fun && (!val || !*val) && mode != ValueMode::NONE &&
+        !hasFlag(mode, ValueMode::JOINED_AND_SEPARATE)) {
+      err << "missing argument for '" << opt->name << "'" << err.endl();
+      return false;
+    }
 
-    if (opt->fun && !opt->fun(target, opt->name, val, &argv[i + 1]))
+    i = std::min(i + numArgs, argc - 1);
+
+    options.printDebug(*opt, arg, val);
+
+    if (opt->fun && !opt->fun(target, opt->name, val, &argv[firstArg + 1]))
       return false;
 
-    if (pushArg) {
+    if (hasFlag(opt->parseMode, ParseMode::FORWARD)) {
       for (int j = firstArg; j <= i; ++j)
         target.userArgs.push_back(argv[j]);
     }
