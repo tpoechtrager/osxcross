@@ -1,6 +1,8 @@
 
 ## macOS Cross-Toolchain for Linux and \*BSD
 
+See [CHANGELOG.md](CHANGELOG.md) for changes in each version.
+
 ### OSXCross build flavors
 
 OSXCross provides three build flavors:
