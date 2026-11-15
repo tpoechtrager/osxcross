@@ -191,7 +191,7 @@ bool noLinking(Target &target, const char *, const char *, char **) {
 // options that change them cannot be given per architecture.
 bool xarch(Target &, const char *opt, const char *archName, char **args) {
   static const char *const Prefixes[] = {
-    "-stdlib=", "-isysroot", "--sysroot", "-foc-compiler-path=",
+    "-stdlib=", "--stdlib", "-isysroot", "--sysroot", "-foc-compiler-path=",
     "-foc-intrinsic-path=", "-foc-run-prog="
   };
   static const char *const Names[] = {
