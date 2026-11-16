@@ -417,6 +417,9 @@ struct OSVersion {
 
   std::string majorStr() const { return std::to_string(major); }
 
+  // For messages: Show the patch level only if it is not 0 (12.0, 27.3.1).
+  std::string displayStr() const { return patch ? str() : shortStr(); }
+
   std::string numStr() const { return std::to_string(num()); }
 
   int major;

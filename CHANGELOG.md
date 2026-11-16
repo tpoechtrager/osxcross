@@ -4,6 +4,19 @@ All notable changes to OSXCross, newest first.
 
 ## v3.1.1
 
+### Added
+
+- wrapper: New environment variable `OSXCROSS_CHECK_MIN_DEPLOYMENT_TARGET`. If set, deployment  
+  targets below the SDK's minimum (`MinimumDeploymentTarget` in `SDKSettings.json`, e.g. 12.0 for  
+  SDK 27.3) are rejected. SDKs before 11.0 do not specify a minimum; a warning is printed instead.
+
+### Changed
+
+- wrapper: Deployment targets with a patch level, such as `-mmacosx-version-min=27.3.1` with the  
+  27.3 SDK, are no longer rejected. The upper limit is now the SDK's `MaximumDeploymentTarget` from  
+  `SDKSettings.json` (e.g. 27.3.99 for SDK 27.3). For SDKs before 11.0, which have no  
+  `SDKSettings.json`, it is the SDK version with patch level 99 (e.g. 10.13.99).
+
 ### Fixed
 
 - wrapper: The `PATH` lookup (compiler, `xcrun -f`, `lipo` shim) now skips directories and  
@@ -18,6 +31,7 @@ All notable changes to OSXCross, newest first.
 
 - wrapper: `OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION` (env). Clang 16 and later, like  
   Apple Clang, reject implicit function declarations in C99 and later modes by default.
+- wrapper: The hard-coded minimum deployment target of 10.4.
 
 ## v3.1.0
 

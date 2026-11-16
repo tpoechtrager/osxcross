@@ -67,7 +67,7 @@ Arch getDefaultArch(bool gcc = false);
 
 // The oldest macOS version that runs the architecture: 11.0 for arm64 and
 // arm64e, 10.8 for x86_64h; 0.0 (no limit) for the others.
-constexpr OSVersion getMinMacOSVersion(Arch arch) {
+constexpr OSVersion getMinSupportedMacOSVersionForArch(Arch arch) {
   return arch == Arch::ARM64 || arch == Arch::ARM64E ? OSVersion(11, 0)
          : arch == Arch::X86_64H                     ? OSVersion(10, 8)
                                                      : OSVersion();
@@ -155,16 +155,6 @@ private:
 std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
                        bool useAarch64InsteadOfArm64 = false);
 
-// What the wrapper uses from the SDKSettings.json of an SDK (SDKs since
-// 11.0 have one).
-struct SDKSettings {
-  OSVersion version; // "Version"; 0.0 if there is none
-
-  // Read <sdkPath>/SDKSettings.json. Returns false, with the members reset,
-  // if the file does not exist or is not valid JSON.
-  bool read(const std::string &sdkPath);
-};
-
 struct Target {
   Target();
 
@@ -180,8 +170,9 @@ struct Target {
   //
   // The version comes from the SDK's SDKSettings.json; without one, from
   // the name of the directory (15.4 for MacOSX15.4.sdk; 0.0 if the name has
-  // none). Prints an error, unless quiet, and returns false if the directory
-  // does not exist; sdkVersion is set anyway.
+  // none). So do sdkMinDeploymentTarget and sdkMaxDeploymentTarget. Prints an
+  // error, unless quiet, and returns false if the directory does not exist;
+  // sdkVersion is set anyway.
   bool determineSDK(bool quiet = false);
 
   bool getMacPortsDir(std::string &path) const;
@@ -256,7 +247,12 @@ struct Target {
   std::string commandLineSysroot;  // --sysroot; empty: not given
   std::string sdkPath;             // the SDK in use
   OSVersion sdkVersion;            // its macOS version; 0.0: unknown
-  SDKSettings sdkSettings;         // from its SDKSettings.json, if any
+  // The deployment targets it accepts, 12.0 and 27.3.99 for SDK 27.3. The
+  // minimum is 0.0 if the SDK states none. The maximum is sdkVersion with the
+  // patch level raised to 99 if the SDK states none; 0.0 if sdkVersion is
+  // unknown.
+  OSVersion sdkMinDeploymentTarget;
+  OSVersion sdkMaxDeploymentTarget;
 
   //
   // Compiler

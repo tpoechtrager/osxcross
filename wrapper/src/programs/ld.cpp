@@ -171,7 +171,8 @@ int ld(int argc, char **argv, target::Target &target) {
           archName ? tools::parseArch(archName) : target.primaryArch;
 
       defaultMinimum =
-          std::max(defaultMinimum, target::getMinMacOSVersion(arch));
+          std::max(defaultMinimum,
+                   target::getMinSupportedMacOSVersionForArch(arch));
       minimum = defaultMinimum.shortStr();
     }
 
