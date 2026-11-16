@@ -5,7 +5,7 @@
 # This script requires the OS X SDK and the Clang/LLVM compiler.
 #
 
-VERSION=3.1.0
+VERSION=3.1.1
 
 # Stable build flavor: cctools and ld64 versions
 STABLE_CCTOOLS_VERSION=986

@@ -1167,9 +1167,6 @@ bool Target::setup() {
       // default.
       wrapperArgs.push_back("-Wno-liblto");
     }
-
-    if (getenv("OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION"))
-      wrapperArgs.push_back("-Werror=implicit-function-declaration");
   } else if (isGCC()) {
     if (userArgs.empty() || (userArgs.size() == 1 && userArgs[0] == "-v")) {
       //

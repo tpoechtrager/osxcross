@@ -43,8 +43,6 @@ Set `ARM64_GCC_REPO` to build a different repository; it defaults to
 
 ## Notes
 
-- To enable `-Werror=implicit-function-declaration`, set
-  `OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION=1`
 - To disable static linking: `OSXCROSS_GCC_NO_STATIC_RUNTIME=1`
 - Clang uses `-femulated-tls` by default with the libstdc++ installed by
   `build_gcc.sh` (`clang++-gstdc++` or `-foc-use-gcc-libstdc++`). Override

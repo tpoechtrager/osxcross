@@ -2,6 +2,13 @@
 
 All notable changes to OSXCross, newest first.
 
+## v3.1.1
+
+### Removed
+
+- wrapper: `OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION` (env). Clang 16 and later, like  
+  Apple Clang, reject implicit function declarations in C99 and later modes by default.
+
 ## v3.1.0
 
 ### Added
