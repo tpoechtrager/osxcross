@@ -172,13 +172,17 @@ bool getFileContent(const std::string &file, std::string &content);
 
 bool fileExists(const std::string &file);
 bool dirExists(const std::string &dir);
+// True if file is a regular file that the current user may execute. A symlink
+// is judged by its target; a broken symlink is not executable.
+bool isExecutableFile(const std::string &file);
 // Names of all entries of a directory, including "." and "..", in the
 // order of readdir(); empty if the directory cannot be opened.
 std::vector<std::string> listFiles(const std::string &dir);
 
-// First match for <file> in the PATH directories, resolved with realpath()
-// unless resolve is false. If accept() rejects a match, the search goes on.
-// Returns an empty string if nothing is found.
+// Searches the PATH directories for an executable file (see
+// isExecutableFile()) named <file> and returns its path, or an empty string
+// if there is none. If resolve is true, the path is resolved with realpath(),
+// so it has no symlinks. If accept() rejects a match, the search goes on.
 std::string
 findExecutableInPath(const std::string &file, bool resolve = true,
                      bool (*accept)(const std::string &path) = nullptr);

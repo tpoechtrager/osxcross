@@ -4,6 +4,12 @@ All notable changes to OSXCross, newest first.
 
 ## v3.1.1
 
+### Fixed
+
+- wrapper: The `PATH` lookup (compiler, `xcrun -f`, `lipo` shim) now skips directories and  
+  non-executable files, like a shell. Previously, a directory or non-executable file named `clang`  
+  earlier in `PATH` took precedence over the real compiler.
+
 ### Removed
 
 - wrapper: `OSXCROSS_ENABLE_WERROR_IMPLICIT_FUNCTION_DECLARATION` (env). Clang 16 and later, like  

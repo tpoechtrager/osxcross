@@ -332,6 +332,16 @@ bool dirExists(const std::string &dir) {
   return !stat(dir.c_str(), &st) && S_ISDIR(st.st_mode);
 }
 
+bool isExecutableFile(const std::string &file) {
+  struct stat st;
+
+  // access() alone is not enough: POSIX lets it succeed for the superuser
+  // even if no execute bit is set. Like a shell, skip such files.
+  return !stat(file.c_str(), &st) && S_ISREG(st.st_mode) &&
+         (st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) &&
+         !access(file.c_str(), X_OK);
+}
+
 std::vector<std::string> listFiles(const std::string &dir) {
   std::vector<std::string> files;
 
@@ -360,9 +370,8 @@ std::string findExecutableInPath(const std::string &file, bool resolve,
 
   for (const std::string &dir : dirs) {
     std::string path = dir + PathDiv + file;
-    struct stat st;
 
-    if (stat(path.c_str(), &st) != 0)
+    if (!isExecutableFile(path))
       continue;
 
     if (resolve) {
