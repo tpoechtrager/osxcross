@@ -9,6 +9,10 @@ All notable changes to OSXCross, newest first.
 - wrapper: The `PATH` lookup (compiler, `xcrun -f`, `lipo` shim) now skips directories and  
   non-executable files, like a shell. Previously, a directory or non-executable file named `clang`  
   earlier in `PATH` took precedence over the real compiler.
+- wrapper: With MacPorts packages installed and a sysroot set (`OSXCROSS_PKG_CONFIG_SYSROOT_DIR`,  
+  or `PKG_CONFIG_SYSROOT_DIR` with `OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES`), `pkg-config` joined  
+  both paths with `:` and returned broken `-I` and `-L` flags. The configured sysroot now takes  
+  precedence, and MacPorts packages are not added.
 
 ### Removed
 

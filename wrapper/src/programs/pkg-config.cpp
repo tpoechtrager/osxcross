@@ -69,16 +69,24 @@ int pkg_config(int argc, char **argv, Target &target) {
     std::string macPortsSysRoot;
 
     if (target.getMacPortsSysRootDir(macPortsSysRoot)) {
-      prependEnvVariable(useNativeVariables ? "PKG_CONFIG_SYSROOT_DIR"
-                                            : "OSXCROSS_PKG_CONFIG_SYSROOT_DIR",
-                         macPortsSysRoot);
+      const char *sysRootVar = useNativeVariables
+                                   ? "PKG_CONFIG_SYSROOT_DIR"
+                                   : "OSXCROSS_PKG_CONFIG_SYSROOT_DIR";
+      const char *userSysRoot = getenv(sysRootVar);
 
-      std::string macPortsPkgConfigPath;
+      // The sysroot is a single directory, not a search path. As with plain
+      // pkg-config, one set by the user is kept. The MacPorts packages only
+      // work with their own sysroot, so they are left out then.
+      if (!userSysRoot || !*userSysRoot) {
+        setenv(sysRootVar, macPortsSysRoot.c_str(), 1);
 
-      if (target.getMacPortsPkgConfigDir(macPortsPkgConfigPath))
-        prependEnvVariable(useNativeVariables ? "PKG_CONFIG_PATH"
-                                              : "OSXCROSS_PKG_CONFIG_PATH",
-                           macPortsPkgConfigPath);
+        std::string macPortsPkgConfigPath;
+
+        if (target.getMacPortsPkgConfigDir(macPortsPkgConfigPath))
+          prependEnvVariable(useNativeVariables ? "PKG_CONFIG_PATH"
+                                                : "OSXCROSS_PKG_CONFIG_PATH",
+                             macPortsPkgConfigPath);
+      }
     }
   } else {
     unsetenv("OSXCROSS_PKG_CONFIG_NO_MP_INC");
