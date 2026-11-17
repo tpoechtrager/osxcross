@@ -29,6 +29,9 @@ All notable changes to OSXCross, newest first.
   `PKG_CONFIG_SYSROOT_DIR` with `OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES`) was set, and it produced  
   broken `-I` and `-L` flags. The user's sysroot is now used as is, and the MacPorts packages are  
   not added.
+- wrapper: With the `llvm` build flavor, the `as` shim, which invokes Clang to assemble GCC's  
+  output, now gets the full deployment target, such as 10.6.1. Previously, it got only 10.6, which  
+  the object files then recorded. Linked executables were not affected.
 - `build.sh`: Heading underlines in the build banner did not always match the length of the heading.
 
 ### Removed

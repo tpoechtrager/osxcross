@@ -1282,7 +1282,7 @@ bool Target::setup() {
   if (buildFlavor.isLLVM() && isGCC()) {
     // The LLVM as wrapper needs GCC's selected deployment target.
     setenv("OSXCROSS_AS_TARGET_VERSION",
-           deploymentTarget.shortStr().c_str(), 1);
+           deploymentTarget.str().c_str(), 1);
   } else if (isGCCLibstdcxx) {
     // Silence 'operator new[]' warning in ld64.
     setenv("OSXCROSS_GCC_LIBSTDCXX", "1", 1);
