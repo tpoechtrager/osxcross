@@ -18,7 +18,8 @@
 pushd "${0%/*}/src" &>/dev/null
 
 CLANG_TIDY=${CLANG_TIDY:-clang-tidy}
-SOURCES=(*.cpp passthrough-compiler-options/*.cpp tools/*.cpp programs/*.cpp)
+SOURCES=(*.cpp passthrough-compiler-options/*.cpp tools/*.cpp programs/*.cpp
+         programs/xcode/*.cpp)
 FILES=("${SOURCES[@]}" *.h passthrough-compiler-options/*.h tools/*.h)
 status=0
 

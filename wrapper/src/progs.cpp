@@ -91,8 +91,8 @@ int dummy(int, char **, Target &) { return 0; }
 constexpr Prog Programs[] = {
   // Built-in tools
   { "sw_vers",          sw_vers },
-  { "xcrun",            xcrun },
-  { "xcodebuild",       xcodebuild },
+  { "xcrun",            xcode::xcrun },
+  { "xcodebuild",       xcode::xcodebuild },
 
   // LLVM tools
 

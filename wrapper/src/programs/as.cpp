@@ -47,7 +47,7 @@ int as(int argc, char **argv, target::Target &target) {
     return 1;
   }
 
-  const int sdkResult = applySDKRootFromEnvironment();
+  const int sdkResult = xcode::applySDKRootFromEnvironment();
   if (sdkResult != 0)
     return sdkResult;
 

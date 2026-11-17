@@ -77,8 +77,8 @@ SRCS= \
  programs/osxcross-man.cpp \
  programs/sw_vers.cpp \
  programs/pkg-config.cpp \
- programs/xcrun.cpp \
- programs/xcodebuild.cpp \
+ programs/xcode/xcrun.cpp \
+ programs/xcode/xcodebuild.cpp \
  programs/lipo.cpp \
  programs/ld.cpp \
  programs/as.cpp

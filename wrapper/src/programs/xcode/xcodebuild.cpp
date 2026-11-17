@@ -31,6 +31,7 @@ using namespace tools;
 using namespace target;
 
 namespace program {
+namespace xcode {
 namespace {
 
 int version(Target *, char **) {
@@ -85,4 +86,5 @@ int xcodebuild(int argc, char **argv, Target &target) {
   return retVal;
 }
 
+} // namespace xcode
 } // namespace program

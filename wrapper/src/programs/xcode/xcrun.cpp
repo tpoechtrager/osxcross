@@ -37,6 +37,7 @@ using namespace tools;
 using namespace target;
 
 namespace program {
+namespace xcode {
 namespace {
 
 bool isStandaloneXcrun = false;
@@ -341,4 +342,5 @@ int xcrun(int argc, char **argv, Target &target) {
   return retVal;
 }
 
+} // namespace xcode
 } // namespace program
