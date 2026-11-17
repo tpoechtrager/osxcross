@@ -20,11 +20,10 @@ LLVM_LIPO_VERSION=1010.6
 
 pushd "${0%/*}" &>/dev/null
 
-echo "OSXCross $VERSION"
-echo "------------"
-echo ""
-
 source tools/tools.sh
+
+print_heading "OSXCross $VERSION"
+echo ""
 
 if [ -z "$SDK_VERSION" ]; then
   guess_sdk_version
@@ -236,8 +235,7 @@ fi
 
 export TARGET
 
-echo "Configuration"
-echo "-------------"
+print_heading "Configuration"
 printf "%-26s: %s\n" "Build flavor" "$BUILD_FLAVOR"
 printf "%-26s: macOS %s (%s)\n" "SDK" "$SDK_VERSION" "$SDK_ARCHIVE"
 printf "%-26s: %s\n" "Target" "$TARGET"
@@ -245,8 +243,7 @@ printf "%-26s: %s\n" "Minimum deployment target" "$OSX_VERSION_MIN"
 printf "%-26s: %s\n" "Architectures" "${SUPPORTED_ARCHS// /, }"
 
 echo ""
-echo "Directories"
-echo "-----------"
+print_heading "Directories"
 printf "%-17s: %s\n" "Tarballs" "$TARBALL_DIR"
 printf "%-17s: %s\n" "Build" "$BUILD_DIR"
 printf "%-17s: %s\n" "Install" "$TARGET_DIR"
@@ -413,8 +410,7 @@ function build_llvm()
 
   if [ -z "${ENABLE_REPLACEMENT_LIPO+x}" ]; then
     echo ""
-    echo "LLVM flavor compatibility"
-    echo "-------------------------"
+    print_heading "LLVM flavor compatibility"
     echo ""
 
     message=$'Use cctools lipo instead of llvm-lipo to improve compatibility?'

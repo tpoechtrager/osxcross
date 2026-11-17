@@ -26,6 +26,7 @@ All notable changes to OSXCross, newest first.
   or `PKG_CONFIG_SYSROOT_DIR` with `OSXCROSS_PKG_CONFIG_USE_NATIVE_VARIABLES`), `pkg-config` joined  
   both paths with `:` and returned broken `-I` and `-L` flags. The configured sysroot now takes  
   precedence, and MacPorts packages are not added.
+- `build.sh`: Heading underlines in the build banner did not always match the length of the heading.
 
 ### Removed
 

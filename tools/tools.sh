@@ -96,6 +96,11 @@ function first_supported_arch() {
   echo "${SUPPORTED_ARCHS%% *}"
 }
 
+function print_heading() {
+  echo "$1"
+  printf '%*s\n' "${#1}" "" | tr ' ' '-'
+}
+
 # Compare two dotted versions without external tools; this replaces the old
 # osxcross-cmp wrapper program and prints 1 when the comparison is true, else 0.
 function cmp-version() {
@@ -360,8 +365,7 @@ function check_for_existing_osxcross_installation()
   )
 
   echo ""
-  echo "WARNING: Existing OSXCross installation detected"
-  echo "------------------------------------------------"
+  print_heading "WARNING: Existing OSXCross installation detected"
   echo "The following directories already contain an"
   echo "OSXCross installation:"
   echo ""
