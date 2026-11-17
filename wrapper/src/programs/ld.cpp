@@ -162,7 +162,7 @@ int ld(int argc, char **argv, target::Target &target) {
     } else {
       // The default, as in Target::setup(): the build default (the SDK
       // version if there is none), raised to what the architecture needs.
-      tools::OSVersion defaultMinimum = target::getDefaultMinTarget();
+      tools::OSVersion defaultMinimum = target::getDefaultDeploymentTarget();
 
       if (!defaultMinimum.num())
         defaultMinimum = sdkVersion;
@@ -171,8 +171,7 @@ int ld(int argc, char **argv, target::Target &target) {
           archName ? tools::parseArch(archName) : target.primaryArch;
 
       defaultMinimum =
-          std::max(defaultMinimum,
-                   target::getMinSupportedMacOSVersionForArch(arch));
+          std::max(defaultMinimum, target::getMinDeploymentTargetForArch(arch));
       minimum = defaultMinimum.shortStr();
     }
 

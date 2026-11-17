@@ -67,7 +67,7 @@ Arch getDefaultArch(bool gcc = false);
 
 // The oldest macOS version that runs the architecture: 11.0 for arm64 and
 // arm64e, 10.8 for x86_64h; 0.0 (no limit) for the others.
-constexpr OSVersion getMinSupportedMacOSVersionForArch(Arch arch) {
+constexpr OSVersion getMinDeploymentTargetForArch(Arch arch) {
   return arch == Arch::ARM64 || arch == Arch::ARM64E ? OSVersion(11, 0)
          : arch == Arch::X86_64H                     ? OSVersion(10, 8)
                                                      : OSVersion();
@@ -93,15 +93,15 @@ constexpr const char *getOSXCrossVersion() {
 #endif
 }
 
-#ifdef OSXCROSS_OSX_VERSION_MIN
-inline OSVersion getDefaultMinTarget() {
-  if (!strcmp(OSXCROSS_OSX_VERSION_MIN, "default"))
+#ifdef OSXCROSS_DEFAULT_DEPLOYMENT_TARGET
+inline OSVersion getDefaultDeploymentTarget() {
+  if (!strcmp(OSXCROSS_DEFAULT_DEPLOYMENT_TARGET, "default"))
     return OSVersion();
 
-  return parseOSVersion(OSXCROSS_OSX_VERSION_MIN);
+  return parseOSVersion(OSXCROSS_DEFAULT_DEPLOYMENT_TARGET);
 }
 #else
-constexpr OSVersion getDefaultMinTarget() { return OSVersion(); }
+constexpr OSVersion getDefaultDeploymentTarget() { return OSVersion(); }
 #endif
 
 // Build flavor

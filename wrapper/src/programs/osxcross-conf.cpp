@@ -42,7 +42,7 @@ void print(const char *var, const A &val) {
 }
 
 int conf(int, char **, Target &target) {
-  OSVersion osxVersionMin = getDefaultMinTarget();
+  OSVersion osxVersionMin = getDefaultDeploymentTarget();
   const char *ltoPath = getLibLTOPath();
   std::string buildDir = getBuildDir();
 
@@ -64,6 +64,9 @@ int conf(int, char **, Target &target) {
 
   print("VERSION", getOSXCrossVersion());
   print("BUILD_FLAVOR", getBuildFlavor());
+  print("DEFAULT_DEPLOYMENT_TARGET", osxVersionMin.shortStr());
+  // The old name of DEFAULT_DEPLOYMENT_TARGET. Scripts outside OSXCross may
+  // still read it: keep it, do not remove it.
   print("OSX_VERSION_MIN", osxVersionMin.shortStr());
   print("TARGET", getDefaultTarget());
   print("BASE_DIR", buildDir + "/..");

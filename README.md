@@ -119,7 +119,7 @@ Use `ENABLE_ARCHS` to restrict the build to a supported set of architectures, fo
 ./build.sh
 BUILD_FLAVOR=llvm ./build.sh
 UNATTENDED=1 BUILD_FLAVOR=latest ./build.sh
-TARGET_DIR=/usr/local/osxcross OSX_VERSION_MIN=XX.X ENABLE_ARCHS="<ARCHS>" ./build.sh
+TARGET_DIR=/usr/local/osxcross DEFAULT_DEPLOYMENT_TARGET=XX.X ENABLE_ARCHS="<ARCHS>" ./build.sh
 ```
 
 Add `<target>/bin` to your `PATH` after installation.
@@ -218,7 +218,7 @@ Default:
 
 Can be overriden via:
 
-1. During the build: `OSX_VERSION_MIN=XX.X ./build.sh`.
+1. During the build: `DEFAULT_DEPLOYMENT_TARGET=XX.X ./build.sh`.
 2. By passing `-mmacos-version-min=XX.X` to the compiler.
 3. By setting `MACOSX_DEPLOYMENT_TARGET=XX.X` env var.
 

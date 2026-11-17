@@ -6,7 +6,9 @@ function import_osxcross_environment()
 {
   if [ -n "$OSXCROSS_VERSION" ]; then
     export VERSION=$OSXCROSS_VERSION
-    export OSX_VERSION_MIN=$OSXCROSS_OSX_VERSION_MIN
+    # OSXCROSS_OSX_VERSION_MIN is the old name; an osxcross-conf installed
+    # by an older OSXCross only prints that one. Keep this fallback.
+    export DEFAULT_DEPLOYMENT_TARGET=${OSXCROSS_DEFAULT_DEPLOYMENT_TARGET:-$OSXCROSS_OSX_VERSION_MIN}
     export TARGET=$OSXCROSS_TARGET
     export BASE_DIR=$OSXCROSS_BASE_DIR
     export TARBALL_DIR=$OSXCROSS_TARBALL_DIR
@@ -22,6 +24,7 @@ function import_osxcross_environment()
     export BUILD_FLAVOR=$OSXCROSS_BUILD_FLAVOR
     # Do not use these
     unset OSXCROSS_VERSION OSXCROSS_OSX_VERSION_MIN
+    unset OSXCROSS_DEFAULT_DEPLOYMENT_TARGET
     unset OSXCROSS_TARGET OSXCROSS_BASE_DIR
     unset OSXCROSS_SDK_VERSION OSXCROSS_SDK
     unset OSXCROSS_SDK_DIR OSXCROSS_TARBALL_DIR
@@ -302,7 +305,7 @@ function guess_sdk_version()
 
     echo "Please set the SDK_VERSION environment variable for the one you want."
     echo ""
-    echo "(for example: SDK_VERSION=10.x [OSX_VERSION_MIN=10.x] [TARGET_DIR=...] ./build.sh)"
+    echo "(for example: SDK_VERSION=10.x [DEFAULT_DEPLOYMENT_TARGET=10.x] [TARGET_DIR=...] ./build.sh)"
     exit 1
   else
     sdk=${sdks[0]}

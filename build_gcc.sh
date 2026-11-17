@@ -51,8 +51,8 @@ fi
 export GCC_TARGET_ARCHS
 
 
-if [ $(cmp-version $OSX_VERSION_MIN '<=' 10.5) -eq 1 ]; then
-  echo "You must build OSXCross with OSX_VERSION_MIN >= 10.6" 2>&1
+if [ $(cmp-version $DEFAULT_DEPLOYMENT_TARGET '<=' 10.5) -eq 1 ]; then
+  echo "You must build OSXCross with DEFAULT_DEPLOYMENT_TARGET >= 10.6" 2>&1
   exit 1
 fi
 
@@ -399,16 +399,16 @@ for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
   # GCC's own default follows the Darwin triple, which can be newer than the
   # deployment target selected for OSXCross. Build all target runtime libraries
   # for that deployment target too; changing the wrapper alone is insufficient.
-  GCC_OSX_VERSION_MIN=$OSX_VERSION_MIN
+  GCC_DEPLOYMENT_TARGET=$DEFAULT_DEPLOYMENT_TARGET
   if [ "$GCC_TARGET_ARCH" = "aarch64" ] &&
-     [ "$(cmp-version "$GCC_OSX_VERSION_MIN" '<' 11.0)" -eq 1 ]; then
-    GCC_OSX_VERSION_MIN=11.0
+     [ "$(cmp-version "$GCC_DEPLOYMENT_TARGET" '<' 11.0)" -eq 1 ]; then
+    GCC_DEPLOYMENT_TARGET=11.0
   fi
-  GCC_DEPLOYMENT_FLAG="-mmacosx-version-min=$GCC_OSX_VERSION_MIN"
+  GCC_DEPLOYMENT_FLAG="-mmacosx-version-min=$GCC_DEPLOYMENT_TARGET"
 
   # Libtool omits compiler flags in some intermediate link steps. Supply the
   # environment default as well, so those steps use the same deployment target.
-  GCC_BUILD_ENV=("MACOSX_DEPLOYMENT_TARGET=$GCC_OSX_VERSION_MIN")
+  GCC_BUILD_ENV=("MACOSX_DEPLOYMENT_TARGET=$GCC_DEPLOYMENT_TARGET")
   # END FIX: Set the GCC runtime build deployment target (#485)
 
   env "${GCC_BUILD_ENV[@]}" "${GCC_CONFIGURE_ENV[@]}" ../configure \
@@ -439,12 +439,12 @@ for GCC_TARGET_ARCH in $GCC_TARGET_ARCHS; do
   if [ "$(cmp-version "$SDK_VERSION" '<' 10.7)" -eq 1 ]; then
     printf 'override EXTRA_TARGET_FLAGS += "%s"\n' "BUILD_LIBGCCS1=NO" >> Makefile
   else
-    GCC_LIBGCC_S1_OSX_VERSION_MIN=$GCC_OSX_VERSION_MIN
-    if [ "$(cmp-version "$GCC_LIBGCC_S1_OSX_VERSION_MIN" '<' 10.7)" -eq 1 ]; then
-      GCC_LIBGCC_S1_OSX_VERSION_MIN=10.7
+    GCC_LIBGCC_S1_DEPLOYMENT_TARGET=$GCC_DEPLOYMENT_TARGET
+    if [ "$(cmp-version "$GCC_LIBGCC_S1_DEPLOYMENT_TARGET" '<' 10.7)" -eq 1 ]; then
+      GCC_LIBGCC_S1_DEPLOYMENT_TARGET=10.7
     fi
     printf 'override EXTRA_TARGET_FLAGS += "%s"\n' \
-      "LIBGCC_S1_MIN_VERSION=-mmacosx-version-min=$GCC_LIBGCC_S1_OSX_VERSION_MIN" >> Makefile
+      "LIBGCC_S1_MIN_VERSION=-mmacosx-version-min=$GCC_LIBGCC_S1_DEPLOYMENT_TARGET" >> Makefile
   fi
   # END FIX: Set libgcc and CRT build deployment targets (#485)
 

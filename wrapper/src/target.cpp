@@ -824,24 +824,24 @@ bool Target::setup() {
   //
 
   if (!deploymentTarget.num()) {
-    const OSVersion defaultMinTarget = getDefaultMinTarget();
+    const OSVersion defaultTarget = getDefaultDeploymentTarget();
 
-    if (defaultMinTarget != OSVersion()) {
-      // Default version is given via -DOSXCROSS_OSX_VERSION_MIN=XX,
+    if (defaultTarget != OSVersion()) {
+      // Default version is given via -DOSXCROSS_DEFAULT_DEPLOYMENT_TARGET=XX,
       // raised to what the architectures and the C++ library need.
-      deploymentTarget = defaultMinTarget;
+      deploymentTarget = defaultTarget;
 
       // Default to >= 11.0 for arm64 and >= 10.8 for x86_64h
       for (Arch arch : archs)
         deploymentTarget = std::max(deploymentTarget,
-                                    getMinSupportedMacOSVersionForArch(arch));
+                                    getMinDeploymentTargetForArch(arch));
 
       if (stdlib == Stdlib::LIBCXX) {
         // Default to >= 10.7 for libc++
         deploymentTarget = std::max(deploymentTarget, OSVersion(10, 7));
       }
     } else {
-      // No -DOSXCROSS_OSX_VERSION_MIN=XX: default to the SDK version
+      // No -DOSXCROSS_DEFAULT_DEPLOYMENT_TARGET=XX: default to the SDK version
       deploymentTarget = sdkVersion;
     }
   }

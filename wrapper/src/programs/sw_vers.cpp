@@ -47,7 +47,7 @@ int sw_vers(int argc, char **argv, Target &target) {
     if (p)
       osNum = parseOSVersion(p);
     else
-      osNum = getDefaultMinTarget();
+      osNum = getDefaultDeploymentTarget();
 
     if (!osNum.num()) {
       // The version is known even if the SDK directory does not exist.

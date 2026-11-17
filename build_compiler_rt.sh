@@ -154,7 +154,7 @@ if [ $f_res -eq 1 ]; then
           extra_cmake_flags+="-DCOMPILER_RT_BUILD_SANITIZERS=OFF "
           extra_cmake_flags+="-DCOMPILER_RT_BUILD_XRAY=OFF "
         elif [ "$arch" = "x86_64h" ]; then
-          if [ $(cmp-version $OSXCROSS_OSX_VERSION_MIN "<" 10.8) -eq 1 ]; then
+          if [ $(cmp-version $DEFAULT_DEPLOYMENT_TARGET "<" 10.8) -eq 1 ]; then
             export MACOSX_DEPLOYMENT_TARGET=10.8
           fi
         fi
@@ -286,7 +286,7 @@ if [ $f_res -eq 1 ]; then
     ### MAKE ###
 
      if arch_supported $ARCHS "x86_64h"; then
-      if [ $(cmp-version $OSXCROSS_OSX_VERSION_MIN "<" 10.8) -eq 1 ]; then
+      if [ $(cmp-version $DEFAULT_DEPLOYMENT_TARGET "<" 10.8) -eq 1 ]; then
         export MACOSX_DEPLOYMENT_TARGET=10.8
       fi
     fi
