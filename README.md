@@ -212,9 +212,10 @@ xcrun lipo -create test.x86_64 test.arm64 -output test
 ### Deployment Target
 
 Default:
-* SDK ≤ 10.13 → macOS 10.6
-* SDK ≥ 10.14 → macOS 10.9
-* SDK ≥ 14.0 → macOS 10.13
+* SDK 10.6 – 10.13 → macOS 10.6
+* SDK 10.14 – 12.x → macOS 10.9
+* SDK 13.0 – 26.x → macOS 10.13
+* SDK ≥ 27.0 → macOS 12.0
 
 Can be overriden via:
 
