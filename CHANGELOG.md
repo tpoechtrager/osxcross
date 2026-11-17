@@ -2,6 +2,12 @@
 
 All notable changes to OSXCross, newest first.
 
+## v3.1.2
+
+### Fixed
+
+- wrapper: On OpenBSD, tools can now be invoked using a relative path such as `bin/o64-clang`.
+
 ## v3.1.1
 
 ### Added

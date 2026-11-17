@@ -90,42 +90,20 @@ bool isTerminal() {
 namespace {
 
 // OpenBSD cannot report the path of the running executable, so resolve
-// argv[0] like the shell that started us: a path starting with '/' or '.'
-// is taken as it is, any other name is looked up in PATH. Symlinks are
-// resolved, as on Linux and FreeBSD, where the kernel reports the resolved
-// path: started through a symlink elsewhere, the directory is still the
-// installation's bin/.
+// argv[0] like the shell that started us: a name with a '/' is a path, any
+// other name is looked up in PATH. Symlinks are resolved, as on Linux and
+// FreeBSD, where the kernel reports the resolved path: started through a
+// symlink elsewhere, the directory is still the installation's bin/.
 std::string resolveArgv0(const std::string &argv0) {
-  std::string path;
+  if (argv0.find('/') == std::string::npos)
+    return findExecutableInPath(argv0);
 
-  if (argv0[0] == '/' || argv0[0] == '.') {
-    path = argv0;
-  } else {
-    const char *envPath = getenv("PATH");
-
-    if (!envPath)
-      return std::string();
-
-    for (const std::string &dir : splitPath(envPath)) {
-      const std::string candidate = dir + PathDiv + argv0;
-      struct stat st;
-
-      if (!stat(candidate.c_str(), &st) && (st.st_mode & S_IXUSR)) {
-        path = candidate;
-        break;
-      }
-    }
-
-    if (path.empty())
-      return std::string();
-  }
-
-  char *resolved = realpath(path.c_str(), nullptr);
+  char *resolved = realpath(argv0.c_str(), nullptr);
 
   if (!resolved)
     return std::string();
 
-  path = resolved;
+  const std::string path = resolved;
   free(resolved);
   return path;
 }
