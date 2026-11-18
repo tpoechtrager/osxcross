@@ -6,6 +6,7 @@ All notable changes to OSXCross, newest first.
 
 ### Changed
 
+- Build scripts now require GNU sed (`gsed`) on macOS hosts.
 - wrapper: `xcrun`: When given several query options, such as `--show-sdk-path` and  
   `--show-sdk-version`, `xcrun` runs only the last query and uses the last `-sdk` option.
 - wrapper: When an SDK is missing, the error reports which option or environment variable selected  
@@ -15,6 +16,7 @@ All notable changes to OSXCross, newest first.
 
 - wrapper: `xcrun`: `-sdk` accepts any SDK directory, including a relative path or a directory not  
   named `MacOSX*.sdk`. Previously, such a directory was rejected with `'-sdk': expected macOS SDK`.
+- wrapper: `xcrun`: Skips non-executable target-prefixed files when looking up a tool by name.
 - wrapper: On OpenBSD, tools can now be invoked using a relative path such as `bin/o64-clang`.
 - wrapper: `as`: With the `llvm` build flavor, the `as` shim, which invokes Clang to assemble GCC's  
   output, now uses GCC's SDK. Previously, it chose the SDK itself: after `gcc -isysroot` it  

@@ -207,12 +207,13 @@ function require()
   fi
 }
 
+MAKE=make
+SED=sed
 if [[ $PLATFORM == *BSD ]] || [ $PLATFORM == "DragonFly" ]; then
   MAKE=gmake
   SED=gsed
-else
-  MAKE=make
-  SED=sed
+elif [ "$PLATFORM" == "Darwin" ]; then
+  SED=gsed
 fi
 
 if [ -z "$USESYSTEMCOMPILER" ]; then

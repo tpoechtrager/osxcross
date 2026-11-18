@@ -71,15 +71,14 @@ bool isXcodeToolName(const char *tool) {
 bool getToolPath(Target *target, std::string &toolPath, std::string tool) {
   const char *fileName = getFileName(tool);
   bool isXcodeTool = isXcodeToolName(fileName);
+  const bool useExplicitPath = tool[0] == PathDiv && !isXcodeTool;
 
   toolPath.clear();
 
-  if (tool[0] == PathDiv) {
-    if (isXcodeTool)
-      tool = fileName; // map /usr/bin/clang (etc.) to <triple>-clang
-    else
-      toolPath = tool;
-  }
+  if (useExplicitPath)
+    toolPath = tool;
+  else if (tool[0] == PathDiv)
+    tool = fileName; // map /usr/bin/clang (etc.) to <triple>-clang
 
   if (toolPath.empty()) {
     std::string triple;
@@ -101,7 +100,11 @@ bool getToolPath(Target *target, std::string &toolPath, std::string tool) {
     toolPath = target->buildToolPath(triple, tool);
   }
 
-  if (!fileExists(toolPath)) {
+  // Match Apple's xcrun: -find accepts an existing absolute path even if
+  // it is not executable. Candidates found by tool name must be executable.
+  const bool found = useExplicitPath ? fileExists(toolPath)
+                                     : isExecutableFile(toolPath);
+  if (!found) {
     // Fall back to system executables so 'xcrun git status' etc. works.
     // Do not resolve symlinks, so that 'xcrun -f sh' prints /usr/bin/sh
     // and not /usr/bin/bash.
