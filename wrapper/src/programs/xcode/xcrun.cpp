@@ -27,11 +27,10 @@
 #include <string>
 #include <vector>
 
-#include <strings.h>
-
 #include "tools/tools.h"
 #include "target.h"
 #include "progs.h"
+#include "programs/xcode/sdk.h"
 
 using namespace tools;
 using namespace target;
@@ -42,6 +41,13 @@ namespace {
 
 bool isStandaloneXcrun = false;
 bool showCommand = false;
+
+// Like Apple's xcrun, the options are read first, up to the name of the
+// program to run. Then only the last action runs, with the SDK of the last
+// -sdk option.
+const char *sdkOption = nullptr;            // the last -sdk; nullptr: not given
+int (*action)(Target *, char **) = nullptr; // the last action
+char **actionArgs = nullptr;                // and its arguments
 
 bool isXcodeToolName(const char *tool) {
   constexpr const char *xcodeTools[] = {
@@ -125,47 +131,12 @@ int version(Target *, char **) {
 }
 
 int sdk(Target *, char **argv) {
-  const char *sdkArg = argv[0];
-
-  if (!strcmp(sdkArg, "macosx") || !strcmp(sdkArg, "macosx.internal"))
-    return 0;
-
-  // Ignore '/'.
-  if (sdkArg[0] == PathDiv && !sdkArg[1])
-    return 0;
-
-  std::string sdkPath = sdkArg;
-
-  while (sdkPath.size() && sdkPath[sdkPath.size() - 1] == PathDiv)
-    sdkPath.erase(sdkPath.size() - 1, 1);
-
-  const char *sdkName = getFileName(sdkPath);
-
-  if (!strncasecmp(sdkName, "MacOSX", 6)) {
-    if (!dirExists(sdkArg)) {
-      err << "xcrun: '-sdk': directory '" << sdkArg << "' does not exist"
-          << err.endl();
-      return 1;
-    }
-
-    // The in-process queries (--show-sdk-path, --show-sdk-version) and the
-    // tools that xcrun starts read OSXCROSS_SDKROOT. Set SDKROOT as well, as
-    // Apple's xcrun does, so that a stale SDKROOT does not reach the tools:
-    // a nested xcrun would prefer it over OSXCROSS_SDKROOT.
-    setenv("OSXCROSS_SDKROOT", sdkArg, 1);
-    setenv("SDKROOT", sdkArg, 1);
-
-    return 0;
-  }
-
-  // Ignore empty argument.
-  if (sdkArg[0]) {
-    err << "xcrun: '-sdk': expected macOS SDK" << err.endl();
-    return 1;
-  }
-
+  sdkOption = argv[0];
   return 0;
 }
+
+// Options that xcrun accepts but that change nothing here.
+int ignore(Target *, char **) { return 0; }
 
 int log(Target *, char **) {
   showCommand = true;
@@ -173,8 +144,6 @@ int log(Target *, char **) {
 }
 
 int find(Target *target, char **argv) {
-  if (argv[1])
-    return 1;
   const std::string toolName = argv[0];
   std::string toolPath;
   if (!getToolPath(target, toolPath, toolName))
@@ -191,6 +160,9 @@ int run(Target *target, char **argv) {
 
   if (!getToolPath(target, toolPath, toolName))
     exit(1);
+
+  // Like Apple's xcrun, pass the SDK on to the program.
+  target->passSDKToChildProcesses();
 
   std::vector<std::string> args;
   args.push_back(toolPath);
@@ -216,15 +188,11 @@ int run(Target *target, char **argv) {
 }
 
 int showSDKPath(Target *target, char **) {
-  if (!target->determineSDK())
-    return 1;
   std::cout << target->sdkPath << std::endl;
   return 0;
 }
 
 int showSDKVersion(Target *target, char **) {
-  // The version is known even if the SDK directory does not exist.
-  target->determineSDK(true);
   std::cout << target->sdkVersion.shortStr() << std::endl;
   return 0;
 }
@@ -235,34 +203,6 @@ int showPlatformPath(Target *target, char **) {
 }
 
 } // anonymous namespace
-
-int applySDKRootFromEnvironment() {
-  // SDKROOT is the SDK selector used by Apple's tools. Apple's xcrun
-  // passes an explicitly selected SDK to developer tools through SDKROOT.
-  // OSXCROSS_SDKROOT is our own SDK override, read by the compiler wrapper.
-  // Translate the incoming SDKROOT selection into that internal override.
-  //
-  // If SDKROOT is unset, preserve OSXCROSS_SDKROOT. Otherwise SDKROOT
-  // takes precedence: clear the old override and let sdk() validate it.
-  // Empty SDKROOT, "/", "macosx" and "macosx.internal" select the default
-  // SDK by leaving OSXCROSS_SDKROOT unset.
-  //
-  // For an explicit SDK path, sdk() sets both variables. This also matters
-  // when xcrun handles -sdk: a nested xcrun must inherit the new SDKROOT,
-  // or it could prefer an older SDKROOT and undo the outer SDK selection.
-  // Apple propagates its selection through SDKROOT; OSXCROSS_SDKROOT is
-  // the additional variable needed by our compiler wrapper.
-  char *sdkRoot = getenv("SDKROOT");
-
-  if (!sdkRoot)
-    return 0;
-
-  // Environment updates may invalidate the pointer returned by getenv().
-  const std::string sdkValue = sdkRoot;
-  unsetenv("OSXCROSS_SDKROOT");
-  char *sdkArgs[1] = { const_cast<char *>(sdkValue.c_str()) };
-  return sdk(nullptr, sdkArgs);
-}
 
 int xcrun(int argc, char **argv, Target &target) {
   isStandaloneXcrun = !endsWith(argv[0], "-xcrun");
@@ -283,40 +223,34 @@ int xcrun(int argc, char **argv, Target &target) {
     }
   }
 
-  const int sdkResult = applySDKRootFromEnvironment();
-  if (sdkResult != 0)
-    return sdkResult;
-
-  auto dummy = [](Target *, char **) { return 0; };
-
   ArgParser<int (*)(Target *, char **), 21> argParser = {{
-    {"h", help},
-    {"help", help},
-    {"version", version},
-    {"v", dummy},
-    {"verbose", dummy},
-    {"k", dummy},
-    {"kill-cache", dummy},
-    {"n", dummy},
-    {"no-cache", dummy},
+    {"h", help, 0, true},
+    {"help", help, 0, true},
+    {"version", version, 0, true},
+    {"v", ignore},
+    {"verbose", ignore},
+    {"k", ignore},
+    {"kill-cache", ignore},
+    {"n", ignore},
+    {"no-cache", ignore},
     {"sdk", sdk, 1},
-    {"toolchain", dummy, 1},
-    {"l", log },
+    {"toolchain", ignore, 1},
+    {"l", log},
     {"log", log},
-    {"f", find, 1},
-    {"find", find, 1},
-    {"r", run, 1},
-    {"run", run, 1},
-    {"show-sdk-path", showSDKPath},
-    {"show-sdk-version", showSDKVersion},
-    {"show-sdk-platform-version", showSDKVersion},
-    {"show-sdk-platform-path", showPlatformPath}
+    {"f", find, 1, true},
+    {"find", find, 1, true},
+    {"r", run, 1, true},
+    {"run", run, 1, true},
+    {"show-sdk-path", showSDKPath, 0, true},
+    {"show-sdk-version", showSDKVersion, 0, true},
+    {"show-sdk-platform-version", showSDKVersion, 0, true},
+    {"show-sdk-platform-path", showPlatformPath, 0, true}
   }};
 
-  if (argc == 1)
+  if (argc == 1) {
     help();
-
-  int retVal = 1;
+    return 1;
+  }
 
   for (int i = 1; i < argc; ++i) {
     auto b = argParser.parseArg(argc, argv, i);
@@ -324,22 +258,37 @@ int xcrun(int argc, char **argv, Target &target) {
     if (!b) {
       if (argv[i][0] == '-') {
         err << "xcrun: unknown argument: '" << argv[i] << "'" << err.endl();
-        retVal = 2;
-        break;
+        return 2;
       }
 
-      run(&target, &argv[i]);
+      // A program name, as in "xcrun clang ...".
+      action = run;
+      actionArgs = &argv[i];
+      break;
     }
 
-    retVal = b->fun(&target, &argv[i + 1]);
+    // Actions run after the loop; only the last one counts.
+    if (b->action) {
+      action = b->fun;
+      actionArgs = &argv[i + 1];
 
-    if (retVal != 0)
-      break;
+      // -r, --run: the remaining arguments belong to the program.
+      if (action == run)
+        break;
+    } else {
+      b->fun(&target, &argv[i + 1]);
+    }
 
     i += b->numArgs;
   }
 
-  return retVal;
+  if (!action)
+    return 0;
+
+  if (!determineSDK(target, sdkOption))
+    return 1;
+
+  return action(&target, actionArgs);
 }
 
 } // namespace xcode

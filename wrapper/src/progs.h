@@ -81,8 +81,6 @@ int sw_vers(int argc, char **argv, Target &target);
 namespace xcode {
 int xcrun(int argc, char **argv, Target &target);
 int xcodebuild(int argc, char **argv, Target &target);
-
-int applySDKRootFromEnvironment();
 } // namespace xcode
 
 namespace llvm {

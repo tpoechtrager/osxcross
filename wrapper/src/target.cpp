@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
@@ -31,6 +32,7 @@
 #include <vector>
 
 #include <strings.h>
+#include <unistd.h>
 
 #include "tools/tools.h"
 #include "tools/json.h"
@@ -121,10 +123,25 @@ static OSVersion getMacOSVersion(const std::string &darwinTarget) {
   return OSVersion(10, major - 4);
 }
 
+// path, made absolute with the current directory if it is relative.
+// Symlinks are kept: for SDKs without SDKSettings.json the version comes
+// from the directory name.
+static std::string makeAbsolutePath(const std::string &path) {
+  if (path.empty() || path[0] == PathDiv)
+    return path;
+
+  char cwd[PATH_MAX];
+
+  if (!getcwd(cwd, sizeof(cwd)))
+    return path;
+
+  return std::string(cwd) + PathDiv + path;
+}
+
 Target::Target()
     : vendor(getDefaultVendor()), supportedArchs(getSupportedArchs()),
       targetOS(getDefaultTarget()), primaryArch(getDefaultArch()),
-      compiler(getDefaultCompilerIdentifier()),
+      sdkFrom("OSXCross"), compiler(getDefaultCompilerIdentifier()),
       compilerName(getDefaultCompilerName()), skipIntrinsicHeaders(),
       stdlib(Stdlib::UNSET), useGCCLibs(), language(), linking(true) {
   execDir = getExecutableDir();
@@ -145,42 +162,70 @@ Target::Target()
   }
 }
 
-bool Target::determineSDK(bool quiet) {
-  // Start from scratch, although the constructor does the same: xcrun calls
-  // this more than once on one Target (-sdk A --show-sdk-version -sdk B
-  // --show-sdk-version), and an SDK without SDKSettings.json would keep the
-  // values of the previous one.
-  sdkVersion = OSVersion();
-  sdkMinDeploymentTarget = OSVersion();
-  sdkMaxDeploymentTarget = OSVersion();
+std::vector<Target::SDKSource>
+Target::compilerSDKSources(std::vector<SDKSource> extra) const {
+  // The compiler's options. In the other tools, such as the ld shim or
+  // osxcross-conf, they are always empty and therefore skipped.
+  std::vector<SDKSource> sources = {{"-isysroot", commandLineIsysroot},
+                                    {"--sysroot", commandLineSysroot}};
 
+  sources.insert(sources.end(), extra.begin(), extra.end());
+
+  // As with Apple's clang, SDKROOT is used only if it is an absolute path to
+  // an existing directory other than "/"; anything else is ignored.
+  auto checkSDKRoot = [](const std::string &value) {
+    if (value[0] == PathDiv && value[1] && dirExists(value))
+      return SDKSource::Use::PATH;
+    return SDKSource::Use::SKIP;
+  };
+
+  sources.push_back({"SDKROOT", getenv("SDKROOT"), checkSDKRoot});
+  sources.push_back({"OSXCROSS_SDKROOT", getenv("OSXCROSS_SDKROOT")});
+  return sources;
+}
+
+bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
   //
   // SDK path
   //
 
-  const char *sdkRoot = getenv("SDKROOT");
-  const char *sdkOverride = getenv("OSXCROSS_SDKROOT");
-  const char *sdkFrom;     // where the SDK and its version come from, for
-  const char *versionFrom; // the debug messages
+  const char *versionFrom; // where the version comes from, for the debug
+                           // messages
 
-  // As with Apple's clang, SDKROOT is used only if it is an absolute path to
-  // an existing directory other than "/"; otherwise it is ignored.
-  const bool useSDKRoot = sdkRoot && sdkRoot[0] == PathDiv && sdkRoot[1] &&
-                          dirExists(sdkRoot);
+  sdkPath.clear();
+  sdkFrom = "OSXCross";
+  bool fromSource = false; // a source gave the directory
 
-  if (!commandLineIsysroot.empty()) {
-    sdkPath = commandLineIsysroot;
-    sdkFrom = "-isysroot";
-  } else if (!commandLineSysroot.empty()) {
-    sdkPath = commandLineSysroot;
-    sdkFrom = "--sysroot";
-  } else if (useSDKRoot) {
-    sdkPath = sdkRoot;
-    sdkFrom = "SDKROOT";
-  } else if (sdkOverride && sdkOverride[0]) {
-    sdkPath = sdkOverride;
-    sdkFrom = "OSXCROSS_SDKROOT";
-  } else {
+  for (const SDKSource &source : sources) {
+    if (!source.given)
+      continue;
+
+    SDKSource::Use use;
+
+    if (source.check)
+      use = source.check(source.value);
+    else
+      use = source.value.empty() ? SDKSource::Use::SKIP : SDKSource::Use::PATH;
+
+    switch (use) {
+    case SDKSource::Use::SKIP:
+      if (getDebugLevel() >= 2 && !source.value.empty())
+        dbg << source.option << "=" << source.value << " ignored"
+            << dbg.endl();
+      continue; // the next source
+    case SDKSource::Use::DEFAULT_SDK:
+      break;
+    case SDKSource::Use::PATH:
+      sdkPath = source.value;
+      sdkFrom = source.option;
+      fromSource = true;
+      break;
+    }
+
+    break; // this source decides
+  }
+
+  if (sdkPath.empty()) {
     // The SDK that's installed by build.sh. It is named after the macOS
     // version of the target; the 10.4 SDK is named MacOSX10.4u.sdk
     // (universal), the SDK for macOS 15.0 may also be named MacOSX15.sdk.
@@ -192,8 +237,6 @@ bool Target::determineSDK(bool quiet) {
 
     if (!dirExists(sdkPath) && targetVersion.minor == 0)
       sdkPath = prefix + targetVersion.majorStr() + suffix;
-
-    sdkFrom = "OSXCross";
   }
 
   //
@@ -254,10 +297,6 @@ bool Target::determineSDK(bool quiet) {
   if (getDebugLevel() >= 2) {
     const std::string settingsFile = sdkPath + "/SDKSettings.json";
 
-    if (sdkRoot && sdkRoot[0] && !useSDKRoot)
-      dbg << "SDKROOT=" << sdkRoot << " ignored: not an absolute path to an "
-          << "existing directory other than /" << dbg.endl();
-
     dbg << "SDK: " << sdkPath << " (from " << sdkFrom << ")" << dbg.endl();
 
     if (!haveSettings && fileExists(settingsFile))
@@ -293,13 +332,21 @@ bool Target::determineSDK(bool quiet) {
   //
 
   if (!dirExists(sdkPath)) {
-    if (!quiet)
-      err << "cannot find macOS SDK (expected in: " << sdkPath << ")"
-          << err.endl();
+    if (!quiet) {
+      err << "cannot find macOS SDK (expected in: " << sdkPath;
+      if (fromSource)
+        err << ", from " << sdkFrom;
+      err << ")" << err.endl();
+    }
     return false;
   }
 
   return true;
+}
+
+void Target::passSDKToChildProcesses() const {
+  setenv("SDKROOT", makeAbsolutePath(sdkPath).c_str(), 1);
+  unsetenv("OSXCROSS_SDKROOT");
 }
 
 bool Target::getMacPortsDir(std::string &path) const {
@@ -774,7 +821,7 @@ bool Target::setup() {
   if (!isKnownCompiler())
     warn << "unknown compiler '" << compilerName << "'" << warn.endl();
 
-  if (!determineSDK())
+  if (!determineSDK(compilerSDKSources()))
     return false;
 
   // The checks below compare against the SDK version; with an unknown one
@@ -1280,9 +1327,10 @@ bool Target::setup() {
   }
 
   if (buildFlavor.isLLVM() && isGCC()) {
-    // The LLVM as wrapper needs GCC's selected deployment target.
+    // The LLVM as wrapper needs GCC's selected deployment target and SDK.
     setenv("OSXCROSS_AS_TARGET_VERSION",
            deploymentTarget.str().c_str(), 1);
+    passSDKToChildProcesses();
   } else if (isGCCLibstdcxx) {
     // Silence 'operator new[]' warning in ld64.
     setenv("OSXCROSS_GCC_LIBSTDCXX", "1", 1);

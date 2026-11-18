@@ -158,22 +158,65 @@ std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
 struct Target {
   Target();
 
-  // Determine the SDK in use, sdkPath and sdkVersion. The first one given
-  // wins:
-  //
-  //   -isysroot, --sysroot  commandLineIsysroot, commandLineSysroot
-  //   SDKROOT               if it is an absolute path to an existing
-  //                         directory other than "/", as with Apple's clang
-  //   OSXCROSS_SDKROOT      if it is not empty
-  //   the installed SDK     <execDir>/../SDK/MacOSX<version>.sdk, named after
-  //                         the macOS version that belongs to the target
+  // A source that can give the SDK: a command-line option such as -isysroot
+  // or an environment variable such as SDKROOT. determineSDK() checks the
+  // sources in order; the first one that does not skip decides.
+  struct SDKSource {
+    enum class Use {
+      SKIP,        // the source gives nothing, check the next one
+      DEFAULT_SDK, // the installed default SDK
+      PATH         // value is the SDK directory
+    };
+
+    // Decides what the value of a given source means: skip it, use the
+    // default SDK, or use the value as the SDK directory. Without a check,
+    // an empty value is skipped and any other value is the SDK directory.
+    typedef Use (*Check)(const std::string &value);
+
+    // An environment variable: nullptr, as from getenv(), means not set.
+    SDKSource(const char *option, const char *value, Check check = nullptr)
+        : option(option), given(value != nullptr), value(value ? value : ""),
+          check(check) {}
+
+    // A command-line option: an empty value means it was not given.
+    SDKSource(const char *option, const std::string &value,
+              Check check = nullptr)
+        : option(option), given(!value.empty()), value(value), check(check) {}
+
+    const char *option; // "-isysroot", "-sdk", "SDKROOT", ...: for messages
+    bool given;         // false: skipped
+    std::string value;
+    Check check;
+  };
+
+  // The SDK sources of the compiler and the tools around it, in this order:
+  // -isysroot and --sysroot (commandLineIsysroot, commandLineSysroot; empty
+  // outside the compiler), extra (such as -syslibroot of the ld shim),
+  // SDKROOT as Apple's clang reads it, OSXCROSS_SDKROOT.
+  std::vector<SDKSource>
+  compilerSDKSources(std::vector<SDKSource> extra = {}) const;
+
+  // Determine the SDK in use, sdkPath, sdkFrom and sdkVersion. The first of
+  // sources that gives one wins (see SDKSource), else the default SDK:
+  // <execDir>/../SDK/MacOSX<version>.sdk, named after the macOS version that
+  // belongs to the target. sources come from compilerSDKSources(); xcrun and
+  // xcodebuild call this through xcode::determineSDK().
   //
   // The version comes from the SDK's SDKSettings.json; without one, from
   // the name of the directory (15.4 for MacOSX15.4.sdk; 0.0 if the name has
   // none). So do sdkMinDeploymentTarget and sdkMaxDeploymentTarget. Prints an
   // error, unless quiet, and returns false if the directory does not exist;
-  // sdkVersion is set anyway.
-  bool determineSDK(bool quiet = false);
+  // sdkPath and sdkVersion are set anyway.
+  bool determineSDK(const std::vector<SDKSource> &sources,
+                    bool quiet = false);
+
+  // Pass the SDK of the last determineSDK() on to the programs that this
+  // process starts. SDKROOT is set to it as an absolute path, because the
+  // compiler wrapper, like Apple's clang, ignores a relative one; Apple's
+  // tools and build scripts read it as well. OSXCROSS_SDKROOT is removed, so
+  // that it cannot override the SDK. Call it only after determineSDK()
+  // succeeded.
+  void passSDKToChildProcesses() const;
 
   bool getMacPortsDir(std::string &path) const;
   bool getMacPortsSysRootDir(std::string &path) const;
@@ -241,11 +284,16 @@ struct Target {
                               // setup() sets the default
 
   //
-  // SDK (see determineSDK())
+  // SDK: the options of the compiler that can give it (see
+  // compilerSDKSources()), and the result of determineSDK()
   //
   std::string commandLineIsysroot; // -isysroot; empty: not given
   std::string commandLineSysroot;  // --sysroot; empty: not given
   std::string sdkPath;             // the SDK in use
+  const char *sdkFrom;             // where it comes from: the option, such
+                                   // as "-sdk", "SDKROOT",
+                                   // "OSXCROSS_SDKROOT" or "OSXCross" for
+                                   // the default SDK
   OSVersion sdkVersion;            // its macOS version; 0.0: unknown
   // The deployment targets it accepts, 12.0 and 27.3.99 for SDK 27.3. The
   // minimum is 0.0 if the SDK states none. The maximum is sdkVersion with the

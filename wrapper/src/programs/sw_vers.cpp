@@ -51,7 +51,7 @@ int sw_vers(int argc, char **argv, Target &target) {
 
     if (!osNum.num()) {
       // The version is known even if the SDK directory does not exist.
-      target.determineSDK(true);
+      target.determineSDK(target.compilerSDKSources(), true);
       osNum = target.sdkVersion;
     }
 

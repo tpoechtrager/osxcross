@@ -20,7 +20,8 @@ pushd "${0%/*}/src" &>/dev/null
 CLANG_TIDY=${CLANG_TIDY:-clang-tidy}
 SOURCES=(*.cpp passthrough-compiler-options/*.cpp tools/*.cpp programs/*.cpp
          programs/xcode/*.cpp)
-FILES=("${SOURCES[@]}" *.h passthrough-compiler-options/*.h tools/*.h)
+FILES=("${SOURCES[@]}" *.h passthrough-compiler-options/*.h tools/*.h
+       programs/xcode/*.h)
 status=0
 
 # report <message> <grep/awk output>: print the lines and fail if there are any

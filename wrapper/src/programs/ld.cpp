@@ -131,12 +131,12 @@ int ld(int argc, char **argv, target::Target &target) {
   if (sysRoot) {
     // The caller's SDK takes the place of -isysroot; determineSDK() gives
     // its version. A missing directory is left to ld64.lld.
-    target.commandLineIsysroot = sysRoot;
-    target.determineSDK(true);
+    target.determineSDK(target.compilerSDKSources({{"-syslibroot", sysRoot}}),
+                        true);
   } else {
     // Without -syslibroot, ld64.lld searches the libraries of the host
     // (/usr/lib, /usr/local/lib). Link against the selected SDK instead.
-    if (!target.determineSDK())
+    if (!target.determineSDK(target.compilerSDKSources()))
       return 1;
 
     args.insert(args.begin() + 1, {"-syslibroot", target.sdkPath});

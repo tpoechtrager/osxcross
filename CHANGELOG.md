@@ -4,9 +4,21 @@ All notable changes to OSXCross, newest first.
 
 ## v3.1.2
 
+### Changed
+
+- wrapper: `xcrun`: When given several query options, such as `--show-sdk-path` and  
+  `--show-sdk-version`, `xcrun` runs only the last query and uses the last `-sdk` option.
+- wrapper: When an SDK is missing, the error reports which option or environment variable selected  
+  its path, for example `cannot find macOS SDK (expected in: /x, from SDKROOT)`.
+
 ### Fixed
 
+- wrapper: `xcrun`: `-sdk` accepts any SDK directory, including a relative path or a directory not  
+  named `MacOSX*.sdk`. Previously, such a directory was rejected with `'-sdk': expected macOS SDK`.
 - wrapper: On OpenBSD, tools can now be invoked using a relative path such as `bin/o64-clang`.
+- wrapper: `as`: With the `llvm` build flavor, the `as` shim, which invokes Clang to assemble GCC's  
+  output, now uses GCC's SDK. Previously, it chose the SDK itself: after `gcc -isysroot` it  
+  assembled with another SDK, and an invalid `SDKROOT` that GCC ignored made the call fail.
 
 ## v3.1.1
 

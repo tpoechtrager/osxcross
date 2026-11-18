@@ -29,6 +29,7 @@
 #include "tools/tools.h"
 #include "target.h"
 #include "progs.h"
+#include "programs/xcode/sdk.h"
 
 namespace program {
 namespace llvm {
@@ -47,9 +48,16 @@ int as(int argc, char **argv, target::Target &target) {
     return 1;
   }
 
-  const int sdkResult = xcode::applySDKRootFromEnvironment();
-  if (sdkResult != 0)
-    return sdkResult;
+  // as is an Xcode tool: read SDKROOT as xcrun does, so that a relative
+  // path or a name such as "macosx" works, and pass the SDK on to the clang
+  // wrapper below.
+  const char *sdkRoot = getenv("SDKROOT");
+
+  if (sdkRoot && sdkRoot[0]) {
+    if (!xcode::determineSDK(target, nullptr))
+      return 1;
+    target.passSDKToChildProcesses();
+  }
 
   const bool debug = tools::getDebugLevel() > 0;
   bool someInputFiles = false;

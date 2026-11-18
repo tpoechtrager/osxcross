@@ -51,7 +51,7 @@ int conf(int, char **, Target &target) {
     buildDir += "/../../build";
   }
 
-  if (!target.determineSDK())
+  if (!target.determineSDK(target.compilerSDKSources()))
     return 1;
 
   const std::string &sdkPath = target.sdkPath;

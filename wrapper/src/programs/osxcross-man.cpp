@@ -38,7 +38,7 @@ namespace osxcross {
 int man(int argc, char **argv, Target &target) {
   bool isStandaloneOSXCrossMan = !endsWith(argv[0], "-osxcross-man");
 
-  if (!target.determineSDK())
+  if (!target.determineSDK(target.compilerSDKSources()))
     return 1;
 
   std::vector<std::string> manPaths;

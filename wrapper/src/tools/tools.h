@@ -337,6 +337,10 @@ template <typename T, size_t size = 0> struct ArgParser {
     const char *name;
     T fun;
     int numArgs;
+    // Marks the option as an action rather than a setting. The parser does
+    // not use it; the caller decides what to do with actions. Optional;
+    // false if left out.
+    bool action;
   } binds[size];
 
   const Bind *parseArg(int argc, char **argv, int numArg = 1) const {

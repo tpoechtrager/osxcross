@@ -79,6 +79,7 @@ SRCS= \
  programs/pkg-config.cpp \
  programs/xcode/xcrun.cpp \
  programs/xcode/xcodebuild.cpp \
+ programs/xcode/sdk.cpp \
  programs/lipo.cpp \
  programs/ld.cpp \
  programs/as.cpp
