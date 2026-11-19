@@ -459,6 +459,25 @@ void detectCXXLib(Target &target) {
 //  detect target and setup invocation command
 //
 
+// The tool name without the target: "gcc" for "x86_64-apple-darwin20.1-gcc"
+// and "o64-gcc"; names without a target, such as "xcrun", stay as they are.
+static const char *getToolName(const char *cmd) {
+  if (const char *darwin = strstr(cmd, "-apple-darwin")) {
+    const char *dash = strchr(darwin + strlen("-apple-darwin"), '-');
+    return dash ? dash + 1 : cmd;
+  }
+
+  constexpr const char *aliases[] = {"o32-", "o64-", "o64h-", "oa64-",
+                                     "oa64e-"};
+
+  for (const char *alias : aliases) {
+    if (!strncmp(cmd, alias, strlen(alias)))
+      return cmd + strlen(alias);
+  }
+
+  return cmd;
+}
+
 bool detectTarget(int argc, char **argv, Target &target) {
   const char *cmd = argv[0];
   const char *p = strrchr(cmd, '/');
@@ -467,6 +486,8 @@ bool detectTarget(int argc, char **argv, Target &target) {
 
   if (p)
     cmd = &p[1];
+
+  target.toolName = getToolName(cmd);
 
   if (auto *prog = program::getProg(cmd))
     (*prog)(argc, argv, target);

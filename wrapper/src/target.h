@@ -155,32 +155,50 @@ private:
 std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
                        bool useAarch64InsteadOfArm64 = false);
 
-// An SDK directory, where it comes from, and what it states about itself:
-// the values of its SDKSettings.json, with fallbacks for SDKs without one.
-// Target::readSDKInfo() fills it in.
+// Information about an SDK, such as its path and version.
 struct SDKInfo {
-  SDKInfo()
-      : from(), haveSettings(), versionFromSettings(), maxFromSettings() {}
+public:
+  SDKInfo() : from() {}
 
+  // Where a value of the SDK comes from, for the debug output.
+  enum class From {
+    UNKNOWN_FROM,   // not set
+    SETTINGS_JSON,  // SDKSettings.json
+    DIRECTORY_NAME, // the SDK directory name, e.g. MacOSX10.13.sdk
+    SDK_VERSION     // derived from the SDK version, e.g. 10.13.99
+  };
+
+private:
+  // A value together with where it comes from. It is a T, so it is read
+  // like one. Only Target::readSDKInfo() sets it, and always together
+  // with its source.
+  template <typename T> struct Value : T {
+    From from = From::UNKNOWN_FROM;
+
+  private:
+    friend struct Target;
+
+    void set(const T &value, From valueFrom) {
+      T::operator=(value);
+      from = valueFrom;
+    }
+  };
+
+public:
   std::string path;              // the SDK directory
   const char *from;              // where it comes from: the option, such
                                  // as "-sdk", "SDKROOT",
                                  // "OSXCROSS_SDKROOT" or "OSXCross" for an
                                  // SDK in OSXCross' SDK directory
-  OSVersion version;             // its macOS version; 0.0: unknown
+  Value<OSVersion> version;      // its macOS version; 0.0: unknown
   // The deployment targets it accepts, 12.0 and 27.3.99 for SDK 27.3. The
   // minimum is 0.0 if the SDK states none. The maximum is version with the
   // patch level raised to 99 if the SDK states none; 0.0 if version is
   // unknown.
-  OSVersion minDeploymentTarget;
-  OSVersion maxDeploymentTarget;
-  std::string displayName;       // "macOS 15.4"
-  std::string canonicalName;     // "macosx15.4", as for xcrun -sdk
-
-  // Where the values come from, for the debug output
-  bool haveSettings;             // SDKSettings.json read and valid JSON
-  bool versionFromSettings;      // version from SDKSettings.json
-  bool maxFromSettings;          // maxDeploymentTarget from SDKSettings.json
+  Value<OSVersion> minDeploymentTarget;
+  Value<OSVersion> maxDeploymentTarget;
+  Value<std::string> displayName;   // "macOS 15.4"
+  Value<std::string> canonicalName; // "macosx15.4", as for xcrun -sdk
 };
 
 struct Target {
@@ -310,6 +328,9 @@ struct Target {
   //
   // Target (from the tool name and the command line)
   //
+  std::string toolName;       // the name the wrapper was called as,
+                              // without path and target: "gcc" for
+                              // x86_64-apple-darwin20.1-gcc and o64-gcc
   std::string targetOS;       // darwin20.1, the OS part of the triple
   Arch primaryArch;           // from the tool name (x86_64-..., o64-...);
                               // GCC: also -arch, -m32, -m64

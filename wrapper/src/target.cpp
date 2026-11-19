@@ -123,6 +123,22 @@ static OSVersion getMacOSVersion(const std::string &darwinTarget) {
   return OSVersion(10, major - 4);
 }
 
+// Where a value of the SDK comes from, as text for the debug output.
+static const char *getSDKValueSource(SDKInfo::From from) {
+  switch (from) {
+  case SDKInfo::From::SETTINGS_JSON:
+    return "SDKSettings.json";
+  case SDKInfo::From::DIRECTORY_NAME:
+    return "SDK directory name";
+  case SDKInfo::From::SDK_VERSION:
+    return "SDK version";
+  case SDKInfo::From::UNKNOWN_FROM:
+    break;
+  }
+
+  return "unknown";
+}
+
 // path, made absolute with the current directory if it is relative.
 // Symlinks are kept: for SDKs without SDKSettings.json the version comes
 // from the directory name.
@@ -185,6 +201,8 @@ Target::compilerSDKSources(std::vector<SDKSource> extra) const {
 }
 
 SDKInfo Target::readSDKInfo(const std::string &path, const char *from) {
+  using From = SDKInfo::From;
+
   SDKInfo sdkInfo;
   std::string settingsText;
   json::Value settings;
@@ -192,55 +210,59 @@ SDKInfo Target::readSDKInfo(const std::string &path, const char *from) {
   sdkInfo.path = path;
   sdkInfo.from = from;
 
-  sdkInfo.haveSettings =
-      getFileContent(path + "/SDKSettings.json", settingsText) &&
-      json::parse(settingsText, settings);
-
-  if (sdkInfo.haveSettings) {
+  if (getFileContent(path + "/SDKSettings.json", settingsText) &&
+      json::parse(settingsText, settings)) {
     // "Version" is exact: MacOSX15.sdk can be 15.5.
     if (settings["Version"].isString())
-      sdkInfo.version = parseOSVersion(settings["Version"].string.c_str());
+      sdkInfo.version.set(parseOSVersion(settings["Version"].string.c_str()),
+                          From::SETTINGS_JSON);
 
     // Minimum deployment target, e.g. "12.0" for SDK 27.3.
     const json::Value &minTarget =
         settings["SupportedTargets"]["macosx"]["MinimumDeploymentTarget"];
 
     if (minTarget.isString())
-      sdkInfo.minDeploymentTarget = parseOSVersion(minTarget.string.c_str());
+      sdkInfo.minDeploymentTarget.set(parseOSVersion(minTarget.string.c_str()),
+                                      From::SETTINGS_JSON);
 
     // Maximum deployment target, e.g. "27.3.99" for SDK 27.3.
-    if (settings["MaximumDeploymentTarget"].isString())
-      sdkInfo.maxDeploymentTarget =
-          parseOSVersion(settings["MaximumDeploymentTarget"].string.c_str());
+    const json::Value &maxTarget = settings["MaximumDeploymentTarget"];
+
+    if (maxTarget.isString())
+      sdkInfo.maxDeploymentTarget.set(parseOSVersion(maxTarget.string.c_str()),
+                                      From::SETTINGS_JSON);
 
     if (settings["DisplayName"].isString())
-      sdkInfo.displayName = settings["DisplayName"].string;
+      sdkInfo.displayName.set(settings["DisplayName"].string,
+                              From::SETTINGS_JSON);
 
     if (settings["CanonicalName"].isString())
-      sdkInfo.canonicalName = settings["CanonicalName"].string;
+      sdkInfo.canonicalName.set(settings["CanonicalName"].string,
+                                From::SETTINGS_JSON);
   }
-
-  sdkInfo.versionFromSettings = sdkInfo.version.num() != 0;
-  sdkInfo.maxFromSettings = sdkInfo.maxDeploymentTarget.num() != 0;
 
   // If SDKSettings.json doesn't provide a version, use the name of the SDK
   // directory as fallback.
-  if (!sdkInfo.versionFromSettings)
-    sdkInfo.version = parseSDKVersionFromDirName(path);
+  if (!sdkInfo.version.num())
+    sdkInfo.version.set(parseSDKVersionFromDirName(path),
+                        From::DIRECTORY_NAME);
 
   // SDKs since 11.0 state the maximum as their version with patch level 99
   // (27.3.99), so that any patch release is accepted. SDKs without a maximum
   // get the same.
-  if (!sdkInfo.maxFromSettings && sdkInfo.version.num())
-    sdkInfo.maxDeploymentTarget =
-        OSVersion(sdkInfo.version.major, sdkInfo.version.minor, 99);
+  if (!sdkInfo.maxDeploymentTarget.num() && sdkInfo.version.num())
+    sdkInfo.maxDeploymentTarget.set(
+        OSVersion(sdkInfo.version.major, sdkInfo.version.minor, 99),
+        From::SDK_VERSION);
 
   // Names as Apple's SDKs have them, for SDKs that do not state them.
   if (sdkInfo.displayName.empty())
-    sdkInfo.displayName = "macOS " + sdkInfo.version.shortStr();
+    sdkInfo.displayName.set("macOS " + sdkInfo.version.shortStr(),
+                            From::SDK_VERSION);
 
   if (sdkInfo.canonicalName.empty())
-    sdkInfo.canonicalName = "macosx" + sdkInfo.version.shortStr();
+    sdkInfo.canonicalName.set("macosx" + sdkInfo.version.shortStr(),
+                              From::SDK_VERSION);
 
   return sdkInfo;
 }
@@ -309,39 +331,59 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
   //
 
   if (getDebugLevel() >= 2) {
-    const std::string settingsFile = sdk.path + "/SDKSettings.json";
+    dbg << (toolName.empty() ? "" : toolName + ": ") << "SDK " << sdk.path
+        << " (from " << sdk.from << ")" << dbg.endl();
 
-    dbg << "SDK: " << sdk.path << " (from " << sdk.from << ")" << dbg.endl();
+    // The SDK has the file, but the version does not come from it.
+    if (fileExists(sdk.path + "/SDKSettings.json") &&
+        sdk.version.from != SDKInfo::From::SETTINGS_JSON)
+      dbg << "  SDKSettings.json is not readable, not valid JSON or has no "
+          << "valid \"Version\"" << dbg.endl();
 
-    if (!sdk.haveSettings && fileExists(settingsFile))
-      dbg << settingsFile << ": not readable or not valid JSON" << dbg.endl();
-    else if (sdk.haveSettings && !sdk.versionFromSettings)
-      dbg << settingsFile << ": no valid \"Version\"" << dbg.endl();
+    // Name, value and source of each value, in aligned columns.
+    struct Row {
+      const char *name;
+      std::string value;
+      const char *source;
+    };
 
-    if (sdk.version.num()) {
-      const char *versionFrom = sdk.versionFromSettings
-                                    ? "SDKSettings.json"
-                                    : "the SDK directory name";
+    std::vector<Row> rows;
 
-      dbg << "SDK version: " << sdk.version.str() << " (from " << versionFrom
-          << ")" << dbg.endl();
-    } else {
-      dbg << "SDK version: unknown (neither SDKSettings.json nor the SDK "
-          << "directory name has one)" << dbg.endl();
+    if (sdk.version.num())
+      rows.push_back({"version", sdk.version.shortStr(),
+                      getSDKValueSource(sdk.version.from)});
+    else
+      rows.push_back({"version", "unknown",
+                      "neither SDKSettings.json nor the directory name"});
+
+    if (sdk.minDeploymentTarget.num())
+      rows.push_back({"min deployment target",
+                      sdk.minDeploymentTarget.displayStr(),
+                      getSDKValueSource(sdk.minDeploymentTarget.from)});
+
+    if (sdk.maxDeploymentTarget.num())
+      rows.push_back({"max deployment target",
+                      sdk.maxDeploymentTarget.displayStr(),
+                      getSDKValueSource(sdk.maxDeploymentTarget.from)});
+
+    rows.push_back({"display name", sdk.displayName,
+                    getSDKValueSource(sdk.displayName.from)});
+    rows.push_back({"canonical name", sdk.canonicalName,
+                    getSDKValueSource(sdk.canonicalName.from)});
+
+    size_t nameWidth = 0;
+    size_t valueWidth = 0;
+
+    for (const Row &row : rows) {
+      nameWidth = std::max(nameWidth, strlen(row.name));
+      valueWidth = std::max(valueWidth, row.value.size());
     }
 
-    if (sdk.minDeploymentTarget.num()) {
-      dbg << "SDK minimum deployment target: " << sdk.minDeploymentTarget.str()
-          << " (from SDKSettings.json)" << dbg.endl();
-    }
-
-    if (sdk.maxDeploymentTarget.num()) {
-      const char *maxFrom = sdk.maxFromSettings
-                                ? "SDKSettings.json"
-                                : "the SDK version with patch level 99";
-
-      dbg << "SDK maximum deployment target: " << sdk.maxDeploymentTarget.str()
-          << " (from " << maxFrom << ")" << dbg.endl();
+    for (const Row &row : rows) {
+      dbg << "  " << row.name
+          << std::string(nameWidth - strlen(row.name) + 2, ' ') << row.value
+          << std::string(valueWidth - row.value.size() + 2, ' ')
+          << row.source << dbg.endl();
     }
   }
 
