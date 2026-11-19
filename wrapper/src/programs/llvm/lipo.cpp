@@ -22,63 +22,35 @@
 #include "compat.h"
 
 #include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <sstream>
+#include <string>
 
 #include "tools/tools.h"
 #include "target.h"
-#include "progs.h"
-
-using namespace tools;
-using namespace target;
+#include "programs/programs.h"
 
 namespace program {
+namespace llvm {
 
-int sw_vers(int argc, char **argv, Target &target) {
+using tools::err;
 
-  auto getProductVer = [&]()->OSVersion {
-    char *p = getenv("OSXCROSS_SW_VERS_OSX_VERSION");
-    OSVersion osNum;
-
-    if (!p)
-      p = getenv("MACOSX_DEPLOYMENT_TARGET");
-
-    if (p)
-      osNum = parseOSVersion(p);
-    else
-      osNum = getDefaultDeploymentTarget();
-
-    if (!osNum.num()) {
-      // The version is known even if the SDK directory does not exist.
-      target.determineSDK(target.compilerSDKSources(), true);
-      osNum = target.sdk.version;
-    }
-
-    return osNum;
-  };
-
-  if (argc == 2) {
-    std::stringstream str;
-
-    if (!strcmp(argv[1], "-productName")) {
-      str << "Mac OS X";
-    } else if (!strcmp(argv[1], "-productVersion")) {
-      str << getProductVer().shortStr();
-    } else if (!strcmp(argv[1], "-buildVersion")) {
-      str << "0CFFFF";
-    } else {
-      return 1;
-    }
-
-    std::cout << str.str() << std::endl;
-  } else if (argc == 1) {
-    std::cout << "ProductName:    Mac OS X" << std::endl;
-    std::cout << "ProductVersion: " << getProductVer().shortStr() << std::endl;
-    std::cout << "BuildVersion:   0CFFFF" << std::endl;
+int lipo(int argc, char **argv, target::Target &target) {
+  if (!target.buildFlavor.isLLVM()) {
+    err << "lipo: This wrapper is only intended to be used "
+        << "with the OSXCross build flavor LLVM."
+        << err.endl();
+    return 1;
   }
 
-  return 0;
+  std::string executable;
+
+  if (!getenv("OSXCROSS_FORCE_LLVM_LIPO"))
+    executable = target::findExecutableInPath("osxcross-cctools-lipo");
+
+  if (executable.empty())
+    executable = "llvm-lipo";
+
+  return execProgram(executable, argc, argv);
 }
 
+} // namespace llvm
 } // namespace program

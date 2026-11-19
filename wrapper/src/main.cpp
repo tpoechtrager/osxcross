@@ -34,7 +34,7 @@
 
 #include "tools/tools.h"
 #include "target.h"
-#include "progs.h"
+#include "programs/programs.h"
 #include "passthrough-compiler-options/options.h"
 
 using namespace tools;

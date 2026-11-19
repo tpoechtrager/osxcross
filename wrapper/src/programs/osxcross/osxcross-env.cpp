@@ -30,7 +30,7 @@
 
 #include "tools/tools.h"
 #include "target.h"
-#include "progs.h"
+#include "programs/programs.h"
 
 using namespace tools;
 using namespace target;

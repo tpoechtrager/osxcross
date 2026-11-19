@@ -62,39 +62,49 @@ endif
 
 endif
 
-BIN=wrapper
-
 SRCS= \
  main.cpp \
  passthrough-compiler-options/options.cpp \
  tools/tools.cpp \
  tools/json.cpp \
  target.cpp \
- progs.cpp \
- programs/osxcross-version.cpp \
- programs/osxcross-env.cpp \
- programs/osxcross-conf.cpp \
- programs/osxcross-man.cpp \
- programs/sw_vers.cpp \
- programs/pkg-config.cpp \
+ programs/programs.cpp \
+ programs/osxcross/osxcross-version.cpp \
+ programs/osxcross/osxcross-env.cpp \
+ programs/osxcross/osxcross-conf.cpp \
+ programs/host/osxcross-man.cpp \
+ programs/host/pkg-config.cpp \
+ programs/macos/sw_vers.cpp \
  programs/xcode/xcrun.cpp \
  programs/xcode/xcodebuild.cpp \
  programs/xcode/sdk.cpp \
- programs/lipo.cpp \
- programs/ld.cpp \
- programs/as.cpp
+ programs/llvm/lipo.cpp \
+ programs/llvm/ld.cpp \
+ programs/llvm/as.cpp
 
-OBJS=$(subst .cpp,.o,$(SRCS))
+# The object files, their dependency files and the wrapper binary go to
+# obj/, in the same subdirectories as their sources, so that the source tree
+# holds only sources.
+OBJ_DIR=obj
+OBJS=$(addprefix $(OBJ_DIR)/,$(SRCS:.cpp=.o))
 DEPS=$(OBJS:.o=.d)
+BIN=$(OBJ_DIR)/wrapper
+
+.PHONY: all wrapper clean
 
 all: wrapper
 
-wrapper: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o wrapper $(OBJS) $(LDFLAGS)
+# "make wrapper" builds obj/wrapper.
+wrapper: $(BIN)
 
-.PHONY: clean
+$(BIN): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(BIN) $(OBJS) $(DEPS)
+	rm -rf $(OBJ_DIR)
 
 -include $(DEPS)

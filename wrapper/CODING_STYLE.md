@@ -35,7 +35,7 @@ Exceptions:
 
 - Functions named after a tool keep the tool's name: `sw_vers`,
   `pkg_config`, `xcrun`, `xcodebuild`, `lipo`, `ld`, `as`.
-- The handlers in `programs/xcrun.cpp` are named after their option
+- The handlers in `programs/xcode/xcrun.cpp` are named after their option
   (`sdk()`, `find()`, `run()`).
 - Enumerators of `ColorCode` follow the ANSI names (`FG_RED`, `BG_BLUE`).
 - Library names in identifiers keep their usual spelling: `libgccDir`,

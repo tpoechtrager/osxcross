@@ -29,7 +29,7 @@
 #include <unistd.h>
 
 #include "tools/tools.h"
-#include "progs.h"
+#include "programs/programs.h"
 
 namespace program {
 
@@ -90,7 +90,7 @@ int dummy(int, char **, Target &) { return 0; }
 
 constexpr Prog Programs[] = {
   // Built-in tools
-  { "sw_vers",          sw_vers },
+  { "sw_vers",          macos::sw_vers },
   { "xcrun",            xcode::xcrun },
   { "xcodebuild",       xcode::xcodebuild },
 
@@ -137,8 +137,8 @@ constexpr Prog Programs[] = {
   { "osxcross-conf",    osxcross::conf },
 
   // Tools where we must modify the passed arguments to it.
-  { "osxcross-man",     osxcross::man },
-  { "pkg-config",       osxcross::pkg_config },
+  { "osxcross-man",     host::man },
+  { "pkg-config",       host::pkg_config },
 
   // Dummy tool. No-op.
   { "wrapper",          dummy }

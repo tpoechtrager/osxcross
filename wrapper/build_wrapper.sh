@@ -78,7 +78,7 @@ if [ -n "$BWCOMPILEONLY" ]; then
   exit 0
 fi
 
-verbose_cmd mv src/wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper"
+verbose_cmd mv src/obj/wrapper "${TARGET_DIR}/bin/${TARGETTRIPLE}-wrapper"
 
 # ---------------------------------------------------------------------------
 # Symlink generation

@@ -19,8 +19,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
-#ifndef OSXCROSS_WRAPPER_PROGS_H
-#define OSXCROSS_WRAPPER_PROGS_H
+#ifndef OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H
+#define OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H
 
 #include <cstdlib>
 #include <string>
@@ -76,7 +76,9 @@ private:
   const char *tool;
 };
 
+namespace macos {
 int sw_vers(int argc, char **argv, Target &target);
+} // namespace macos
 
 namespace xcode {
 int xcrun(int argc, char **argv, Target &target);
@@ -96,9 +98,12 @@ namespace osxcross {
 int version(int argc, char **argv, Target &target);
 int env(int argc, char **argv, Target &target);
 int conf(int argc, char **argv, Target &target);
+} // namespace osxcross
+
+namespace host {
 int man(int argc, char **argv, Target &target);
 int pkg_config(int argc, char **argv, Target &target);
-} // namespace osxcross
+} // namespace host
 
 // The program with this name, for example "xcrun" or "otool"; nullptr if
 // there is none.
@@ -106,4 +111,4 @@ const Prog *getProg(const std::string &name);
 
 } // namespace program
 
-#endif // OSXCROSS_WRAPPER_PROGS_H
+#endif // OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H

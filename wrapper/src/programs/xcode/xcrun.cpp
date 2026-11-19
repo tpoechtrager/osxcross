@@ -29,7 +29,7 @@
 
 #include "tools/tools.h"
 #include "target.h"
-#include "progs.h"
+#include "programs/programs.h"
 #include "programs/xcode/sdk.h"
 
 using namespace tools;

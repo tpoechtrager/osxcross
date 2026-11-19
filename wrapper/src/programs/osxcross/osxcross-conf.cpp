@@ -21,74 +21,73 @@
 
 #include "compat.h"
 
-#include <cstdlib>
+#include <iostream>
 #include <string>
-#include <vector>
 
 #include "tools/tools.h"
 #include "target.h"
-#include "progs.h"
+#include "programs/programs.h"
 
 using namespace tools;
 using namespace target;
 
 namespace program {
 namespace osxcross {
+namespace {
 
-int man(int argc, char **argv, Target &target) {
-  bool isStandaloneOSXCrossMan = !endsWith(argv[0], "-osxcross-man");
+template<typename A>
+void print(const char *var, const A &val) {
+  std::cout << "export OSXCROSS_" << var << "=" << "\"" << val << "\""
+            << std::endl;
+}
+
+} // anonymous namespace
+
+int conf(int, char **, Target &target) {
+  OSVersion osxVersionMin = getDefaultDeploymentTarget();
+  const char *ltoPath = getLibLTOPath();
+  std::string buildDir = getBuildDir();
+
+  if (buildDir.empty()) {
+    buildDir += target.execDir;
+    buildDir += "/../../build";
+  }
 
   if (!target.determineSDK(target.compilerSDKSources()))
     return 1;
 
-  std::vector<std::string> manPaths;
+  const std::string &sdkPath = target.sdk.path;
 
-  manPaths.push_back(target.sdk.path + "/usr/share/man");
-  manPaths.push_back(std::string(target.execDir) + "/../share/man");
+  if (!osxVersionMin.num())
+    osxVersionMin = target.sdk.version;
 
-  unsetenv("MANPATH");
+  if (!ltoPath)
+    ltoPath = "";
 
-  for (const std::string &manPath : manPaths)
-    if (dirExists(manPath))
-      prependEnvVariable("MANPATH", manPath);
+  print("VERSION", getOSXCrossVersion());
+  print("BUILD_FLAVOR", getBuildFlavor());
+  print("DEFAULT_DEPLOYMENT_TARGET", osxVersionMin.shortStr());
+  // The old name of DEFAULT_DEPLOYMENT_TARGET. Scripts outside OSXCross may
+  // still read it: keep it, do not remove it.
+  print("OSX_VERSION_MIN", osxVersionMin.shortStr());
+  print("TARGET", getDefaultTarget());
+  print("BASE_DIR", buildDir + "/..");
+  print("SDK", sdkPath);
+  print("SDK_DIR", sdkPath + "/..");
+  print("SDK_VERSION", target.sdk.version.shortStr());
+  print("TARBALL_DIR", buildDir + "/../tarballs");
+  print("PATCH_DIR", buildDir + "/../patches");
+  print("TARGET_DIR", std::string(target.execDir) + "/..");
+  print("DIR_SDK_TOOLS", sdkPath + "/../tools");
+  print("BUILD_DIR", buildDir);
+  print("CCTOOLS_PATH", target.execDir);
+  print("LIBLTO_PATH", ltoPath);
+  print("LINKER_VERSION", getLinkerVersion());
+  print("SUPPORTED_ARCHS", getSupportedArchsString());
+  print("GCC_TARGET_ARCHS", getSupportedArchsString(true));
+  print("DEFAULT_ARCH", getArchName(getDefaultArch()));
 
-  if (!getenv("MANPATH")) {
-    err << "cannot find man pages!" << err.endl();
-    return 1;
-  }
-
-  std::vector<std::string> args;
-  args.push_back("man");
-
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-
-    // Rewrite gcc to <triple>-gcc for compatibility
-    // with other man pages
-
-    constexpr const char *gccManPages[] = { "gcc", "g++", "cpp", "gcov" };
-
-    for (const char *mp : gccManPages) {
-      if (arg == mp) {
-        std::string triple;
-        if (isStandaloneOSXCrossMan) {
-          // osxcross-man -> use default GCC architecture for triple
-          target.buildDefaultTriple(triple, /* GCC */ true,
-                                    /* useAarch64InsteadOfArm64 */ true);
-        } else {
-          // <triple>-osxcross-man -> use the triple architecture for triple
-          target.setTriple(/* useAarch64InsteadOfArm64 */ true);
-          triple = target.getTriple();
-        }
-        arg = triple + "-" + arg;
-        break;
-      }
-    }
-
-    args.push_back(arg);
-  }
-
-  return execProgram(args[0], args);
+  return 0;
 }
 
 } // namespace osxcross

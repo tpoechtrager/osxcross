@@ -28,13 +28,14 @@
 
 #include "tools/tools.h"
 #include "target.h"
-#include "progs.h"
+#include "programs/programs.h"
 
 extern char **environ;
 using namespace tools;
 
 namespace program {
-namespace osxcross {
+namespace host {
+namespace {
 
 struct EnvVar {
   std::string name;
@@ -43,7 +44,7 @@ struct EnvVar {
   EnvVar(std::string name, std::string value) : name(name), value(value) {}
 };
 
-static EnvVar &var(const char *p, EnvVar &envVar, const bool skipVal = false) {
+EnvVar &var(const char *p, EnvVar &envVar, const bool skipVal = false) {
   if (!p)
     return envVar;
 
@@ -58,6 +59,8 @@ static EnvVar &var(const char *p, EnvVar &envVar, const bool skipVal = false) {
 
   return envVar;
 }
+
+} // anonymous namespace
 
 int pkg_config(int argc, char **argv, Target &target) {
   std::vector<EnvVar> envVars;
@@ -135,5 +138,5 @@ int pkg_config(int argc, char **argv, Target &target) {
   return 1;
 }
 
-} // namespace osxcross
+} // namespace host
 } // namespace program
