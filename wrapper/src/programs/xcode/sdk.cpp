@@ -34,16 +34,16 @@ namespace program {
 namespace xcode {
 namespace {
 
-std::vector<Target::SDKSource> xcodeSDKSources(const char *sdkOption) {
-  // -sdk: these values select the default SDK, any other value is the SDK
-  // directory, even if it is relative or does not exist.
-  auto checkSDK = [](const std::string &value) {
-    if (value == "macosx" || value == "macosx.internal" || value == "/" ||
-        value.empty())
-      return Target::SDKSource::Use::DEFAULT_SDK;
-    return Target::SDKSource::Use::PATH;
-  };
+// -sdk: these values select the default SDK, any other value is the SDK
+// directory, even if it is relative or does not exist.
+Target::SDKSource::Use checkSDK(const std::string &value) {
+  if (value == "macosx" || value == "macosx.internal" || value == "/" ||
+      value.empty())
+    return Target::SDKSource::Use::DEFAULT_SDK;
+  return Target::SDKSource::Use::PATH;
+}
 
+std::vector<Target::SDKSource> xcodeSDKSources(const char *sdkOption) {
   // SDKROOT: an empty value and "/" count as not set; otherwise as -sdk.
   auto checkSDKRoot = [](const std::string &value) {
     if (value.empty() || value == "/")
@@ -62,6 +62,19 @@ std::vector<Target::SDKSource> xcodeSDKSources(const char *sdkOption) {
 
 bool determineSDK(Target &target, const char *sdkOption, bool quiet) {
   return target.determineSDK(xcodeSDKSources(sdkOption), quiet);
+}
+
+bool determineSDKFromOption(Target &target, const char *sdkOption,
+                            bool quiet) {
+  // xcodebuild: as -sdk for xcrun, but "//" selects the default SDK, too.
+  auto checkXcodebuildSDK = [](const std::string &value) {
+    if (value == "//")
+      return Target::SDKSource::Use::DEFAULT_SDK;
+    return checkSDK(value);
+  };
+
+  return target.determineSDK({{"-sdk", sdkOption, checkXcodebuildSDK}},
+                             quiet);
 }
 
 } // namespace xcode

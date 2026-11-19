@@ -4,6 +4,13 @@ All notable changes to OSXCross, newest first.
 
 ## v3.1.2
 
+### Added
+
+- wrapper: `xcodebuild`: Answers SDK queries. `xcodebuild -version -sdk <sdk> [<key>]` prints the  
+  value of a key such as `Path` or `SDKVersion`; without a key, it lists all of the SDK's metadata.  
+  Together with `xcodebuild -license check`, which now succeeds, `qmake` should work with OSXCross.  
+  `qmake` calls `/usr/bin/xcrun` and `/usr/bin/xcode-select` by absolute path, so these must exist.
+
 ### Changed
 
 - Build scripts now require GNU sed (`gsed`) on macOS hosts.
@@ -11,6 +18,10 @@ All notable changes to OSXCross, newest first.
   `--show-sdk-version`, `xcrun` runs only the last query and uses the last `-sdk` option.
 - wrapper: When an SDK is missing, the error reports which option or environment variable selected  
   its path, for example `cannot find macOS SDK (expected in: /x, from SDKROOT)`.
+- wrapper: `xcodebuild`: `-version` now reports Xcode 26.6 (build 17F113) instead of 11.0.0. The SDK  
+  for `-version -sdk` comes only from `-sdk`; `SDKROOT` is not used. Unknown SDK keys print nothing.  
+  An unknown option, a repeated `-sdk` or an SDK that cannot be found ends with status 64, as with  
+  Apple's xcodebuild.
 
 ### Fixed
 

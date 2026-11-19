@@ -155,6 +155,34 @@ private:
 std::string makeTriple(Arch arch, const char *vendor, const std::string &target,
                        bool useAarch64InsteadOfArm64 = false);
 
+// An SDK directory, where it comes from, and what it states about itself:
+// the values of its SDKSettings.json, with fallbacks for SDKs without one.
+// Target::readSDKInfo() fills it in.
+struct SDKInfo {
+  SDKInfo()
+      : from(), haveSettings(), versionFromSettings(), maxFromSettings() {}
+
+  std::string path;              // the SDK directory
+  const char *from;              // where it comes from: the option, such
+                                 // as "-sdk", "SDKROOT",
+                                 // "OSXCROSS_SDKROOT" or "OSXCross" for an
+                                 // SDK in OSXCross' SDK directory
+  OSVersion version;             // its macOS version; 0.0: unknown
+  // The deployment targets it accepts, 12.0 and 27.3.99 for SDK 27.3. The
+  // minimum is 0.0 if the SDK states none. The maximum is version with the
+  // patch level raised to 99 if the SDK states none; 0.0 if version is
+  // unknown.
+  OSVersion minDeploymentTarget;
+  OSVersion maxDeploymentTarget;
+  std::string displayName;       // "macOS 15.4"
+  std::string canonicalName;     // "macosx15.4", as for xcrun -sdk
+
+  // Where the values come from, for the debug output
+  bool haveSettings;             // SDKSettings.json read and valid JSON
+  bool versionFromSettings;      // version from SDKSettings.json
+  bool maxFromSettings;          // maxDeploymentTarget from SDKSettings.json
+};
+
 struct Target {
   Target();
 
@@ -196,17 +224,26 @@ struct Target {
   std::vector<SDKSource>
   compilerSDKSources(std::vector<SDKSource> extra = {}) const;
 
-  // Determine the SDK in use, sdkPath, sdkFrom and sdkVersion. The first of
-  // sources that gives one wins (see SDKSource), else the default SDK:
+  // Read the SDK in the directory path; from says where path comes from (see
+  // SDKInfo::from). It need not be the SDK in use: xcodebuild -showsdks, for
+  // example, needs every SDK.
+  //
+  // The version comes from the SDK's SDKSettings.json; without one, from
+  // the name of the directory (15.4 for MacOSX15.4.sdk; 0.0 if the name has
+  // none). DisplayName and CanonicalName come from SDKSettings.json as well;
+  // without them, they are made from the version ("macOS 15.4",
+  // "macosx15.4").
+  static SDKInfo readSDKInfo(const std::string &path, const char *from);
+
+  // Determine the SDK in use, sdk. The first of sources that gives one wins
+  // (see SDKSource), else the default SDK:
   // <execDir>/../SDK/MacOSX<version>.sdk, named after the macOS version that
   // belongs to the target. sources come from compilerSDKSources(); xcrun and
   // xcodebuild call this through xcode::determineSDK().
   //
-  // The version comes from the SDK's SDKSettings.json; without one, from
-  // the name of the directory (15.4 for MacOSX15.4.sdk; 0.0 if the name has
-  // none). So do sdkMinDeploymentTarget and sdkMaxDeploymentTarget. Prints an
-  // error, unless quiet, and returns false if the directory does not exist;
-  // sdkPath and sdkVersion are set anyway.
+  // The values of the SDK come from readSDKInfo(). Prints an error, unless
+  // quiet, and returns false if the directory does not exist; sdk is set
+  // anyway.
   bool determineSDK(const std::vector<SDKSource> &sources,
                     bool quiet = false);
 
@@ -289,18 +326,7 @@ struct Target {
   //
   std::string commandLineIsysroot; // -isysroot; empty: not given
   std::string commandLineSysroot;  // --sysroot; empty: not given
-  std::string sdkPath;             // the SDK in use
-  const char *sdkFrom;             // where it comes from: the option, such
-                                   // as "-sdk", "SDKROOT",
-                                   // "OSXCROSS_SDKROOT" or "OSXCross" for
-                                   // the default SDK
-  OSVersion sdkVersion;            // its macOS version; 0.0: unknown
-  // The deployment targets it accepts, 12.0 and 27.3.99 for SDK 27.3. The
-  // minimum is 0.0 if the SDK states none. The maximum is sdkVersion with the
-  // patch level raised to 99 if the SDK states none; 0.0 if sdkVersion is
-  // unknown.
-  OSVersion sdkMinDeploymentTarget;
-  OSVersion sdkMaxDeploymentTarget;
+  SDKInfo sdk;                     // the SDK in use
 
   //
   // Compiler

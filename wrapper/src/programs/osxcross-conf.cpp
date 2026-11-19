@@ -54,10 +54,10 @@ int conf(int, char **, Target &target) {
   if (!target.determineSDK(target.compilerSDKSources()))
     return 1;
 
-  const std::string &sdkPath = target.sdkPath;
+  const std::string &sdkPath = target.sdk.path;
 
   if (!osxVersionMin.num())
-    osxVersionMin = target.sdkVersion;
+    osxVersionMin = target.sdk.version;
 
   if (!ltoPath)
     ltoPath = "";
@@ -72,7 +72,7 @@ int conf(int, char **, Target &target) {
   print("BASE_DIR", buildDir + "/..");
   print("SDK", sdkPath);
   print("SDK_DIR", sdkPath + "/..");
-  print("SDK_VERSION", target.sdkVersion.shortStr());
+  print("SDK_VERSION", target.sdk.version.shortStr());
   print("TARBALL_DIR", buildDir + "/../tarballs");
   print("PATCH_DIR", buildDir + "/../patches");
   print("TARGET_DIR", std::string(target.execDir) + "/..");

@@ -141,7 +141,7 @@ static std::string makeAbsolutePath(const std::string &path) {
 Target::Target()
     : vendor(getDefaultVendor()), supportedArchs(getSupportedArchs()),
       targetOS(getDefaultTarget()), primaryArch(getDefaultArch()),
-      sdkFrom("OSXCross"), compiler(getDefaultCompilerIdentifier()),
+      compiler(getDefaultCompilerIdentifier()),
       compilerName(getDefaultCompilerName()), skipIntrinsicHeaders(),
       stdlib(Stdlib::UNSET), useGCCLibs(), language(), linking(true) {
   execDir = getExecutableDir();
@@ -184,17 +184,75 @@ Target::compilerSDKSources(std::vector<SDKSource> extra) const {
   return sources;
 }
 
+SDKInfo Target::readSDKInfo(const std::string &path, const char *from) {
+  SDKInfo sdkInfo;
+  std::string settingsText;
+  json::Value settings;
+
+  sdkInfo.path = path;
+  sdkInfo.from = from;
+
+  sdkInfo.haveSettings =
+      getFileContent(path + "/SDKSettings.json", settingsText) &&
+      json::parse(settingsText, settings);
+
+  if (sdkInfo.haveSettings) {
+    // "Version" is exact: MacOSX15.sdk can be 15.5.
+    if (settings["Version"].isString())
+      sdkInfo.version = parseOSVersion(settings["Version"].string.c_str());
+
+    // Minimum deployment target, e.g. "12.0" for SDK 27.3.
+    const json::Value &minTarget =
+        settings["SupportedTargets"]["macosx"]["MinimumDeploymentTarget"];
+
+    if (minTarget.isString())
+      sdkInfo.minDeploymentTarget = parseOSVersion(minTarget.string.c_str());
+
+    // Maximum deployment target, e.g. "27.3.99" for SDK 27.3.
+    if (settings["MaximumDeploymentTarget"].isString())
+      sdkInfo.maxDeploymentTarget =
+          parseOSVersion(settings["MaximumDeploymentTarget"].string.c_str());
+
+    if (settings["DisplayName"].isString())
+      sdkInfo.displayName = settings["DisplayName"].string;
+
+    if (settings["CanonicalName"].isString())
+      sdkInfo.canonicalName = settings["CanonicalName"].string;
+  }
+
+  sdkInfo.versionFromSettings = sdkInfo.version.num() != 0;
+  sdkInfo.maxFromSettings = sdkInfo.maxDeploymentTarget.num() != 0;
+
+  // If SDKSettings.json doesn't provide a version, use the name of the SDK
+  // directory as fallback.
+  if (!sdkInfo.versionFromSettings)
+    sdkInfo.version = parseSDKVersionFromDirName(path);
+
+  // SDKs since 11.0 state the maximum as their version with patch level 99
+  // (27.3.99), so that any patch release is accepted. SDKs without a maximum
+  // get the same.
+  if (!sdkInfo.maxFromSettings && sdkInfo.version.num())
+    sdkInfo.maxDeploymentTarget =
+        OSVersion(sdkInfo.version.major, sdkInfo.version.minor, 99);
+
+  // Names as Apple's SDKs have them, for SDKs that do not state them.
+  if (sdkInfo.displayName.empty())
+    sdkInfo.displayName = "macOS " + sdkInfo.version.shortStr();
+
+  if (sdkInfo.canonicalName.empty())
+    sdkInfo.canonicalName = "macosx" + sdkInfo.version.shortStr();
+
+  return sdkInfo;
+}
+
 bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
   //
   // SDK path
   //
 
-  const char *versionFrom; // where the version comes from, for the debug
-                           // messages
-
-  sdkPath.clear();
-  sdkFrom = "OSXCross";
-  bool fromSource = false; // a source gave the directory
+  std::string path;
+  const char *from = "OSXCross"; // unless a source gives the directory
+  bool fromSource = false;       // a source gave the directory
 
   for (const SDKSource &source : sources) {
     if (!source.given)
@@ -216,8 +274,8 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
     case SDKSource::Use::DEFAULT_SDK:
       break;
     case SDKSource::Use::PATH:
-      sdkPath = source.value;
-      sdkFrom = source.option;
+      path = source.value;
+      from = source.option;
       fromSource = true;
       break;
     }
@@ -225,7 +283,7 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
     break; // this source decides
   }
 
-  if (sdkPath.empty()) {
+  if (path.empty()) {
     // The SDK that's installed by build.sh. It is named after the macOS
     // version of the target; the 10.4 SDK is named MacOSX10.4u.sdk
     // (universal), the SDK for macOS 15.0 may also be named MacOSX15.sdk.
@@ -233,96 +291,56 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
     const std::string prefix = execDir + "/../SDK/MacOSX";
     const char *suffix = targetVersion <= OSVersion(10, 4) ? "u.sdk" : ".sdk";
 
-    sdkPath = prefix + targetVersion.shortStr() + suffix;
+    path = prefix + targetVersion.shortStr() + suffix;
 
-    if (!dirExists(sdkPath) && targetVersion.minor == 0)
-      sdkPath = prefix + targetVersion.majorStr() + suffix;
+    if (!dirExists(path) && targetVersion.minor == 0)
+      path = prefix + targetVersion.majorStr() + suffix;
   }
 
   //
-  // SDK version and deployment targets (SDKSettings.json, with fallbacks)
+  // SDK version, deployment targets and names (SDKSettings.json, with
+  // fallbacks)
   //
 
-  std::string settingsText;
-  json::Value settings;
-  const bool haveSettings =
-      getFileContent(sdkPath + "/SDKSettings.json", settingsText) &&
-      json::parse(settingsText, settings);
-
-  if (haveSettings) {
-    // "Version" is exact: MacOSX15.sdk can be 15.5.
-    if (settings["Version"].isString())
-      sdkVersion = parseOSVersion(settings["Version"].string.c_str());
-
-    // Minimum deployment target, e.g. "12.0" for SDK 27.3.
-    const json::Value &minTarget =
-        settings["SupportedTargets"]["macosx"]["MinimumDeploymentTarget"];
-
-    if (minTarget.isString())
-      sdkMinDeploymentTarget = parseOSVersion(minTarget.string.c_str());
-
-    // Maximum deployment target, e.g. "27.3.99" for SDK 27.3.
-    if (settings["MaximumDeploymentTarget"].isString())
-      sdkMaxDeploymentTarget =
-          parseOSVersion(settings["MaximumDeploymentTarget"].string.c_str());
-  }
-
-  // What SDKSettings.json provided, for the fallbacks and the debug output.
-  const bool versionFromSettings = sdkVersion.num() != 0;
-  const bool maxFromSettings = sdkMaxDeploymentTarget.num() != 0;
-
-  // If SDKSettings.json doesn't provide a version, use the name of the SDK
-  // directory as fallback.
-  if (!versionFromSettings) {
-    sdkVersion = parseSDKVersionFromDirName(sdkPath);
-    versionFrom = "the SDK directory name";
-  } else {
-    versionFrom = "SDKSettings.json";
-  }
-
-  //
-  // Maximum deployment target
-  //
-
-  // SDKs since 11.0 state the maximum as their version with patch level 99
-  // (27.3.99), so that any patch release is accepted. SDKs without a maximum
-  // get the same.
-  if (!maxFromSettings && sdkVersion.num())
-    sdkMaxDeploymentTarget = OSVersion(sdkVersion.major, sdkVersion.minor, 99);
+  sdk = readSDKInfo(path, from);
 
   //
   // Debug output
   //
 
   if (getDebugLevel() >= 2) {
-    const std::string settingsFile = sdkPath + "/SDKSettings.json";
+    const std::string settingsFile = sdk.path + "/SDKSettings.json";
 
-    dbg << "SDK: " << sdkPath << " (from " << sdkFrom << ")" << dbg.endl();
+    dbg << "SDK: " << sdk.path << " (from " << sdk.from << ")" << dbg.endl();
 
-    if (!haveSettings && fileExists(settingsFile))
+    if (!sdk.haveSettings && fileExists(settingsFile))
       dbg << settingsFile << ": not readable or not valid JSON" << dbg.endl();
-    else if (haveSettings && !versionFromSettings)
+    else if (sdk.haveSettings && !sdk.versionFromSettings)
       dbg << settingsFile << ": no valid \"Version\"" << dbg.endl();
 
-    if (sdkVersion.num()) {
-      dbg << "SDK version: " << sdkVersion.str() << " (from " << versionFrom
+    if (sdk.version.num()) {
+      const char *versionFrom = sdk.versionFromSettings
+                                    ? "SDKSettings.json"
+                                    : "the SDK directory name";
+
+      dbg << "SDK version: " << sdk.version.str() << " (from " << versionFrom
           << ")" << dbg.endl();
     } else {
       dbg << "SDK version: unknown (neither SDKSettings.json nor the SDK "
           << "directory name has one)" << dbg.endl();
     }
 
-    if (sdkMinDeploymentTarget.num()) {
-      dbg << "SDK minimum deployment target: " << sdkMinDeploymentTarget.str()
+    if (sdk.minDeploymentTarget.num()) {
+      dbg << "SDK minimum deployment target: " << sdk.minDeploymentTarget.str()
           << " (from SDKSettings.json)" << dbg.endl();
     }
 
-    if (sdkMaxDeploymentTarget.num()) {
-      const char *maxFrom = maxFromSettings
+    if (sdk.maxDeploymentTarget.num()) {
+      const char *maxFrom = sdk.maxFromSettings
                                 ? "SDKSettings.json"
                                 : "the SDK version with patch level 99";
 
-      dbg << "SDK maximum deployment target: " << sdkMaxDeploymentTarget.str()
+      dbg << "SDK maximum deployment target: " << sdk.maxDeploymentTarget.str()
           << " (from " << maxFrom << ")" << dbg.endl();
     }
   }
@@ -331,11 +349,11 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
   // Does the SDK actually exist?
   //
 
-  if (!dirExists(sdkPath)) {
+  if (!dirExists(sdk.path)) {
     if (!quiet) {
-      err << "cannot find macOS SDK (expected in: " << sdkPath;
+      err << "cannot find macOS SDK (expected in: " << sdk.path;
       if (fromSource)
-        err << ", from " << sdkFrom;
+        err << ", from " << sdk.from;
       err << ")" << err.endl();
     }
     return false;
@@ -345,7 +363,7 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
 }
 
 void Target::passSDKToChildProcesses() const {
-  setenv("SDKROOT", makeAbsolutePath(sdkPath).c_str(), 1);
+  setenv("SDKROOT", makeAbsolutePath(sdk.path).c_str(), 1);
   unsetenv("OSXCROSS_SDKROOT");
 }
 
@@ -432,17 +450,17 @@ bool Target::haveArch(const Arch arch) {
   return false;
 }
 
-bool Target::hasLibCXX() const { return sdkVersion >= OSVersion(10, 7); }
+bool Target::hasLibCXX() const { return sdk.version >= OSVersion(10, 7); }
 
 bool Target::libCXXIsDefaultCXXLib() const {
   OSVersion deploymentTarget = this->deploymentTarget;
 
   if (!deploymentTarget.num())
-    deploymentTarget = sdkVersion;
+    deploymentTarget = sdk.version;
 
   return stdlib != Stdlib::LIBSTDCXX && hasLibCXX() && !isGCC() &&
          (deploymentTarget >= OSVersion(10, 9) ||
-          sdkVersion >= OSVersion(10, 14));
+          sdk.version >= OSVersion(10, 14));
 }
 
 bool Target::isCXX() {
@@ -826,8 +844,8 @@ bool Target::setup() {
 
   // The checks below compare against the SDK version; with an unknown one
   // (0.0) they would fail with misleading messages.
-  if (!sdkVersion.num()) {
-    err << "cannot determine the version of the macOS SDK '" << sdkPath
+  if (!sdk.version.num()) {
+    err << "cannot determine the version of the macOS SDK '" << sdk.path
         << "' (neither SDKSettings.json nor the directory name has one)"
         << err.endl();
     return false;
@@ -854,8 +872,8 @@ bool Target::setup() {
       continue;
 
     const bool sdkSupported = requiredSDK.orEarlier
-                                  ? sdkVersion <= requiredSDK.sdkVer
-                                  : sdkVersion >= requiredSDK.sdkVer;
+                                  ? sdk.version <= requiredSDK.sdkVer
+                                  : sdk.version >= requiredSDK.sdkVer;
 
     if (!sdkSupported) {
       err << "Architecture '" << getArchName(requiredSDK.arch) << "' requires "
@@ -864,6 +882,7 @@ bool Target::setup() {
           << err.endl();
       return false;
     }
+
   }
 
   //
@@ -889,25 +908,25 @@ bool Target::setup() {
       }
     } else {
       // No -DOSXCROSS_DEFAULT_DEPLOYMENT_TARGET=XX: default to the SDK version
-      deploymentTarget = sdkVersion;
+      deploymentTarget = sdk.version;
     }
   }
 
-  if (deploymentTarget > sdkMaxDeploymentTarget) {
+  if (deploymentTarget > sdk.maxDeploymentTarget) {
     err << "deployment target " << deploymentTarget.displayStr()
-        << " is above the SDK maximum " << sdkMaxDeploymentTarget.displayStr()
+        << " is above the SDK maximum " << sdk.maxDeploymentTarget.displayStr()
         << err.endl();
     return false;
   }
 
   if (getenv("OSXCROSS_CHECK_MIN_DEPLOYMENT_TARGET")) {
-    if (!sdkMinDeploymentTarget.num()) {
+    if (!sdk.minDeploymentTarget.num()) {
       warn << "OSXCROSS_CHECK_MIN_DEPLOYMENT_TARGET is set, but the SDK does "
            << "not state a minimum deployment target" << warn.endl();
-    } else if (deploymentTarget < sdkMinDeploymentTarget) {
+    } else if (deploymentTarget < sdk.minDeploymentTarget) {
       err << "deployment target " << deploymentTarget.displayStr()
-          << " is below the SDK minimum " << sdkMinDeploymentTarget.displayStr()
-          << err.endl();
+          << " is below the SDK minimum "
+          << sdk.minDeploymentTarget.displayStr() << err.endl();
       return false;
     }
   }
@@ -931,7 +950,7 @@ bool Target::setup() {
     }
   }
 
-  if (sdkVersion >= OSVersion(10, 14) && stdlib == Stdlib::LIBSTDCXX &&
+  if (sdk.version >= OSVersion(10, 14) && stdlib == Stdlib::LIBSTDCXX &&
       !isGCC() && !useGCCLibs) {
     err << "macOS SDK '>= 10.14' does not support libstdc++ anymore"
         << err.endl();
@@ -955,7 +974,7 @@ bool Target::setup() {
 
   switch (stdlib) {
   case Stdlib::LIBCXX: {
-    cxxHeaderPath = sdkPath + "/usr/include/c++/v1";
+    cxxHeaderPath = sdk.path + "/usr/include/c++/v1";
     if (!dirExists(cxxHeaderPath)) {
       err << "cannot find " << getStdlibString(stdlib) << " headers"
           << err.endl();
@@ -1031,10 +1050,10 @@ bool Target::setup() {
       cxxHeaderSubDirs.push_back(cxxBuildTriple);
     } else {
       // Use SDK libs
-      if (sdkVersion <= OSVersion(10, 5))
-        cxxHeaderPath = sdkPath + "/usr/include/c++/4.0.0";
+      if (sdk.version <= OSVersion(10, 5))
+        cxxHeaderPath = sdk.path + "/usr/include/c++/4.0.0";
       else
-        cxxHeaderPath = sdkPath + "/usr/include/c++/4.2.1";
+        cxxHeaderPath = sdk.path + "/usr/include/c++/4.2.1";
 
       cxxHeaderSubDirs.push_back(makeTriple(primaryArch, vendor, targetOS));
     }
@@ -1085,7 +1104,7 @@ bool Target::setup() {
     }
 
     wrapperArgs.push_back("-isysroot");
-    wrapperArgs.push_back(sdkPath);
+    wrapperArgs.push_back(sdk.path);
 
     if (isCXX()) {
       wrapperArgs.push_back(std::string("-stdlib=") + getStdlibString(stdlib));
@@ -1112,7 +1131,7 @@ bool Target::setup() {
     // The SDK determined above, as for clang; without it, GCC would use its
     // built-in sysroot, the installed SDK.
     wrapperArgs.push_back("-isysroot");
-    wrapperArgs.push_back(sdkPath);
+    wrapperArgs.push_back(sdk.path);
 
     if (isCXX() && stdlib == Stdlib::LIBCXX) {
       wrapperArgs.push_back("-nostdinc++");
@@ -1121,7 +1140,7 @@ bool Target::setup() {
       if (!isGCH()) {
         wrapperArgs.push_back("-lc");
         wrapperArgs.push_back("-lc++");
-        if (sdkVersion <= OSVersion(10, 13)) {
+        if (sdk.version <= OSVersion(10, 13)) {
           // SDK 10.14 does not have -lgcc_s anymore
           wrapperArgs.push_back("-lgcc_s.10.5");
         }
@@ -1247,7 +1266,7 @@ bool Target::setup() {
 #ifdef __ANDROID__
   // Workaround for Termux
   std::string ldSysRoot = "-Wl,-syslibroot,";
-  ldSysRoot += sdkPath;
+  ldSysRoot += sdk.path;
   wrapperArgs.push_back(ldSysRoot);
 #endif
 
@@ -1261,7 +1280,7 @@ bool Target::setup() {
       wrapperArgs.push_back("-D__apple_build_version__=1");
     }
 
-    if (sdkVersion >= OSVersion(14, 0) && clangVersion < ClangVersion(17, 0)) {
+    if (sdk.version >= OSVersion(14, 0) && clangVersion < ClangVersion(17, 0)) {
       // MacOS 14 SDK uses __ENVIRONMENT_OS_VERSION_MIN_REQUIRED__ in
       // AvailabilityInternal.h
       wrapperArgs.push_back("-D__ENVIRONMENT_OS_VERSION_MIN_REQUIRED__=" +

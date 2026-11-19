@@ -40,6 +40,12 @@ namespace xcode {
 bool determineSDK(target::Target &target, const char *sdkOption,
                   bool quiet = false);
 
+// Determine the SDK for xcodebuild, only from -sdk (sdkOption): like Apple's
+// xcodebuild, SDKROOT and OSXCROSS_SDKROOT are not read. The values are those
+// of -sdk above; in addition, "//" selects the default SDK as well.
+bool determineSDKFromOption(target::Target &target, const char *sdkOption,
+                            bool quiet = false);
+
 } // namespace xcode
 } // namespace program
 

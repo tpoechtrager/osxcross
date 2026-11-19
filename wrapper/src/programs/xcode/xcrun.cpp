@@ -191,12 +191,12 @@ int run(Target *target, char **argv) {
 }
 
 int showSDKPath(Target *target, char **) {
-  std::cout << target->sdkPath << std::endl;
+  std::cout << target->sdk.path << std::endl;
   return 0;
 }
 
 int showSDKVersion(Target *target, char **) {
-  std::cout << target->sdkVersion.shortStr() << std::endl;
+  std::cout << target->sdk.version.shortStr() << std::endl;
   return 0;
 }
 

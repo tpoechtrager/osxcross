@@ -139,7 +139,7 @@ int ld(int argc, char **argv, target::Target &target) {
     if (!target.determineSDK(target.compilerSDKSources()))
       return 1;
 
-    args.insert(args.begin() + 1, {"-syslibroot", target.sdkPath});
+    args.insert(args.begin() + 1, {"-syslibroot", target.sdk.path});
   }
 
   // ld64.lld needs both the deployment target and SDK version. Synthesize the
@@ -147,7 +147,7 @@ int ld(int argc, char **argv, target::Target &target) {
   if (!platformVersionSeen) {
     const tools::OSVersion sdkVersion =
         sdkVersionArg ? tools::parseOSVersion(sdkVersionArg)
-                      : target.sdkVersion;
+                      : target.sdk.version;
 
     // The deployment target: -macos_version_min or MACOSX_DEPLOYMENT_TARGET,
     // passed on as given; as in the compiler wrapper, an empty or invalid

@@ -43,7 +43,7 @@ int man(int argc, char **argv, Target &target) {
 
   std::vector<std::string> manPaths;
 
-  manPaths.push_back(target.sdkPath + "/usr/share/man");
+  manPaths.push_back(target.sdk.path + "/usr/share/man");
   manPaths.push_back(std::string(target.execDir) + "/../share/man");
 
   unsetenv("MANPATH");
