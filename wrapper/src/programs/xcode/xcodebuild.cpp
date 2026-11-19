@@ -44,20 +44,24 @@ constexpr int UsageError = 64;
 
 // Like Apple's xcodebuild, the options are read first, then the last action
 // runs. Arguments that are not options are keys for -version.
-const char *sdkOption = nullptr;            // nullptr: -sdk not given
-std::vector<const char *> keys;             // arguments that are not options
-int (*action)(Target *, char **) = nullptr; // the last action
-char **actionArgs = nullptr;                // and its arguments
+const char *sdkOption = nullptr; // nullptr: -sdk not given
+std::vector<const char *> keys;  // arguments that are not options
 
 void printXcodeVersion() {
   std::cout << "Xcode 26.6" << std::endl;
   std::cout << "Build version 17F113" << std::endl;
 }
 
-int help(Target * = nullptr, char ** = nullptr) {
+int help(Target &, char **) {
   std::cerr << "Only '-version [-sdk <sdk>] [<key>...]' and '-license check' "
                "are supported by this stub tool" << std::endl;
   return 0;
+}
+
+// Without an action, print the help and fail.
+int usage(Target &target, char **args) {
+  help(target, args);
+  return 1;
 }
 
 // Replace the XML entities in a plist string.
@@ -186,19 +190,19 @@ int sdkInfo(Target &target) {
   return 0;
 }
 
-int version(Target *target, char **) {
+int version(Target &target, char **) {
   // Without -sdk, -version prints the Xcode version and ignores the keys.
   if (!sdkOption) {
     printXcodeVersion();
     return 0;
   }
 
-  return sdkInfo(*target);
+  return sdkInfo(target);
 }
 
-int license(Target *, char **argv) {
-  if (strcmp(argv[0], "check")) {
-    err << "xcodebuild: unsupported license action: '" << argv[0] << "'"
+int license(Target &, char **args) {
+  if (strcmp(args[0], "check")) {
+    err << "xcodebuild: unsupported license action: '" << args[0] << "'"
         << err.endl();
     return UsageError;
   }
@@ -208,68 +212,44 @@ int license(Target *, char **argv) {
   return 0;
 }
 
-// argv is nullptr for "-sdk" without a value, which selects the default SDK.
-int sdk(Target *, char **argv) {
+// args is nullptr for "-sdk" without a value. Apple's xcodebuild then prints
+// all SDKs; here, it selects the default SDK.
+int sdk(Target &, char **args) {
   if (sdkOption) {
     err << "xcodebuild: option '-sdk' may only be provided once" << err.endl();
     return UsageError;
   }
 
-  sdkOption = argv ? argv[0] : "";
+  sdkOption = args ? args[0] : "";
+  return 0;
+}
+
+int addKey(Target &, char **args) {
+  keys.push_back(args[0]);
   return 0;
 }
 
 } // anonymous namespace
 
 int xcodebuild(int argc, char **argv, Target &target) {
-  ArgParser<int (*)(Target *, char **), 5> argParser = {{
-    {"version", version, 0, true},
-    {"sdk", sdk, 1},
-    {"license", license, 1, true},
-    {"help", help, 0, true},
-    {"usage", help, 0, true}
-  }};
+  using Kind = ArgumentParser::Kind;
+  using Value = ArgumentParser::Value;
 
-  for (int i = 1; i < argc; ++i) {
-    const char *arg = argv[i];
+  const ArgumentParser parser = {
+    "xcodebuild", UsageError,
+    true, // one '-' only, as with Apple's xcodebuild
+    {
+      {"version", version, Kind::ACTION},
+      {"sdk", sdk, Kind::SETTING, Value::OPTIONAL},
+      {"license", license, Kind::ACTION, Value::ONE},
+      {"help", help, Kind::ACTION},
+      {"usage", help, Kind::ACTION}
+    },
+    {nullptr, addKey},
+    nullptr, usage
+  };
 
-    if (arg[0] != '-') {
-      keys.push_back(arg);
-      continue;
-    }
-
-    // "-sdk" without a value: Apple's xcodebuild prints all SDKs. Here,
-    // that is the default SDK.
-    if (!strcmp(arg, "-sdk") && i == argc - 1) {
-      if (int status = sdk(&target, nullptr))
-        return status;
-      break;
-    }
-
-    // Apple's xcodebuild takes options with one '-' only.
-    auto b = arg[1] != '-' ? argParser.parseArg(argc, argv, i) : nullptr;
-
-    if (!b) {
-      err << "xcodebuild: unknown argument: '" << arg << "'" << err.endl();
-      return UsageError;
-    }
-
-    if (b->action) {
-      action = b->fun;
-      actionArgs = &argv[i + 1];
-    } else if (int status = b->fun(&target, &argv[i + 1])) {
-      return status;
-    }
-
-    i += b->numArgs;
-  }
-
-  if (!action) {
-    help();
-    return 1;
-  }
-
-  return action(&target, actionArgs);
+  return parser.execute(argc, argv, target);
 }
 
 } // namespace xcode

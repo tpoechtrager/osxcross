@@ -45,9 +45,7 @@ bool showCommand = false;
 // Like Apple's xcrun, the options are read first, up to the name of the
 // program to run. Then only the last action runs, with the SDK of the last
 // -sdk option.
-const char *sdkOption = nullptr;            // the last -sdk; nullptr: not given
-int (*action)(Target *, char **) = nullptr; // the last action
-char **actionArgs = nullptr;                // and its arguments
+const char *sdkOption = nullptr; // the last -sdk; nullptr: not given
 
 bool isXcodeToolName(const char *tool) {
   constexpr const char *xcodeTools[] = {
@@ -68,7 +66,7 @@ bool isXcodeToolName(const char *tool) {
   return false;
 }
 
-bool getToolPath(Target *target, std::string &toolPath, std::string tool) {
+bool getToolPath(Target &target, std::string &toolPath, std::string tool) {
   const char *fileName = getFileName(tool);
   bool isXcodeTool = isXcodeToolName(fileName);
   const bool useExplicitPath = tool[0] == PathDiv && !isXcodeTool;
@@ -88,16 +86,16 @@ bool getToolPath(Target *target, std::string &toolPath, std::string tool) {
       // For GCC tools, prefer the default GCC architecture so xcrun can find
       // GCC even when it is not available for the Clang default architecture.
       bool isGCC = (tool.rfind("gcc", 0) == 0 || tool.rfind("g++", 0) == 0);
-      target->buildDefaultTriple(triple, isGCC);
+      target.buildDefaultTriple(triple, isGCC);
     } else {
       // A target-prefixed xcrun must resolve tools for that exact target.
       // For example, arm64-apple-darwin27-xcrun -f gcc must fail when
       // no ARM64 GCC installation exists.
-      target->setTriple();
-      triple = target->getTriple();
+      target.setTriple();
+      triple = target.getTriple();
     }
 
-    toolPath = target->buildToolPath(triple, tool);
+    toolPath = target.buildToolPath(triple, tool);
   }
 
   // Match Apple's xcrun: -find accepts an existing absolute path even if
@@ -122,32 +120,32 @@ bool getToolPath(Target *target, std::string &toolPath, std::string tool) {
   return true;
 }
 
-int help(Target * = nullptr, char ** = nullptr) {
+int help(Target &, char **) {
   std::cerr << "https://developer.apple.com/library/mac/documentation/Darwin/"
                "Reference/ManPages/man1/xcrun.1.html" << std::endl;
   return 0;
 }
 
-int version(Target *, char **) {
+int version(Target &, char **) {
   std::cout << "xcrun version: 0." << std::endl;
   return 0;
 }
 
-int sdk(Target *, char **argv) {
-  sdkOption = argv[0];
+int sdk(Target &, char **args) {
+  sdkOption = args[0];
   return 0;
 }
 
 // Options that xcrun accepts but that change nothing here.
-int ignore(Target *, char **) { return 0; }
+int ignore(Target &, char **) { return 0; }
 
-int log(Target *, char **) {
+int log(Target &, char **) {
   showCommand = true;
   return 0;
 }
 
-int find(Target *target, char **argv) {
-  const std::string toolName = argv[0];
+int find(Target &target, char **args) {
+  const std::string toolName = args[0];
   std::string toolPath;
   if (!getToolPath(target, toolPath, toolName))
     return 1;
@@ -155,34 +153,33 @@ int find(Target *target, char **argv) {
   return 0;
 }
 
-int run(Target *target, char **argv) {
+int run(Target &target, char **args) {
   std::string toolPath;
-  std::string command;
 
-  const std::string toolName = argv[0];
+  const std::string toolName = args[0];
 
   if (!getToolPath(target, toolPath, toolName))
     exit(1);
 
   // Like Apple's xcrun, pass the SDK on to the program.
-  target->passSDKToChildProcesses();
+  target.passSDKToChildProcesses();
 
-  std::vector<std::string> args;
-  args.push_back(toolPath);
+  std::vector<std::string> programArgs;
+  programArgs.push_back(toolPath);
 
-  for (char **arg = &argv[1]; *arg; ++arg)
-    args.push_back(*arg);
+  for (char **arg = &args[1]; *arg; ++arg)
+    programArgs.push_back(*arg);
 
   if (showCommand) {
-    for (size_t i = 0; i < args.size(); ++i) {
-      std::cout << args[i];
-      if (i != args.size() - 1)
+    for (size_t i = 0; i < programArgs.size(); ++i) {
+      std::cout << programArgs[i];
+      if (i != programArgs.size() - 1)
         std::cout << " ";
     }
     std::cout << std::endl;
   }
 
-  execProgram(args[0], args);
+  execProgram(programArgs[0], programArgs);
   exit(1);
 
   // Silence -Wreturn-type warnings in case exit() is not marked as
@@ -190,19 +187,25 @@ int run(Target *target, char **argv) {
   __builtin_unreachable();
 }
 
-int showSDKPath(Target *target, char **) {
-  std::cout << target->sdk.path << std::endl;
+int showSDKPath(Target &target, char **) {
+  std::cout << target.sdk.path << std::endl;
   return 0;
 }
 
-int showSDKVersion(Target *target, char **) {
-  std::cout << target->sdk.version.shortStr() << std::endl;
+int showSDKVersion(Target &target, char **) {
+  std::cout << target.sdk.version.shortStr() << std::endl;
   return 0;
 }
 
-int showPlatformPath(Target *target, char **) {
-  std::cout << target->execDir << "/.." << std::endl;
+int showPlatformPath(Target &target, char **) {
+  std::cout << target.execDir << "/.." << std::endl;
   return 0;
+}
+
+// Every action needs the SDK; like Apple's xcrun, report a missing one
+// before the action runs.
+int prepare(Target &target, char **) {
+  return determineSDK(target, sdkOption) ? 0 : 1;
 }
 
 } // anonymous namespace
@@ -226,72 +229,47 @@ int xcrun(int argc, char **argv, Target &target) {
     }
   }
 
-  ArgParser<int (*)(Target *, char **), 21> argParser = {{
-    {"h", help, 0, true},
-    {"help", help, 0, true},
-    {"version", version, 0, true},
-    {"v", ignore},
-    {"verbose", ignore},
-    {"k", ignore},
-    {"kill-cache", ignore},
-    {"n", ignore},
-    {"no-cache", ignore},
-    {"sdk", sdk, 1},
-    {"toolchain", ignore, 1},
-    {"l", log},
-    {"log", log},
-    {"f", find, 1, true},
-    {"find", find, 1, true},
-    {"r", run, 1, true},
-    {"run", run, 1, true},
-    {"show-sdk-path", showSDKPath, 0, true},
-    {"show-sdk-version", showSDKVersion, 0, true},
-    {"show-sdk-platform-version", showSDKVersion, 0, true},
-    {"show-sdk-platform-path", showPlatformPath, 0, true}
-  }};
+  using Kind = ArgumentParser::Kind;
+  using Value = ArgumentParser::Value;
+
+  const ArgumentParser parser = {
+    "xcrun", 2,
+    false, // -sdk and --sdk alike
+    {
+      {"h", help, Kind::ACTION},
+      {"help", help, Kind::ACTION},
+      {"version", version, Kind::ACTION},
+      {"v", ignore},
+      {"verbose", ignore},
+      {"k", ignore},
+      {"kill-cache", ignore},
+      {"n", ignore},
+      {"no-cache", ignore},
+      {"sdk", sdk, Kind::SETTING, Value::ONE},
+      {"toolchain", ignore, Kind::SETTING, Value::ONE},
+      {"l", log},
+      {"log", log},
+      {"f", find, Kind::ACTION, Value::ONE},
+      {"find", find, Kind::ACTION, Value::ONE},
+      {"r", run, Kind::ACTION, Value::REST},
+      {"run", run, Kind::ACTION, Value::REST},
+      {"show-sdk-path", showSDKPath, Kind::ACTION},
+      {"show-sdk-version", showSDKVersion, Kind::ACTION},
+      {"show-sdk-platform-version", showSDKVersion, Kind::ACTION},
+      {"show-sdk-platform-path", showPlatformPath, Kind::ACTION}
+    },
+    // A program name, as in "xcrun clang ...": the remaining arguments
+    // belong to the program.
+    {nullptr, run, Kind::ACTION, Value::REST},
+    prepare, nullptr
+  };
 
   if (argc == 1) {
-    help();
+    help(target, nullptr);
     return 1;
   }
 
-  for (int i = 1; i < argc; ++i) {
-    auto b = argParser.parseArg(argc, argv, i);
-
-    if (!b) {
-      if (argv[i][0] == '-') {
-        err << "xcrun: unknown argument: '" << argv[i] << "'" << err.endl();
-        return 2;
-      }
-
-      // A program name, as in "xcrun clang ...".
-      action = run;
-      actionArgs = &argv[i];
-      break;
-    }
-
-    // Actions run after the loop; only the last one counts.
-    if (b->action) {
-      action = b->fun;
-      actionArgs = &argv[i + 1];
-
-      // -r, --run: the remaining arguments belong to the program.
-      if (action == run)
-        break;
-    } else {
-      b->fun(&target, &argv[i + 1]);
-    }
-
-    i += b->numArgs;
-  }
-
-  if (!action)
-    return 0;
-
-  if (!determineSDK(target, sdkOption))
-    return 1;
-
-  return action(&target, actionArgs);
+  return parser.execute(argc, argv, target);
 }
 
 } // namespace xcode

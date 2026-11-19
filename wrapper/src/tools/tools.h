@@ -332,41 +332,6 @@ template <typename T> struct OptParser {
   }
 };
 
-template <typename T, size_t size = 0> struct ArgParser {
-  const struct Bind {
-    const char *name;
-    T fun;
-    int numArgs;
-    // Marks the option as an action rather than a setting. The parser does
-    // not use it; the caller decides what to do with actions. Optional;
-    // false if left out.
-    bool action;
-  } binds[size];
-
-  const Bind *parseArg(int argc, char **argv, int numArg = 1) const {
-    const char *arg = argv[numArg];
-
-    if (*arg != '-')
-      return nullptr;
-
-    while (*arg == '-')
-      ++arg;
-
-    for (const Bind &bind : binds) {
-      if (!strcmp(arg, bind.name)) {
-        if (argc - numArg <= bind.numArgs) {
-          err << "too few arguments for '-" << bind.name << "'" << err.endl();
-          return nullptr;
-        }
-
-        return &bind;
-      }
-    }
-
-    return nullptr;
-  }
-};
-
 //
 // OSVersion
 //

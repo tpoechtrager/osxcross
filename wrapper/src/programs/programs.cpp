@@ -155,4 +155,107 @@ const Prog *getProg(const std::string &name) {
   return nullptr;
 }
 
+//
+// ArgumentParser
+//
+
+int ArgumentParser::execute(int argc, char **argv, Target &target) const {
+  Handler action = nullptr; // the last action given
+  char **actionArgs = nullptr;
+
+  for (int i = 1; i < argc; ++i) {
+    const char *arg = argv[i];
+    const bool isOption = arg[0] == '-';
+    const Option *option = isOption ? findOption(arg) : &positional;
+
+    if (!option || !option->handler) {
+      err << program << ": unknown argument: '" << arg << "'" << err.endl();
+      return usageError;
+    }
+
+    // A positional argument is its own value; the values of an option
+    // follow it.
+    char **args = isOption ? &argv[i + 1] : &argv[i];
+    const int numArgs = isOption ? argc - i - 1 : argc - i;
+    bool lastArg = false;
+
+    switch (option->value) {
+    case Value::NONE:
+      break;
+    case Value::ONE:
+      if (!numArgs) {
+        err << program << ": too few arguments for '" << arg << "'"
+            << err.endl();
+        return usageError;
+      }
+
+      if (isOption)
+        ++i;
+      break;
+    case Value::OPTIONAL:
+      if (!numArgs)
+        args = nullptr;
+      else if (isOption)
+        ++i;
+      break;
+    case Value::REST:
+      if (!numArgs) {
+        err << program << ": too few arguments for '" << arg << "'"
+            << err.endl();
+        return usageError;
+      }
+
+      lastArg = true;
+      break;
+    }
+
+    switch (option->kind) {
+    case Kind::SETTING:
+      if (int status = option->handler(target, args))
+        return status;
+      break;
+    case Kind::ACTION:
+      action = option->handler;
+      actionArgs = args;
+      break;
+    case Kind::IMMEDIATE_ACTION:
+      return option->handler(target, args);
+    }
+
+    if (lastArg)
+      break;
+  }
+
+  if (!action)
+    return defaultAction ? defaultAction(target, nullptr) : 0;
+
+  if (prepare) {
+    if (int status = prepare(target, nullptr))
+      return status;
+  }
+
+  return action(target, actionArgs);
+}
+
+// The option for arg, such as "-sdk"; nullptr if there is none.
+const ArgumentParser::Option *
+ArgumentParser::findOption(const char *arg) const {
+  const char *name = arg + 1;
+
+  if (singleDash) {
+    if (*name == '-')
+      return nullptr;
+  } else {
+    while (*name == '-')
+      ++name;
+  }
+
+  for (const Option &option : options) {
+    if (!strcmp(name, option.name))
+      return &option;
+  }
+
+  return nullptr;
+}
+
 } // namespace program
