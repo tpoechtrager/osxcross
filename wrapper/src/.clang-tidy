@@ -1,6 +1,7 @@
-# Naming rules of the OSXCross compiler wrapper, see CODING_STYLE.md.
-# Only names are checked here, not the formatting.
-Checks: '-*,readability-identifier-naming'
+# Naming rules of the OSXCross compiler wrapper, see CODING_STYLE.md, and
+# comments that name a parameter at a call site (/*strict=*/true). The
+# formatting is not checked here.
+Checks: '-*,readability-identifier-naming,bugprone-argument-comment'
 WarningsAsErrors: ''
 HeaderFilterRegex: '.*/wrapper/.*'
 CheckOptions:

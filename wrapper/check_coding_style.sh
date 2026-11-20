@@ -2,7 +2,8 @@
 #
 # Check the sources of the wrapper (src/) against CODING_STYLE.md:
 #
-#   - names (clang-tidy, rules in .clang-tidy)
+#   - names and parameter comments such as /*strict=*/ (clang-tidy, rules
+#     in .clang-tidy)
 #   - lines longer than 80 columns
 #   - tabs and trailing whitespace
 #   - "*" without a space in front of it (Target*, char**)
@@ -33,7 +34,7 @@ report() {
   fi
 }
 
-# Names
+# Names and parameter comments
 if command -v "$CLANG_TIDY" &>/dev/null; then
   # The defines that the Makefile passes; their values do not matter here.
   FLAGS=(

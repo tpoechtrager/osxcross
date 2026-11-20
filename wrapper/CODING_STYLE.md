@@ -49,6 +49,8 @@ Exceptions:
   `Target &target`. Without a name they are still preceded by a space:
   `int version(Target *, char **)`.
 - Comments are written in English.
+- A `bool` or a literal whose meaning is not clear at the call site gets
+  the parameter name as a comment: `parseOSVersion(text, /*strict=*/true)`.
 - A namespace ends with a comment that names it: `} // namespace target`.
   An unnamed namespace ends with `} // unnamed namespace`, the term the C++
   standard uses, not "anonymous namespace".
@@ -71,6 +73,8 @@ Run [`wrapper/check_coding_style.sh`](check_coding_style.sh). It checks:
 
 - the names, with `clang-tidy` (tested with 21.1.0) and the rules in
   [`wrapper/src/.clang-tidy`](src/.clang-tidy),
+- that a comment such as `/*strict=*/` names the parameter it stands
+  for, also with `clang-tidy`,
 - lines longer than 80 columns,
 - tabs and trailing whitespace,
 - a `*` without a space in front of it,
