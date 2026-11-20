@@ -22,9 +22,10 @@
 #ifndef OSXCROSS_WRAPPER_TOOLS_JSON_H
 #define OSXCROSS_WRAPPER_TOOLS_JSON_H
 
-#include <cstddef>
 #include <string>
 #include <vector>
+
+#include <stddef.h>
 
 // A small JSON reader (RFC 8259), for files such as SDKSettings.json.
 namespace json {
@@ -57,8 +58,10 @@ struct Value {
   const Value &operator[](int index) const;
 };
 
-// Parse text, which must contain exactly one JSON value. Returns false, with
-// value reset, if text is not valid JSON or nested deeper than 64 levels.
+// Parses exactly one JSON value with at most 64 nested objects or arrays.
+// Expects UTF-8 without a byte order mark. Unescaped string bytes are copied
+// as supplied. Unicode escapes are decoded and unpaired surrogates rejected.
+// Returns false and resets value to NONE on a parse error.
 bool parse(const std::string &text, Value &value);
 
 } // namespace json

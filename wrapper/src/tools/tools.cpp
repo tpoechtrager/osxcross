@@ -61,6 +61,28 @@
 namespace tools {
 
 //
+// Misc helper tools
+//
+
+void appendUTF8(std::string &out, unsigned code) {
+  if (code < 0x80) {
+    out += static_cast<char>(code);
+  } else if (code < 0x800) {
+    out += static_cast<char>(0xC0 | (code >> 6));
+    out += static_cast<char>(0x80 | (code & 0x3F));
+  } else if (code < 0x10000) {
+    out += static_cast<char>(0xE0 | (code >> 12));
+    out += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
+    out += static_cast<char>(0x80 | (code & 0x3F));
+  } else {
+    out += static_cast<char>(0xF0 | (code >> 18));
+    out += static_cast<char>(0x80 | ((code >> 12) & 0x3F));
+    out += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
+    out += static_cast<char>(0x80 | (code & 0x3F));
+  }
+}
+
+//
 // Debugging
 //
 

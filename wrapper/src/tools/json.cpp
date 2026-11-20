@@ -21,11 +21,13 @@
 
 #include "compat.h"
 
-#include <cstring>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <string.h>
+
+#include "tools/tools.h"
 #include "tools/json.h"
 
 namespace json {
@@ -104,7 +106,7 @@ struct Parser {
       if (peek() != '"' || !parseString(key) || !consume(':'))
         return false;
 
-      value.keys.push_back(key);
+      value.keys.push_back(std::move(key));
       value.values.push_back(Value());
 
       if (!parseValue(value.values.back(), depth + 1))
@@ -203,24 +205,6 @@ struct Parser {
     return true;
   }
 
-  static void appendUTF8(std::string &out, unsigned code) {
-    if (code < 0x80) {
-      out += static_cast<char>(code);
-    } else if (code < 0x800) {
-      out += static_cast<char>(0xC0 | (code >> 6));
-      out += static_cast<char>(0x80 | (code & 0x3F));
-    } else if (code < 0x10000) {
-      out += static_cast<char>(0xE0 | (code >> 12));
-      out += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
-      out += static_cast<char>(0x80 | (code & 0x3F));
-    } else {
-      out += static_cast<char>(0xF0 | (code >> 18));
-      out += static_cast<char>(0x80 | ((code >> 12) & 0x3F));
-      out += static_cast<char>(0x80 | ((code >> 6) & 0x3F));
-      out += static_cast<char>(0x80 | (code & 0x3F));
-    }
-  }
-
   // \uXXXX, with a surrogate pair for characters above U+FFFF.
   bool parseUnicodeEscape(std::string &out) {
     unsigned code;
@@ -245,7 +229,7 @@ struct Parser {
       code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
     }
 
-    appendUTF8(out, code);
+    tools::appendUTF8(out, code);
     return true;
   }
 
@@ -316,18 +300,18 @@ bool parse(const std::string &text, Value &value) {
   Parser parser(text);
   Value result;
 
+  // Read the whole input before changing value, which may own text.
+  if (parser.parseValue(result, 0)) {
+    parser.skipSpace();
+
+    if (parser.atEnd()) {
+      value = std::move(result);
+      return true;
+    }
+  }
+
   value = Value();
-
-  if (!parser.parseValue(result, 0))
-    return false;
-
-  parser.skipSpace();
-
-  if (!parser.atEnd()) // anything after the value
-    return false;
-
-  std::swap(value, result);
-  return true;
+  return false;
 }
 
 } // namespace json

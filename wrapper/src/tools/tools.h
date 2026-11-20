@@ -46,6 +46,9 @@ size_t constexpr constexprStrLen(const char *str) {
   return *str ? 1 + constexprStrLen(str + 1) : 0;
 }
 
+// Appends the Unicode code point code to out, encoded as UTF-8.
+void appendUTF8(std::string &out, unsigned code);
+
 //
 // Debugging
 //
