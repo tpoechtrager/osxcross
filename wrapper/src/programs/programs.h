@@ -22,6 +22,7 @@
 #ifndef OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H
 #define OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H
 
+#include <cassert>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -80,9 +81,10 @@ private:
 struct ArgumentParser {
   // When the handler of an option runs.
   enum class Kind {
-    SETTING,         // while the arguments are read, e.g. -sdk
-    ACTION,          // after reading; only the last action given runs
-    IMMEDIATE_ACTION // at once; its result ends execute()
+    SETTING,          // while the arguments are read, e.g. -sdk
+    ACTION,           // after reading; only the last action given runs
+    IMMEDIATE_ACTION, // at once; its result ends execute()
+    IGNORE            // never; the option is accepted and dropped, e.g. -v
   };
 
   // What follows the option name.
@@ -105,6 +107,12 @@ struct ArgumentParser {
     Option(const char *name, Handler handler, Kind kind = Kind::SETTING,
            Value value = Value::NONE)
         : name(name), handler(handler), kind(kind), value(value) {}
+
+    // An option without a handler, e.g. {"v", Kind::IGNORE}.
+    Option(const char *name, Kind kind, Value value = Value::NONE)
+        : name(name), handler(), kind(kind), value(value) {
+      assert(kind == Kind::IGNORE);
+    }
 
     const char *name; // without the leading '-'
     Handler handler;

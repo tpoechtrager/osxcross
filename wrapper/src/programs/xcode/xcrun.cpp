@@ -136,9 +136,6 @@ int sdk(Target &, char **args) {
   return 0;
 }
 
-// Options that xcrun accepts but that change nothing here.
-int ignore(Target &, char **) { return 0; }
-
 int log(Target &, char **) {
   showCommand = true;
   return 0;
@@ -239,14 +236,14 @@ int xcrun(int argc, char **argv, Target &target) {
       {"h", help, Kind::ACTION},
       {"help", help, Kind::ACTION},
       {"version", version, Kind::ACTION},
-      {"v", ignore},
-      {"verbose", ignore},
-      {"k", ignore},
-      {"kill-cache", ignore},
-      {"n", ignore},
-      {"no-cache", ignore},
+      {"v", Kind::IGNORE},
+      {"verbose", Kind::IGNORE},
+      {"k", Kind::IGNORE},
+      {"kill-cache", Kind::IGNORE},
+      {"n", Kind::IGNORE},
+      {"no-cache", Kind::IGNORE},
       {"sdk", sdk, Kind::SETTING, Value::ONE},
-      {"toolchain", ignore, Kind::SETTING, Value::ONE},
+      {"toolchain", Kind::IGNORE, Value::ONE},
       {"l", log},
       {"log", log},
       {"f", find, Kind::ACTION, Value::ONE},

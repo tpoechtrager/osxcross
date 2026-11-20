@@ -168,7 +168,7 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
     const bool isOption = arg[0] == '-';
     const Option *option = isOption ? findOption(arg) : &positional;
 
-    if (!option || !option->handler) {
+    if (!option || (!option->handler && option->kind != Kind::IGNORE)) {
       err << program << ": unknown argument: '" << arg << "'" << err.endl();
       return usageError;
     }
@@ -220,6 +220,8 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
       break;
     case Kind::IMMEDIATE_ACTION:
       return option->handler(target, args);
+    case Kind::IGNORE:
+      break;
     }
 
     if (lastArg)
