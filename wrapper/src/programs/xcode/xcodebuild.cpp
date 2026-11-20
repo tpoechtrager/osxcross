@@ -90,6 +90,8 @@ readSystemVersion(const std::string &sdkPath) {
   for (size_t i = 0; i < root.keys.size(); ++i) {
     if (root.values[i].isString())
       values[root.keys[i]] = root.values[i].string;
+    else
+      values.erase(root.keys[i]);
   }
 
   return values;

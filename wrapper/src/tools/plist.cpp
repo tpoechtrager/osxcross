@@ -958,8 +958,6 @@ bool parse(const std::string &data, Value &value) {
   Value result;
   bool ok;
 
-  value = Value();
-
   // Newer binary formats, such as bplist15 and bplist16, are not supported.
   if (!data.compare(0, 6, "bplist")) {
     BinaryParser parser(data);
@@ -969,11 +967,12 @@ bool parse(const std::string &data, Value &value) {
     ok = parser.parseDocument(result);
   }
 
+  // value is replaced only now, as data may be part of it.
   if (!ok)
-    return false;
+    result = Value();
 
   std::swap(value, result);
-  return true;
+  return ok;
 }
 
 } // namespace plist
