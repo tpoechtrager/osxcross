@@ -401,7 +401,10 @@ struct OSVersion {
 
 static_assert(OSVersion(10, 6) != OSVersion(10, 5), "");
 
-OSVersion parseOSVersion(const char *osVer);
+// The version at the start of osVer: 10.4 for "10.4u.sdk". With strict,
+// osVer must be one to three numbers separated by dots and nothing else;
+// otherwise the result is 0.0, for example for "10.9beta" or "10,14".
+OSVersion parseOSVersion(const char *osVer, bool strict = false);
 
 typedef OSVersion GCCVersion;
 inline GCCVersion parseGCCVersion(const char *ver) {

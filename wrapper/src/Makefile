@@ -67,6 +67,7 @@ SRCS= \
  passthrough-compiler-options/options.cpp \
  tools/tools.cpp \
  tools/json.cpp \
+ tools/plist.cpp \
  target.cpp \
  programs/programs.cpp \
  programs/osxcross/osxcross-version.cpp \

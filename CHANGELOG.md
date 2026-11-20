@@ -27,6 +27,10 @@ All notable changes to OSXCross, newest first.
 
 - wrapper: `xcrun`: `-sdk` accepts any SDK directory, including a relative path or a directory not  
   named `MacOSX*.sdk`. Previously, such a directory was rejected with `'-sdk': expected macOS SDK`.
+- wrapper: SDKs before 11.0, which have no `SDKSettings.json`, now get their version from  
+  `SDKSettings.plist`. Previously, it came only from the directory name, so an SDK directory with  
+  another name, such as a plain `MacOSX.sdk`, had no version and could not be used. An invalid  
+  version in either file, such as `10.9beta`, is now ignored, and the next source is used.
 - wrapper: `xcrun`: Skips non-executable target-prefixed files when looking up a tool by name.
 - wrapper: On OpenBSD, tools can now be invoked using a relative path such as `bin/o64-clang`.
 - wrapper: `as`: With the `llvm` build flavor, the `as` shim, which invokes Clang to assemble GCC's  

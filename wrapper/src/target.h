@@ -164,6 +164,7 @@ public:
   enum class From {
     UNKNOWN_FROM,   // not set
     SETTINGS_JSON,  // SDKSettings.json
+    SETTINGS_PLIST, // SDKSettings.plist
     DIRECTORY_NAME, // the SDK directory name, e.g. MacOSX10.13.sdk
     SDK_VERSION     // derived from the SDK version, e.g. 10.13.99
   };
@@ -247,8 +248,9 @@ struct Target {
   // example, needs every SDK.
   //
   // The version comes from the SDK's SDKSettings.json; without one, from
-  // the name of the directory (15.4 for MacOSX15.4.sdk; 0.0 if the name has
-  // none). DisplayName and CanonicalName come from SDKSettings.json as well;
+  // SDKSettings.plist, and without that, from the name of the directory
+  // (15.4 for MacOSX15.4.sdk; 0.0 if the name has none). DisplayName and
+  // CanonicalName come from SDKSettings.json as well;
   // without them, they are made from the version ("macOS 15.4",
   // "macosx15.4").
   static SDKInfo readSDKInfo(const std::string &path, const char *from);

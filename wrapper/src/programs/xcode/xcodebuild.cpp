@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/plist.h"
 #include "target.h"
 #include "programs/programs.h"
 #include "programs/xcode/sdk.h"
@@ -64,74 +65,23 @@ int usage(Target &target, char **args) {
   return 1;
 }
 
-// Replace the XML entities in a plist string.
-std::string decodeXMLEntities(const std::string &text) {
-  constexpr const char *entities[][2] = {
-    {"&lt;", "<"}, {"&gt;", ">"}, {"&quot;", "\""}, {"&apos;", "'"},
-    {"&amp;", "&"}
-  };
-
-  std::string result;
-
-  for (size_t i = 0; i < text.size(); ++i) {
-    bool replaced = false;
-
-    if (text[i] == '&') {
-      for (const auto &entity : entities) {
-        const size_t len = strlen(entity[0]);
-        if (!text.compare(i, len, entity[0])) {
-          result += entity[1];
-          i += len - 1;
-          replaced = true;
-          break;
-        }
-      }
-    }
-
-    if (!replaced)
-      result += text[i];
-  }
-
-  return result;
-}
-
 // The string values of the SDK's System/Library/CoreServices/
-// SystemVersion.plist, such as ProductBuildVersion. The file is a flat
-// dictionary of strings, so looking for <key> followed by <string> is enough.
+// SystemVersion.plist, such as ProductBuildVersion, sorted by key. If a key
+// repeats, its last value counts, as with Apple's CoreFoundation.
 std::map<std::string, std::string>
 readSystemVersion(const std::string &sdkPath) {
   std::map<std::string, std::string> values;
-  std::string text;
+  std::string data;
+  plist::Value root;
 
   if (!getFileContent(sdkPath + "/System/Library/CoreServices/"
-                                "SystemVersion.plist", text))
+                                "SystemVersion.plist", data) ||
+      !plist::parse(data, root) || !root.isDict())
     return values;
 
-  size_t pos = 0;
-
-  while ((pos = text.find("<key>", pos)) != std::string::npos) {
-    pos += strlen("<key>");
-    const size_t keyEnd = text.find("</key>", pos);
-    if (keyEnd == std::string::npos)
-      break;
-
-    const std::string key = text.substr(pos, keyEnd - pos);
-    pos = keyEnd + strlen("</key>");
-
-    // Only a <string> right after the key is a value.
-    const size_t valueStart = text.find_first_not_of(" \t\r\n", pos);
-    if (valueStart == std::string::npos ||
-        text.compare(valueStart, strlen("<string>"), "<string>"))
-      continue;
-
-    pos = valueStart + strlen("<string>");
-    const size_t valueEnd = text.find("</string>", pos);
-    if (valueEnd == std::string::npos)
-      break;
-
-    values[decodeXMLEntities(key)] =
-        decodeXMLEntities(text.substr(pos, valueEnd - pos));
-    pos = valueEnd + strlen("</string>");
+  for (size_t i = 0; i < root.keys.size(); ++i) {
+    if (root.values[i].isString())
+      values[root.keys[i]] = root.values[i].string;
   }
 
   return values;

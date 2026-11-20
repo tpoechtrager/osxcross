@@ -508,16 +508,40 @@ const char *getFileName(const char *file) {
 // OSVersion
 //
 
-OSVersion parseOSVersion(const char *osVer) {
+OSVersion parseOSVersion(const char *osVer, bool strict) {
   OSVersion osNum;
+  int *const parts[] = {&osNum.major, &osNum.minor, &osNum.patch};
   const char *p = osVer;
+  bool endsWithNumber = false;
 
-  for (int *part : {&osNum.major, &osNum.minor, &osNum.patch}) {
-    *part = atoi(p);
-    if (!(p = strchr(p, '.')))
+  // Like atoi(), the lenient form skips leading whitespace and a '+', as in
+  // MACOSX_DEPLOYMENT_TARGET=" 10.9".
+  if (!strict) {
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
+      ++p;
+
+    if (*p == '+')
+      ++p;
+  }
+
+  // Up to three numbers of up to six digits, separated by dots.
+  for (int i = 0; i < 3; ++i) {
+    int digits = 0;
+
+    for (; *p >= '0' && *p <= '9' && digits < 6; ++p, ++digits)
+      *parts[i] = *parts[i] * 10 + (*p - '0');
+
+    endsWithNumber = digits > 0;
+
+    if (!endsWithNumber || *p != '.' || i == 2)
       break;
+
     ++p;
   }
+
+  // Strict: nothing may follow, not even a dot.
+  if (strict && (!endsWithNumber || *p))
+    return OSVersion();
 
   return osNum;
 }

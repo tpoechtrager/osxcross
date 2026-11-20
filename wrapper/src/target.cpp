@@ -36,6 +36,7 @@
 
 #include "tools/tools.h"
 #include "tools/json.h"
+#include "tools/plist.h"
 #include "target.h"
 
 namespace target {
@@ -128,6 +129,8 @@ static const char *getSDKValueSource(SDKInfo::From from) {
   switch (from) {
   case SDKInfo::From::SETTINGS_JSON:
     return "SDKSettings.json";
+  case SDKInfo::From::SETTINGS_PLIST:
+    return "SDKSettings.plist";
   case SDKInfo::From::DIRECTORY_NAME:
     return "SDK directory name";
   case SDKInfo::From::SDK_VERSION:
@@ -212,25 +215,29 @@ SDKInfo Target::readSDKInfo(const std::string &path, const char *from) {
 
   if (getFileContent(path + "/SDKSettings.json", settingsText) &&
       json::parse(settingsText, settings)) {
-    // "Version" is exact: MacOSX15.sdk can be 15.5.
+    // "Version" is exact: MacOSX15.sdk can be 15.5. Versions are read
+    // strictly; an invalid one such as "10.9beta" counts as not given.
     if (settings["Version"].isString())
-      sdkInfo.version.set(parseOSVersion(settings["Version"].string.c_str()),
-                          From::SETTINGS_JSON);
+      sdkInfo.version.set(
+          parseOSVersion(settings["Version"].string.c_str(), /*strict=*/true),
+          From::SETTINGS_JSON);
 
     // Minimum deployment target, e.g. "12.0" for SDK 27.3.
     const json::Value &minTarget =
         settings["SupportedTargets"]["macosx"]["MinimumDeploymentTarget"];
 
     if (minTarget.isString())
-      sdkInfo.minDeploymentTarget.set(parseOSVersion(minTarget.string.c_str()),
-                                      From::SETTINGS_JSON);
+      sdkInfo.minDeploymentTarget.set(
+          parseOSVersion(minTarget.string.c_str(), /*strict=*/true),
+          From::SETTINGS_JSON);
 
     // Maximum deployment target, e.g. "27.3.99" for SDK 27.3.
     const json::Value &maxTarget = settings["MaximumDeploymentTarget"];
 
     if (maxTarget.isString())
-      sdkInfo.maxDeploymentTarget.set(parseOSVersion(maxTarget.string.c_str()),
-                                      From::SETTINGS_JSON);
+      sdkInfo.maxDeploymentTarget.set(
+          parseOSVersion(maxTarget.string.c_str(), /*strict=*/true),
+          From::SETTINGS_JSON);
 
     if (settings["DisplayName"].isString())
       sdkInfo.displayName.set(settings["DisplayName"].string,
@@ -241,8 +248,25 @@ SDKInfo Target::readSDKInfo(const std::string &path, const char *from) {
                                 From::SETTINGS_JSON);
   }
 
-  // If SDKSettings.json doesn't provide a version, use the name of the SDK
-  // directory as fallback.
+  // SDKs before 11.0 have no SDKSettings.json, but their SDKSettings.plist
+  // states the version. Its MaximumDeploymentTarget is not used: up to SDK
+  // 10.12 it has no patch level ("10.6" instead of 10.6.99), so patch
+  // releases such as 10.6.8 would be rejected.
+  if (!sdkInfo.version.num()) {
+    std::string plistData;
+    plist::Value plistSettings;
+
+    if (getFileContent(path + "/SDKSettings.plist", plistData) &&
+        plist::parse(plistData, plistSettings) &&
+        plistSettings["Version"].isString())
+      sdkInfo.version.set(
+          parseOSVersion(plistSettings["Version"].string.c_str(),
+                         /*strict=*/true),
+          From::SETTINGS_PLIST);
+  }
+
+  // If neither file provides a version, use the name of the SDK directory
+  // as fallback.
   if (!sdkInfo.version.num())
     sdkInfo.version.set(parseSDKVersionFromDirName(path),
                         From::DIRECTORY_NAME);
@@ -354,7 +378,8 @@ bool Target::determineSDK(const std::vector<SDKSource> &sources, bool quiet) {
                       getSDKValueSource(sdk.version.from)});
     else
       rows.push_back({"version", "unknown",
-                      "neither SDKSettings.json nor the directory name"});
+                      "not in SDKSettings.json, SDKSettings.plist or the "
+                      "directory name"});
 
     if (sdk.minDeploymentTarget.num())
       rows.push_back({"min deployment target",
@@ -888,7 +913,8 @@ bool Target::setup() {
   // (0.0) they would fail with misleading messages.
   if (!sdk.version.num()) {
     err << "cannot determine the version of the macOS SDK '" << sdk.path
-        << "' (neither SDKSettings.json nor the directory name has one)"
+        << "' (neither SDKSettings.json, SDKSettings.plist nor the "
+        << "directory name has one)"
         << err.endl();
     return false;
   }
