@@ -18,6 +18,12 @@ All notable changes to OSXCross, newest first.
   `--show-sdk-version`, `xcrun` runs only the last query and uses the last `-sdk` option.
 - wrapper: When an SDK is missing, the error reports which option or environment variable selected  
   its path, for example `cannot find macOS SDK (expected in: /x, from SDKROOT)`.
+- wrapper: Deployment targets below macOS 10.6, including 10.5 patch releases such as 10.5.8, now  
+  get the same warning with every compiler: `deployment targets below macOS 10.6 are unsupported;  
+  the resulting binaries may not work`. Previously, GCC and Clang with GCC's libstdc++ stopped with  
+  an error, and 10.5 patch releases got no warning. For cctools-based flavors, a note adds that the  
+  linker may abort with an assertion. `OSXCROSS_NO_10_5_DEPRECATION_WARNING` suppresses both. For  
+  older macOS versions, the `osxcross-1.1` branch is still available and maintained.
 - wrapper: `xcodebuild`: `-version` now reports Xcode 26.6 (build 17F113) instead of 11.0.0. The SDK  
   for `-version -sdk` comes only from `-sdk`; `SDKROOT` is not used. Unknown SDK keys print nothing.  
   An unknown option, a repeated `-sdk` or an SDK that cannot be found ends with status 64, as with  

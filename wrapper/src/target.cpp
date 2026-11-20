@@ -1384,34 +1384,22 @@ bool Target::setup() {
   // Legacy deployment targets and the environment of the invoked tools
   //
 
+  if (deploymentTarget < OSVersion(10, 6) &&
+      !getenv("OSXCROSS_NO_10_5_DEPRECATION_WARNING")) {
+    warn << "deployment targets below macOS 10.6 are unsupported; "
+            "the resulting binaries may not work"
+         << warn.endl();
+
+    if (!buildFlavor.isLLVM()) {
+      note << "the linker may abort with an assertion for these targets"
+           << note.endl();
+    }
+
+    info << "use the 'osxcross-1.1' branch for older targets" << info.endl();
+  }
+
   // GCC or clang++-gstdc++: GCC's libstdc++ is used.
   const bool isGCCLibstdcxx = isGCC() || (isClang() && useGCCLibstdcxx);
-
-  if (deploymentTarget <= OSVersion(10, 5)) {
-    auto suggestOldBranch = []() {
-      info << "use 'osxcross-1.1' branch instead" << info.endl();
-    };
-
-    if (isGCCLibstdcxx) {
-      err << "building for macOS '<= 10.5' with GCC (or clang++-gstdc++) "
-             "is no longer supported" << err.endl();
-      suggestOldBranch();
-      return false;
-    }
-
-    if (isClang()) {
-      // OSXCROSS_NO_10_5_DEPRECATION_WARNING silences the warning and the
-      // hint.
-      if (!getenv("OSXCROSS_NO_10_5_DEPRECATION_WARNING")) {
-        warn << "building for macOS '<= 10.5' "
-                "is no longer supported" << warn.endl();
-        suggestOldBranch();
-      }
-    } else {
-      // Unknown compiler: only the hint.
-      suggestOldBranch();
-    }
-  }
 
   if (buildFlavor.isLLVM() && isGCC()) {
     // The LLVM as wrapper needs GCC's selected deployment target and SDK.
