@@ -229,7 +229,7 @@ int addKey(Target &, char **args) {
   return 0;
 }
 
-} // anonymous namespace
+} // unnamed namespace
 
 int xcodebuild(int argc, char **argv, Target &target) {
   using Kind = ArgumentParser::Kind;

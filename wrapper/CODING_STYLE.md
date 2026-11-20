@@ -49,6 +49,9 @@ Exceptions:
   `Target &target`. Without a name they are still preceded by a space:
   `int version(Target *, char **)`.
 - Comments are written in English.
+- A namespace ends with a comment that names it: `} // namespace target`.
+  An unnamed namespace ends with `} // unnamed namespace`, the term the C++
+  standard uses, not "anonymous namespace".
 - New files start with the license header of the other files, with the
   year the file was created.
 

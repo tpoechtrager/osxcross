@@ -41,7 +41,7 @@ void print(const char *var, const A &val) {
             << std::endl;
 }
 
-} // anonymous namespace
+} // unnamed namespace
 
 int conf(int, char **, Target &target) {
   OSVersion osxVersionMin = getDefaultDeploymentTarget();

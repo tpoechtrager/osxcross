@@ -60,7 +60,7 @@ EnvVar &var(const char *p, EnvVar &envVar, const bool skipVal = false) {
   return envVar;
 }
 
-} // anonymous namespace
+} // unnamed namespace
 
 int pkg_config(int argc, char **argv, Target &target) {
   std::vector<EnvVar> envVars;

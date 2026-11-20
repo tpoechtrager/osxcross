@@ -208,7 +208,7 @@ int prepare(Target &target, char **) {
   return determineSDK(target, sdkOption) ? 0 : 1;
 }
 
-} // anonymous namespace
+} // unnamed namespace
 
 int xcrun(int argc, char **argv, Target &target) {
   isStandaloneXcrun = !endsWith(argv[0], "-xcrun");
