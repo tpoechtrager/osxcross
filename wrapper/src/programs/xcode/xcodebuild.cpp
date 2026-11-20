@@ -31,6 +31,7 @@
 #include "tools/plist.h"
 #include "target.h"
 #include "programs/programs.h"
+#include "programs/argument-parser.h"
 #include "programs/xcode/sdk.h"
 
 using namespace tools;

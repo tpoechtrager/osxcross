@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
 
@@ -88,7 +89,7 @@ int man(int argc, char **argv, Target &target) {
     args.push_back(arg);
   }
 
-  return execProgram(args[0], args);
+  return process::execProgram(args[0], args);
 }
 
 } // namespace host

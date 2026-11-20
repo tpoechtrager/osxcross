@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
 
@@ -128,8 +129,8 @@ int pkg_config(int argc, char **argv, Target &target) {
     if (!getenv("PKG_CONFIG_LIBDIR"))
       setenv("PKG_CONFIG_LIBDIR", "", 1);
 
-    return execProgram("pkg-config",
-                       std::vector<std::string>(argv, argv + argc));
+    return process::execProgram("pkg-config",
+                                std::vector<std::string>(argv, argv + argc));
   }
 
   warn << argv[0] << " is a no-op - please see README.PKG-CONFIG.md for more"

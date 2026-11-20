@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
 #include "programs/xcode/sdk.h"
@@ -36,6 +37,8 @@ namespace llvm {
 namespace clang {
 
 using tools::err;
+using tools::process::execProgram;
+using tools::process::printExecProgramArgs;
 
 // This assembler wrapper is specific to the LLVM build flavor. It translates
 // Darwin as(1) arguments for Clang's integrated assembler and must not be used

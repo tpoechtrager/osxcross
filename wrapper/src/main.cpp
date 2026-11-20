@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
 #include "passthrough-compiler-options/options.h"
@@ -694,7 +695,7 @@ int main(int argc, char **argv) {
     compilerArgs.insert(compilerArgs.end(), target.userArgs.begin(),
                         target.userArgs.end());
 
-    program::execProgram(target.compilerPath, compilerArgs);
+    process::execProgram(target.compilerPath, compilerArgs);
 
     if (!debug)
       printCommand();

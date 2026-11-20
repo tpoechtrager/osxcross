@@ -22,10 +22,10 @@
 #ifndef OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H
 #define OSXCROSS_WRAPPER_PROGRAMS_PROGRAMS_H
 
-#include <cassert>
 #include <cstdlib>
 #include <string>
-#include <vector>
+
+#include "tools/process.h"
 
 namespace target {
 struct Target;
@@ -34,21 +34,6 @@ struct Target;
 namespace program {
 
 using target::Target;
-
-// Execute path (looked up in PATH if it contains no slash) with args;
-// args[0] is the name the program sees as argv[0]. Only returns on failure,
-// after printing an error message, and then returns 1.
-int execProgram(const std::string &path,
-                const std::vector<std::string> &args);
-
-// Same, with argv[1] to argv[argc - 1] as arguments; the program sees path
-// as argv[0].
-int execProgram(const std::string &path, int argc, char **argv);
-
-// Debug output: the original command line (argv) and the one passed to
-// execProgram() (args).
-void printExecProgramArgs(int argc, char **argv,
-                          const std::vector<std::string> &args);
 
 // A program the wrapper provides: either a built-in function or an LLVM
 // tool that is executed with the same arguments.
@@ -67,7 +52,7 @@ public:
     if (fun)
       exit(fun(argc, argv, target));
 
-    exit(execProgram(tool, argc, argv));
+    exit(tools::process::execProgram(tool, argc, argv));
   }
 
   const char *name;
@@ -75,77 +60,6 @@ public:
 private:
   Function fun;
   const char *tool;
-};
-
-// Reads the command line of a program and runs the handlers of its options.
-struct ArgumentParser {
-  // When the handler of an option runs.
-  enum class Kind {
-    SETTING,          // while the arguments are read, e.g. -sdk
-    ACTION,           // after reading; only the last action given runs
-    FALLBACK_ACTION,  // after reading, only if no ACTION is given; only the
-                      // last one runs, e.g. xcrun -f
-    IMMEDIATE_ACTION, // at once; its result ends execute()
-    IGNORE            // never; the option is accepted and dropped, e.g. -v
-  };
-
-  // What follows the option name.
-  enum class Value {
-    NONE,     // nothing, e.g. -version
-    ONE,      // one argument, e.g. -sdk <sdk>
-    OPTIONAL, // one argument if the next one is not an option; otherwise
-              // the handler gets nullptr
-    REST,     // all remaining arguments, at least one; reading stops
-    OPERAND   // for a fallback action, the next operand, also after other
-              // options, e.g. xcrun -f; nullptr if none follows
-  };
-
-  // Gets the arguments that follow the option name (nullptr for
-  // Value::OPTIONAL and OPERAND without one) and returns an exit status. A
-  // setting that returns anything but 0 ends execute() with that status.
-  typedef int (*Handler)(Target &target, char **args);
-
-  struct Option {
-    Option() : name(), handler(), kind(Kind::SETTING), value(Value::NONE) {}
-
-    Option(const char *name, Handler handler, Kind kind = Kind::SETTING,
-           Value value = Value::NONE)
-        : name(name), handler(handler), kind(kind), value(value) {}
-
-    // An option without a handler, e.g. {"v", Kind::IGNORE}.
-    Option(const char *name, Kind kind, Value value = Value::NONE)
-        : name(name), handler(), kind(kind), value(value) {
-      assert(kind == Kind::IGNORE);
-    }
-
-    const char *name; // without the leading '-'
-    Handler handler;
-    Kind kind;
-    Value value;
-  };
-
-  // Reads argv[1] to argv[argc - 1] and runs the handlers. Returns the exit
-  // status of the program.
-  int execute(int argc, char **argv, Target &target) const;
-
-  const char *program;         // the program name in error messages
-  int usageError;              // exit status for an unknown option or a
-                               // missing argument
-  bool singleDash;             // options take one '-' only; otherwise any
-                               // number, as in --sdk
-  std::vector<Option> options;
-  Option operand;              // handles the operands, the arguments that
-                               // do not start with '-'; its handler gets
-                               // the operand itself, and with Value::REST
-                               // also all following arguments. As an
-                               // action, it must not follow another action
-                               // or an operand
-  Handler prepare;             // runs before the action; nullptr: nothing
-  Handler defaultAction;       // runs if no action was given; nullptr:
-                               // execute() returns 0
-
-private:
-  const Option *findOption(const char *arg) const;
 };
 
 namespace macos {

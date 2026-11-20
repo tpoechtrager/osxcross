@@ -68,8 +68,10 @@ SRCS= \
  tools/tools.cpp \
  tools/json.cpp \
  tools/plist.cpp \
+ tools/process.cpp \
  target.cpp \
  programs/programs.cpp \
+ programs/argument-parser.cpp \
  programs/osxcross/osxcross-version.cpp \
  programs/osxcross/osxcross-env.cpp \
  programs/osxcross/osxcross-conf.cpp \

@@ -34,6 +34,7 @@
 #include "tools/tools.h"
 #include "tools/plist.h"
 
+namespace tools {
 namespace plist {
 namespace {
 
@@ -421,7 +422,7 @@ struct XMLParser {
           (code >= 0xD800 && code <= 0xDFFF))
         return false;
 
-      tools::appendUTF8(out, static_cast<unsigned>(code));
+      appendUTF8(out, static_cast<unsigned>(code));
     } else {
       return false;
     }
@@ -920,7 +921,7 @@ struct BinaryParser {
         code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
       }
 
-      tools::appendUTF8(out, code);
+      appendUTF8(out, code);
     }
 
     return true;
@@ -976,3 +977,4 @@ bool parse(const std::string &data, Value &value) {
 }
 
 } // namespace plist
+} // namespace tools

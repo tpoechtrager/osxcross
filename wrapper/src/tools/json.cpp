@@ -30,6 +30,7 @@
 #include "tools/tools.h"
 #include "tools/json.h"
 
+namespace tools {
 namespace json {
 namespace {
 
@@ -229,7 +230,7 @@ struct Parser {
       code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
     }
 
-    tools::appendUTF8(out, code);
+    appendUTF8(out, code);
     return true;
   }
 
@@ -317,3 +318,4 @@ bool parse(const std::string &text, Value &value) {
 }
 
 } // namespace json
+} // namespace tools

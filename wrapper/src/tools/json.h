@@ -28,6 +28,7 @@
 #include <stddef.h>
 
 // A small JSON reader (RFC 8259), for files such as SDKSettings.json.
+namespace tools {
 namespace json {
 
 // A JSON value. Objects and arrays own their children.
@@ -65,5 +66,6 @@ struct Value {
 bool parse(const std::string &text, Value &value);
 
 } // namespace json
+} // namespace tools
 
 #endif // OSXCROSS_WRAPPER_TOOLS_JSON_H

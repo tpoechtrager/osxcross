@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
 
@@ -37,6 +38,8 @@ namespace program {
 namespace llvm {
 
 using tools::err;
+using tools::process::execProgram;
+using tools::process::printExecProgramArgs;
 
 // This linker wrapper is specific to the LLVM build flavor. It translates
 // Apple ld64 arguments for ld64.lld and must not be used by the cctools-based

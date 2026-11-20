@@ -28,6 +28,7 @@
 
 // A reader for Apple's property lists, in XML and in the binary format
 // (bplist00), for files such as SDKSettings.plist and SystemVersion.plist.
+namespace tools {
 namespace plist {
 
 // A property list value. Dictionaries and arrays own their children.
@@ -86,5 +87,6 @@ struct Value {
 bool parse(const std::string &data, Value &value);
 
 } // namespace plist
+} // namespace tools
 
 #endif // OSXCROSS_WRAPPER_TOOLS_PLIST_H

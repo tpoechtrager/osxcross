@@ -35,6 +35,7 @@
 #include <unistd.h>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "tools/json.h"
 #include "tools/plist.h"
 #include "target.h"
@@ -744,7 +745,8 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
 
   std::string resourceDir;
 
-  if (!getProgramOutput({compilerPath, "-print-resource-dir"}, resourceDir))
+  if (!process::getProgramOutput({compilerPath, "-print-resource-dir"},
+                                 resourceDir))
     return warnHeadersNotFound("'" + compilerPath +
                                " -print-resource-dir' failed");
 
@@ -777,7 +779,7 @@ bool Target::findClangIntrinsicHeadersAndVersion(std::string &path) {
     };
     std::string version;
 
-    if (!getProgramOutput({compilerPath, "--version"}, version)) {
+    if (!process::getProgramOutput({compilerPath, "--version"}, version)) {
       warnVersionNotFound("'" + compilerPath + " --version' failed");
     } else {
       for (const char *needle : Needles) {

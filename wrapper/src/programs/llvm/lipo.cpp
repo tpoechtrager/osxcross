@@ -25,6 +25,7 @@
 #include <string>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
 
@@ -32,6 +33,7 @@ namespace program {
 namespace llvm {
 
 using tools::err;
+using tools::process::execProgram;
 
 int lipo(int argc, char **argv, target::Target &target) {
   if (!target.buildFlavor.isLLVM()) {

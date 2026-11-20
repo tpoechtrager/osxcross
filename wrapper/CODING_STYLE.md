@@ -27,6 +27,12 @@ More rules:
   elsewhere in upper case (`getSDKPath()`, `isGCC()`, `requiredSDK`).
 - **"stdlib"** is one word, as in the option `-stdlib=`: `Stdlib`,
   `getStdlibString()`, `stdlibName`.
+- **Namespaces follow the directories:** the code in `tools/` is in
+  `tools`, the code in `programs/` in `program`, and a subdirectory such
+  as `programs/xcode/` in `program::xcode`. Each file in `tools/` except
+  `tools.h` and `tools.cpp` has a namespace of its own, named after the
+  file: `tools/json.h` is `tools::json`, `tools/process.h` is
+  `tools::process`.
 - **Members have no marker** (no `m_` prefix, no `_` suffix).
 - **"unknown" enumerators** carry the name of their enum, so that the
   unscoped enums do not clash in a namespace.

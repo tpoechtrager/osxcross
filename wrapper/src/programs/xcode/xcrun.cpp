@@ -28,8 +28,10 @@
 #include <vector>
 
 #include "tools/tools.h"
+#include "tools/process.h"
 #include "target.h"
 #include "programs/programs.h"
+#include "programs/argument-parser.h"
 #include "programs/xcode/sdk.h"
 
 using namespace tools;
@@ -189,7 +191,7 @@ int run(Target &target, char **args) {
     std::cout << std::endl;
   }
 
-  execProgram(programArgs[0], programArgs);
+  process::execProgram(programArgs[0], programArgs);
   exit(1);
 
   // Silence -Wreturn-type warnings in case exit() is not marked as
