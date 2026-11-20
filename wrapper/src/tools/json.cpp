@@ -280,9 +280,11 @@ struct Parser {
 
 const Value &Value::operator[](const char *key) const {
   if (type == OBJECT) {
-    for (size_t i = 0; i < keys.size(); ++i) {
-      if (keys[i] == key)
-        return values[i];
+    // The last member with this key counts, as with Clang and Apple's
+    // CoreFoundation.
+    for (size_t i = keys.size(); i > 0; --i) {
+      if (keys[i - 1] == key)
+        return values[i - 1];
     }
   }
 

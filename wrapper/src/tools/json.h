@@ -50,7 +50,7 @@ struct Value {
   // The number of members (OBJECT) or elements (ARRAY).
   size_t size() const { return values.size(); }
 
-  // The member with this key (the first one if the key repeats), or the
+  // The member with this key (the last one if the key repeats), or the
   // element at this index. A NONE value if there is none, so lookups can be
   // chained: root["SupportedTargets"]["macosx"]["Archs"][0].string
   // (The index is an int, so that [0] is not ambiguous with a null key.)
