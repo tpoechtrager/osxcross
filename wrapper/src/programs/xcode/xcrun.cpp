@@ -39,6 +39,9 @@ namespace program {
 namespace xcode {
 namespace {
 
+// Like Apple's xcrun, errors in the options exit with 64.
+constexpr int UsageError = 64;
+
 bool isStandaloneXcrun = false;
 bool showCommand = false;
 
@@ -141,7 +144,17 @@ int log(Target &, char **) {
   return 0;
 }
 
+// No tool name, as in "xcrun -f", "xcrun -r" or "xcrun -sdk macosx".
+int noToolName(Target &, char **) {
+  err << "xcrun: no utility name specified" << err.endl();
+  return UsageError;
+}
+
+// args is nullptr for "-f" without a tool name.
 int find(Target &target, char **args) {
+  if (!args)
+    return noToolName(target, args);
+
   const std::string toolName = args[0];
   std::string toolPath;
   if (!getToolPath(target, toolPath, toolName))
@@ -230,12 +243,12 @@ int xcrun(int argc, char **argv, Target &target) {
   using Value = ArgumentParser::Value;
 
   const ArgumentParser parser = {
-    "xcrun", 2,
+    "xcrun", UsageError,
     false, // -sdk and --sdk alike
     {
-      {"h", help, Kind::ACTION},
-      {"help", help, Kind::ACTION},
-      {"version", version, Kind::ACTION},
+      {"h", help, Kind::IMMEDIATE_ACTION},
+      {"help", help, Kind::IMMEDIATE_ACTION},
+      {"version", version, Kind::IMMEDIATE_ACTION},
       {"v", Kind::IGNORE},
       {"verbose", Kind::IGNORE},
       {"k", Kind::IGNORE},
@@ -246,10 +259,12 @@ int xcrun(int argc, char **argv, Target &target) {
       {"toolchain", Kind::IGNORE, Value::ONE},
       {"l", log},
       {"log", log},
-      {"f", find, Kind::ACTION, Value::ONE},
-      {"find", find, Kind::ACTION, Value::ONE},
-      {"r", run, Kind::ACTION, Value::REST},
-      {"run", run, Kind::ACTION, Value::REST},
+      {"f", find, Kind::FALLBACK_ACTION, Value::OPERAND},
+      {"find", find, Kind::FALLBACK_ACTION, Value::OPERAND},
+      // Runs the tool named by the operand, which is the default. Before
+      // the operand, -r cancels -f; after it, -r alone is left and fails.
+      {"r", noToolName, Kind::FALLBACK_ACTION},
+      {"run", noToolName, Kind::FALLBACK_ACTION},
       {"show-sdk-path", showSDKPath, Kind::ACTION},
       {"show-sdk-version", showSDKVersion, Kind::ACTION},
       {"show-sdk-platform-version", showSDKVersion, Kind::ACTION},
@@ -258,12 +273,12 @@ int xcrun(int argc, char **argv, Target &target) {
     // A program name, as in "xcrun clang ...": the remaining arguments
     // belong to the program.
     {nullptr, run, Kind::ACTION, Value::REST},
-    prepare, nullptr
+    prepare, noToolName
   };
 
   if (argc == 1) {
     help(target, nullptr);
-    return 1;
+    return UsageError;
   }
 
   return parser.execute(argc, argv, target);

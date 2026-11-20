@@ -160,21 +160,39 @@ const Prog *getProg(const std::string &name) {
 //
 
 int ArgumentParser::execute(int argc, char **argv, Target &target) const {
-  Handler action = nullptr; // the last action given
+  const Option *action = nullptr;   // the last action given
   char **actionArgs = nullptr;
+  const Option *fallback = nullptr; // the last fallback action given
+  char **fallbackArgs = nullptr;
+  char **givenOperand = nullptr;    // the operand of a fallback action
 
   for (int i = 1; i < argc; ++i) {
     const char *arg = argv[i];
     const bool isOption = arg[0] == '-';
-    const Option *option = isOption ? findOption(arg) : &positional;
+    const Option *option = isOption ? findOption(arg) : &operand;
+
+    // The operand of a fallback action such as -f in "xcrun -f -sdk macosx
+    // clang".
+    if (!isOption && fallback && fallback->value == Value::OPERAND &&
+        !fallbackArgs) {
+      fallbackArgs = givenOperand = &argv[i];
+      continue;
+    }
 
     if (!option || (!option->handler && option->kind != Kind::IGNORE)) {
       err << program << ": unknown argument: '" << arg << "'" << err.endl();
       return usageError;
     }
 
-    // A positional argument is its own value; the values of an option
-    // follow it.
+    // An argument such as "true" in "xcrun -f clang true" would be a second
+    // operand or action.
+    if (!isOption && option->kind == Kind::ACTION &&
+        (action || givenOperand)) {
+      err << program << ": unexpected argument: '" << arg << "'" << err.endl();
+      return usageError;
+    }
+
+    // An operand is its own value; the values of an option follow it.
     char **args = isOption ? &argv[i + 1] : &argv[i];
     const int numArgs = isOption ? argc - i - 1 : argc - i;
     bool lastArg = false;
@@ -193,7 +211,7 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
         ++i;
       break;
     case Value::OPTIONAL:
-      if (!numArgs)
+      if (!numArgs || (isOption && args[0][0] == '-'))
         args = nullptr;
       else if (isOption)
         ++i;
@@ -207,6 +225,9 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
 
       lastArg = true;
       break;
+    case Value::OPERAND:
+      args = nullptr; // taken from a later argument
+      break;
     }
 
     switch (option->kind) {
@@ -215,8 +236,16 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
         return status;
       break;
     case Kind::ACTION:
-      action = option->handler;
+      action = option;
       actionArgs = args;
+      break;
+    case Kind::FALLBACK_ACTION:
+      // An operand given before stays, as in "xcrun -f clang -f ld".
+      if (option->value == Value::OPERAND && givenOperand)
+        break;
+
+      fallback = option;
+      fallbackArgs = args;
       break;
     case Kind::IMMEDIATE_ACTION:
       return option->handler(target, args);
@@ -228,6 +257,13 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
       break;
   }
 
+  // An action comes first, as --show-sdk-path in "xcrun --show-sdk-path -f
+  // clang".
+  if (!action) {
+    action = fallback;
+    actionArgs = fallbackArgs;
+  }
+
   if (!action)
     return defaultAction ? defaultAction(target, nullptr) : 0;
 
@@ -236,7 +272,7 @@ int ArgumentParser::execute(int argc, char **argv, Target &target) const {
       return status;
   }
 
-  return action(target, actionArgs);
+  return action->handler(target, actionArgs);
 }
 
 // The option for arg, such as "-sdk"; nullptr if there is none.

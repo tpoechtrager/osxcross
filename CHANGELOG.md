@@ -26,8 +26,13 @@ All notable changes to OSXCross, newest first.
   older macOS versions, the `osxcross-1.1` branch is still available and maintained.
 - wrapper: `xcodebuild`: `-version` now reports Xcode 26.6 (build 17F113) instead of 11.0.0. The SDK  
   for `-version -sdk` comes only from `-sdk`; `SDKROOT` is not used. Unknown SDK keys print nothing.  
-  An unknown option, a repeated `-sdk` or an SDK that cannot be found ends with status 64, as with  
-  Apple's xcodebuild.
+  An unknown option, a second `-sdk` with a value or an SDK that cannot be found ends with status  
+  64, as with Apple's xcodebuild.
+- wrapper: `xcrun`: Follows Apple's command-line handling more closely. Extra arguments after  
+  `-f <tool>` or after a query such as `--show-sdk-path` are rejected, as is a call with neither a  
+  tool nor a query, such as `xcrun -sdk macosx`. Usage errors exit with status 64. The tool name no  
+  longer has to follow `-f` directly: `xcrun -f -sdk macosx clang` finds `clang`. `xcrun --version`  
+  and `xcrun -h` no longer need an SDK.
 
 ### Fixed
 

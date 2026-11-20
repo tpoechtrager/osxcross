@@ -43,8 +43,9 @@ namespace {
 // Like Apple's xcodebuild, errors in the options exit with 64.
 constexpr int UsageError = 64;
 
-// Like Apple's xcodebuild, the options are read first, then the last action
-// runs. Arguments that are not options are keys for -version.
+// Like Apple's xcodebuild, the options are read first, then the action runs;
+// -version comes before -help and -license. Arguments that are not options
+// are keys for -version.
 const char *sdkOption = nullptr; // nullptr: -sdk not given
 std::vector<const char *> keys;  // arguments that are not options
 
@@ -61,6 +62,13 @@ int help(Target &, char **) {
 
 // Without an action, print the help and fail.
 int usage(Target &target, char **args) {
+  // As with Apple's xcodebuild, -sdk without a value needs -version.
+  if (sdkOption && !*sdkOption) {
+    err << "xcodebuild: -sdk must be supplied with an argument unless used "
+           "with -version" << err.endl();
+    return UsageError;
+  }
+
   help(target, args);
   return 1;
 }
@@ -150,7 +158,14 @@ int version(Target &target, char **) {
   return sdkInfo(target);
 }
 
+// args is nullptr for "-license" without a value. Apple's xcodebuild then
+// shows the license; here, it is an error.
 int license(Target &, char **args) {
+  if (!args) {
+    err << "xcodebuild: only '-license check' is supported" << err.endl();
+    return UsageError;
+  }
+
   if (strcmp(args[0], "check")) {
     err << "xcodebuild: unsupported license action: '" << args[0] << "'"
         << err.endl();
@@ -163,14 +178,21 @@ int license(Target &, char **args) {
 }
 
 // args is nullptr for "-sdk" without a value. Apple's xcodebuild then prints
-// all SDKs; here, it selects the default SDK.
+// all SDKs; here, it selects the default SDK. As with Apple's xcodebuild,
+// only a second -sdk with a value is an error.
 int sdk(Target &, char **args) {
-  if (sdkOption) {
+  if (!args) {
+    if (!sdkOption)
+      sdkOption = "";
+    return 0;
+  }
+
+  if (sdkOption && *sdkOption) {
     err << "xcodebuild: option '-sdk' may only be provided once" << err.endl();
     return UsageError;
   }
 
-  sdkOption = args ? args[0] : "";
+  sdkOption = args[0];
   return 0;
 }
 
@@ -191,9 +213,9 @@ int xcodebuild(int argc, char **argv, Target &target) {
     {
       {"version", version, Kind::ACTION},
       {"sdk", sdk, Kind::SETTING, Value::OPTIONAL},
-      {"license", license, Kind::ACTION, Value::ONE},
-      {"help", help, Kind::ACTION},
-      {"usage", help, Kind::ACTION}
+      {"license", license, Kind::FALLBACK_ACTION, Value::OPTIONAL},
+      {"help", help, Kind::FALLBACK_ACTION},
+      {"usage", help, Kind::FALLBACK_ACTION}
     },
     {nullptr, addKey},
     nullptr, usage

@@ -83,6 +83,8 @@ struct ArgumentParser {
   enum class Kind {
     SETTING,          // while the arguments are read, e.g. -sdk
     ACTION,           // after reading; only the last action given runs
+    FALLBACK_ACTION,  // after reading, only if no ACTION is given; only the
+                      // last one runs, e.g. xcrun -f
     IMMEDIATE_ACTION, // at once; its result ends execute()
     IGNORE            // never; the option is accepted and dropped, e.g. -v
   };
@@ -91,14 +93,16 @@ struct ArgumentParser {
   enum class Value {
     NONE,     // nothing, e.g. -version
     ONE,      // one argument, e.g. -sdk <sdk>
-    OPTIONAL, // one argument if there is one; otherwise the handler gets
-              // nullptr
-    REST      // all remaining arguments, at least one; reading stops
+    OPTIONAL, // one argument if the next one is not an option; otherwise
+              // the handler gets nullptr
+    REST,     // all remaining arguments, at least one; reading stops
+    OPERAND   // for a fallback action, the next operand, also after other
+              // options, e.g. xcrun -f; nullptr if none follows
   };
 
   // Gets the arguments that follow the option name (nullptr for
-  // Value::OPTIONAL without one) and returns an exit status. A setting
-  // that returns anything but 0 ends execute() with that status.
+  // Value::OPTIONAL and OPERAND without one) and returns an exit status. A
+  // setting that returns anything but 0 ends execute() with that status.
   typedef int (*Handler)(Target &target, char **args);
 
   struct Option {
@@ -130,10 +134,12 @@ struct ArgumentParser {
   bool singleDash;             // options take one '-' only; otherwise any
                                // number, as in --sdk
   std::vector<Option> options;
-  Option positional;           // handles the arguments that do not start
-                               // with '-'; its handler gets the argument
-                               // itself, and with Value::REST also all
-                               // following ones
+  Option operand;              // handles the operands, the arguments that
+                               // do not start with '-'; its handler gets
+                               // the operand itself, and with Value::REST
+                               // also all following arguments. As an
+                               // action, it must not follow another action
+                               // or an operand
   Handler prepare;             // runs before the action; nullptr: nothing
   Handler defaultAction;       // runs if no action was given; nullptr:
                                // execute() returns 0
