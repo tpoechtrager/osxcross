@@ -28,6 +28,7 @@
 
 #include "tools/tools.h"
 #include "tools/process.h"
+#include "tools/response-file.h"
 #include "target.h"
 #include "programs/programs.h"
 #include "programs/xcode/sdk.h"
@@ -51,6 +52,17 @@ int as(int argc, char **argv, target::Target &target) {
     return 1;
   }
 
+  // Options in response files (@<file>) apply as well, as with Apple's as,
+  // which reads them as clang does. The clang wrapper below reads the files
+  // again if they are passed on and prints the warnings for files left
+  // unread.
+  tools::responsefile::ExpandedArgs expanded;
+
+  if (!tools::responsefile::expand(argc, argv,
+                                   tools::responsefile::Syntax::CLANG, expanded,
+                                   /*printWarnings=*/false))
+    return 1;
+
   // as is an Xcode tool: read SDKROOT as xcrun does, so that a relative
   // path or a name such as "macosx" works, and pass the SDK on to the clang
   // wrapper below.
@@ -67,8 +79,8 @@ int as(int argc, char **argv, target::Target &target) {
   bool outputSpecified = false;
   std::vector<const char *> givenArgs;
 
-  for (int i = 1; i < argc; ++i) {
-    const char *arg = argv[i];
+  for (int i = 1; i < expanded.argc; ++i) {
+    const char *arg = expanded.argv[i];
 
     // Darwin's as driver accepts -Q/-q, but they have no useful equivalent
     // for Clang's integrated assembler. Forwarding them would make Clang fail.
@@ -79,11 +91,11 @@ int as(int argc, char **argv, target::Target &target) {
     // as(1) accepts these options as two arguments, for example "-o out.o".
     if ((!strcmp(arg, "-o") || !strcmp(arg, "-I") ||
          !strcmp(arg, "-arch")) &&
-        i + 1 < argc) {
+        i + 1 < expanded.argc) {
       if (!strcmp(arg, "-o"))
         outputSpecified = true;
-      givenArgs.push_back(argv[i]);
-      givenArgs.push_back(argv[++i]);
+      givenArgs.push_back(expanded.argv[i]);
+      givenArgs.push_back(expanded.argv[++i]);
       continue;
     }
 
@@ -92,7 +104,7 @@ int as(int argc, char **argv, target::Target &target) {
     if (!strcmp(arg, "--") || !strcmp(arg, "-") || arg[0] != '-')
       someInputFiles = true;
 
-    givenArgs.push_back(argv[i]);
+    givenArgs.push_back(expanded.argv[i]);
   }
 
   // Run the clang wrapper for the same target, for example
@@ -141,6 +153,9 @@ int as(int argc, char **argv, target::Target &target) {
 
   if (debug)
     printExecProgramArgs(argc, argv, args);
+
+  if (expanded.fileExpanded)
+    return tools::responsefile::execProgram(clang, args);
 
   return execProgram(clang, args);
 }

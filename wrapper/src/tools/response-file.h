@@ -30,13 +30,22 @@
 namespace tools {
 namespace responsefile {
 
-// How a program splits a response file into arguments. Both split at
-// whitespace and accept single quotes, double quotes and backslash escapes.
-// LLVM tools such as clang and ld64.lld take the character after a
-// backslash literally, also in quotes. GCC 15 changed how it reads some
-// backslashes; GCC stands for the rules that all GCC versions share, and a
-// file that depends on the version is left to GCC.
-enum class Syntax { GCC, LLVM };
+// The program that reads the response files, which decides how they are
+// split into arguments. All split at whitespace and accept single quotes,
+// double quotes and backslash escapes. Clang and ld64.lld use the rules of
+// LLVM: they take the character after a backslash literally, also in
+// quotes. GCC 15 changed how it reads some backslashes; GCC stands for the
+// rules that all GCC versions share, and a file that depends on the version
+// is left to GCC.
+enum class Syntax { GCC, CLANG, LLD };
+
+// Arguments after expand(), in the form main() gets them: argv[0] to
+// argv[argc - 1], followed by a null pointer.
+struct ExpandedArgs {
+  int argc;
+  char **argv;
+  bool fileExpanded; // a response file was replaced with its arguments
+};
 
 // Replaces each argument @<file> in argv[1] to argv[argc - 1] with the
 // arguments in <file>, recursively, as the program that reads the
@@ -46,15 +55,19 @@ enum class Syntax { GCC, LLVM };
 // "-Wl,@<file>" and other arguments that do not start with '@'. It also
 // stays, with a warning, if the wrapper cannot read <file> the way the
 // program does: a GCC response file whose meaning depends on the GCC
-// version, or a FIFO or UTF-16 file for clang.
+// version, or a FIFO or UTF-16 file for clang and ld64.lld. With
+// printWarnings set to false, these warnings are left to the program that
+// gets the arguments, for a wrapper that passes them on to another osxcross
+// wrapper, which reads them again.
 //
-// If a file was replaced with its arguments, argc and argv are set to the
-// expanded arguments, which stay valid until the program exits and end with
-// a null pointer, and expanded is set to true. Otherwise, argc, argv and
-// expanded are not changed. Returns false after printing an error if a
-// response file includes itself, the files are nested too deeply, or clang
-// would read them with Windows rules.
-bool expand(int &argc, char **&argv, Syntax syntax, bool &expanded);
+// Stores the result in expanded; argc and argv are not changed. If no file
+// was replaced with its arguments, expanded holds argc and argv. Otherwise,
+// it points to new arguments, which stay valid until the program exits.
+// Returns false after printing an error if a response file includes
+// itself, the files are nested too deeply, or clang would read them with
+// Windows rules.
+bool expand(int argc, char **argv, Syntax syntax, ExpandedArgs &expanded,
+            bool printWarnings = true);
 
 // Like process::execProgram(), but passes args[1..] in a temporary
 // response file, so that a long command line stays within the system's

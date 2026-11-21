@@ -6,11 +6,21 @@ All notable changes to OSXCross, newest first.
 
 ### Added
 
-- wrapper: Response files (`@file`) given to the compiler are now read, so options such as `-arch`,  
-  `-isysroot` and `-mmacosx-version-min` in them take effect. The compiler then gets all arguments  
-  in one temporary response file. GCC response files that GCC 14 and GCC 15 read differently, and  
-  UTF-16 files and FIFOs for Clang, are passed on unread with a warning. Response files with  
-  Windows quoting (`--rsp-quoting=windows`, `--driver-mode=cl`) are rejected.
+- wrapper: The compiler wrapper now reads response files (`@file`), so options such as `-arch`,  
+  `-isysroot` and `-mmacosx-version-min` take effect when build systems like CMake and Ninja put  
+  them in a file to stay within command-line length limits. After expanding a response file, the  
+  wrapper passes all arguments to the compiler in a single temporary response file.
+  - With the `llvm` flavor, the `as` and `ld` shims also read response files. This lets `as` honor  
+    `-o` in the file and lets `ld` handle options such as `-macos_version_min` and `-ld_classic`  
+    before invoking `ld64.lld`.
+  - This implementation has limitations that are unlikely to affect typical macOS cross-builds:
+    - The wrapper passes UTF-16 response files and FIFOs through to Clang and `ld64.lld`. It does  
+      the same for GCC response files that GCC 14 and GCC 15 interpret differently. In each case,  
+      it prints a warning, and options in the file do not affect the wrapper.
+    - The wrapper rejects Clang response files when `--rsp-quoting=windows` or `--driver-mode=cl`  
+      selects Windows quoting.
+
+    These limitations can be addressed if they turn out to affect real builds.
 
 ## v3.1.2
 

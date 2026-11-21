@@ -31,6 +31,7 @@
 
 #include "tools/tools.h"
 #include "tools/process.h"
+#include "tools/response-file.h"
 #include "target.h"
 #include "programs/programs.h"
 
@@ -52,13 +53,22 @@ int ld(int argc, char **argv, target::Target &target) {
     return 1;
   }
 
+  // Options in response files (@<file>) are translated as well. ld64.lld
+  // would read the files itself, but would not understand ld64 options
+  // such as -macos_version_min or -ld_classic in them.
+  tools::responsefile::ExpandedArgs expanded;
+
+  if (!tools::responsefile::expand(argc, argv,
+                                   tools::responsefile::Syntax::LLD, expanded))
+    return 1;
+
   // Some build systems expect Apple's ld64 version format when probing the
   // linker. Imitate that format for compatibility. The ld64 project version
   // below is synthetic; use --version to print the actual LLD version.
   const char *versionLine = "@(#)PROGRAM:ld  PROJECT:ld64-9999.9 "
                             "(lld - use --version to see the LLVM version)";
 
-  if (argc == 2 && !strcmp(argv[1], "-v")) {
+  if (expanded.argc == 2 && !strcmp(expanded.argv[1], "-v")) {
     std::cout << versionLine << std::endl;
     return 0;
   }
@@ -73,8 +83,8 @@ int ld(int argc, char **argv, target::Target &target) {
 
   args.push_back("ld64.lld");
 
-  for (int i = 1; i < argc; ++i) {
-    const char *arg = argv[i];
+  for (int i = 1; i < expanded.argc; ++i) {
+    const char *arg = expanded.argv[i];
 
     // Like Apple's ld64, print the version and link. ld64.lld would print its
     // own version and the search paths instead.
@@ -87,15 +97,15 @@ int ld(int argc, char **argv, target::Target &target) {
     // minimum version as part of -platform_version instead, so consume it here.
     if ((!strcmp(arg, "-macos_version_min") ||
          !strcmp(arg, "-macosx_version_min")) &&
-        i + 1 < argc) {
-      minimumVersion = argv[++i];
+        i + 1 < expanded.argc) {
+      minimumVersion = expanded.argv[++i];
       continue;
     }
 
     // The SDK version for the legacy option; ld64.lld ignores -sdk_version
     // with a warning, so it goes into -platform_version as well.
-    if (!strcmp(arg, "-sdk_version") && i + 1 < argc) {
-      sdkVersionArg = argv[++i];
+    if (!strcmp(arg, "-sdk_version") && i + 1 < expanded.argc) {
+      sdkVersionArg = expanded.argv[++i];
       continue;
     }
 
@@ -112,14 +122,14 @@ int ld(int argc, char **argv, target::Target &target) {
     // The caller's SDK and architecture, for -platform_version below. Like
     // ld64, the last -arch wins; the last -syslibroot gives the SDK version.
     if ((!strcmp(arg, "-syslibroot") || !strcmp(arg, "-arch")) &&
-        i + 1 < argc) {
+        i + 1 < expanded.argc) {
       if (!strcmp(arg, "-syslibroot"))
-        sysRoot = argv[i + 1];
+        sysRoot = expanded.argv[i + 1];
       else
-        archName = argv[i + 1];
+        archName = expanded.argv[i + 1];
 
       args.push_back(arg);
-      args.push_back(argv[++i]);
+      args.push_back(expanded.argv[++i]);
       continue;
     }
 
@@ -193,6 +203,9 @@ int ld(int argc, char **argv, target::Target &target) {
 
   if (debug)
     printExecProgramArgs(argc, argv, args);
+
+  if (expanded.fileExpanded)
+    return tools::responsefile::execProgram(args[0], args);
 
   return execProgram(args[0], args);
 }

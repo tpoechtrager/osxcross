@@ -70,12 +70,12 @@ void splitArguments(const std::string &text, size_t begin, size_t end,
   for (size_t i = begin; i < end; ++i) {
     const char c = text[i];
 
-    if (c == '\\' && (quote != '\'' || syntax == Syntax::LLVM)) {
+    if (c == '\\' && (quote != '\'' || syntax != Syntax::GCC)) {
       inArg = true;
 
       if (i + 1 < end)
         arg += text[++i];
-      else if (syntax == Syntax::LLVM)
+      else if (syntax != Syntax::GCC)
         arg += c;
     } else if (quote) {
       if (c == quote)
@@ -174,23 +174,17 @@ void warnGCCVersionDifference(const char *file, const std::string &text,
            << warnInfo.endl();
 }
 
-// Warns that file is passed on unread, for the given reason.
-void warnPassedToClang(const char *file, const char *reason) {
-  warn << "response file '" << file << "' is passed to clang unread"
-       << warn.endl();
-  warnInfo << reason << "; options such as -arch and -isysroot in it have "
-           << "no effect on osxcross" << warnInfo.endl();
-}
-
 class Expander {
 public:
-  explicit Expander(Syntax syntax) : syntax(syntax), expanded() {}
+  Expander(Syntax syntax, bool printWarnings)
+      : syntax(syntax), printWarnings(printWarnings), expanded() {}
 
   // Appends arg, or the arguments in the file if arg is @<file>, to args.
   // Like the compiler, it leaves @<file> as it is if the file cannot be
-  // read. Only regular files are read, as GCC does. Clang also reads FIFOs
-  // such as @<(command); the wrapper passes them on, since reading would
-  // consume them. Opening a FIFO without a writer would also block.
+  // read. Only regular files are read, as GCC does. Clang and ld64.lld also
+  // read FIFOs such as @<(command); the wrapper passes them on, since
+  // reading would consume them. Opening a FIFO without a writer would also
+  // block.
   bool expand(const std::string &arg, std::vector<std::string> &args) {
     if (arg.size() < 2 || arg[0] != '@') {
       args.push_back(arg);
@@ -202,8 +196,8 @@ public:
     const bool found = stat(file, &st) == 0;
 
     if (!found || !S_ISREG(st.st_mode)) {
-      if (found && S_ISFIFO(st.st_mode) && syntax == Syntax::LLVM)
-        warnPassedToClang(file, "osxcross reads regular files only");
+      if (found && S_ISFIFO(st.st_mode) && syntax != Syntax::GCC)
+        warnPassedOn(file, "osxcross reads regular files only");
 
       args.push_back(arg);
       return true;
@@ -231,7 +225,9 @@ public:
       const size_t pos = findGCCVersionDifference(content, end);
 
       if (pos != std::string::npos) {
-        warnGCCVersionDifference(file, content, pos);
+        if (printWarnings)
+          warnGCCVersionDifference(file, content, pos);
+
         args.push_back(arg);
         return true;
       }
@@ -239,7 +235,7 @@ public:
       begin = 3; // a UTF-8 byte order mark
     } else if (!content.compare(0, 2, "\xFF\xFE") ||
                !content.compare(0, 2, "\xFE\xFF")) {
-      warnPassedToClang(file, "osxcross cannot read UTF-16 response files");
+      warnPassedOn(file, "osxcross cannot read UTF-16 response files");
       args.push_back(arg);
       return true;
     }
@@ -282,7 +278,23 @@ private:
 
   static constexpr size_t MaxNestingDepth = 256;
 
+  // Warns that file is passed on unread to clang or ld64.lld, for the given
+  // reason.
+  void warnPassedOn(const char *file, const char *reason) const {
+    if (!printWarnings)
+      return;
+
+    const bool lld = syntax == Syntax::LLD;
+
+    warn << "response file '" << file << "' is passed to "
+         << (lld ? "ld64.lld" : "clang") << " unread" << warn.endl();
+    warnInfo << reason << "; options such as -arch and "
+             << (lld ? "-syslibroot" : "-isysroot")
+             << " in it have no effect on osxcross" << warnInfo.endl();
+  }
+
   const Syntax syntax;
+  const bool printWarnings;      // warn about files left unread
   std::vector<FileID> openFiles; // the files being read, to detect cycles
   bool expanded;                 // a file was replaced with its arguments
 };
@@ -294,7 +306,12 @@ std::deque<std::vector<char *> > argvStorage;
 
 } // unnamed namespace
 
-bool expand(int &argc, char **&argv, Syntax syntax, bool &expanded) {
+bool expand(int argc, char **argv, Syntax syntax, ExpandedArgs &expanded,
+            bool printWarnings) {
+  expanded.argc = argc;
+  expanded.argv = argv;
+  expanded.fileExpanded = false;
+
   bool haveFileArg = false;
   bool windowsQuoting = false;
 
@@ -314,14 +331,15 @@ bool expand(int &argc, char **&argv, Syntax syntax, bool &expanded) {
   if (!haveFileArg)
     return true;
 
-  // Windows rules make no sense for macOS builds.
-  if (windowsQuoting && syntax == Syntax::LLVM) {
+  // Windows rules make no sense for macOS builds. ld64.lld does not read
+  // these options.
+  if (windowsQuoting && syntax == Syntax::CLANG) {
     err << "response files with Windows quoting are not supported"
         << err.endl();
     return false;
   }
 
-  Expander expander(syntax);
+  Expander expander(syntax, printWarnings);
   std::vector<std::string> args(1, argv[0]);
 
   for (int i = 1; i < argc; ++i) {
@@ -344,9 +362,9 @@ bool expand(int &argc, char **&argv, Syntax syntax, bool &expanded) {
 
   newArgv.push_back(nullptr);
 
-  argc = static_cast<int>(args.size());
-  argv = newArgv.data();
-  expanded = true;
+  expanded.argc = static_cast<int>(args.size());
+  expanded.argv = newArgv.data();
+  expanded.fileExpanded = true;
   return true;
 }
 

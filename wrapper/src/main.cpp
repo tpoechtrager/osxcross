@@ -358,25 +358,29 @@ Parser options = {{
 bool parse(int argc, char **argv, Target &target) {
   // Options in response files (@<file>) apply as well.
   const responsefile::Syntax syntax = target.isClang()
-                                          ? responsefile::Syntax::LLVM
+                                          ? responsefile::Syntax::CLANG
                                           : responsefile::Syntax::GCC;
 
-  if (!responsefile::expand(argc, argv, syntax, target.useResponseFile))
+  responsefile::ExpandedArgs expanded;
+
+  if (!responsefile::expand(argc, argv, syntax, expanded))
     return false;
+
+  target.useResponseFile = expanded.fileExpanded;
 
   // The compiler's options with a value, so that "-c" in "-o -c" is
   // taken as the file name (passthrough-compiler-options/options.cpp)
   options.add(PassthroughCompilerOptions);
 
-  target.userArgs.reserve(argc);
+  target.userArgs.reserve(expanded.argc);
 
   if (char *p = getenv("MACOSX_DEPLOYMENT_TARGET")) {
     target.deploymentTarget = parseOSVersion(p);
     unsetenv("MACOSX_DEPLOYMENT_TARGET");
   }
 
-  for (int i = 1; i < argc; ++i) {
-    char *arg = argv[i];
+  for (int i = 1; i < expanded.argc; ++i) {
+    char *arg = expanded.argv[i];
 
     if (*arg != '-') {
       target.userArgs.push_back(arg);
@@ -397,7 +401,7 @@ bool parse(int argc, char **argv, Target &target) {
     int numArgs = 0; // following arguments that belong to the option
 
     if (hasFlag(mode, ValueMode::REMAINING_ARGS)) {
-      numArgs = argc;
+      numArgs = expanded.argc;
     } else if (hasFlag(mode, ValueMode::JOINED_AND_SEPARATE)) {
       val = suffix;
       numArgs = 1;
@@ -407,7 +411,7 @@ bool parse(int argc, char **argv, Target &target) {
       val = suffix;
     } else if (hasFlag(mode, ValueMode::SEPARATE)) {
       numArgs = opt->numArgs;
-      val = argv[i + 1]; // nullptr after the last argument
+      val = expanded.argv[i + 1]; // nullptr after the last argument
     } else if (hasFlag(mode, ValueMode::EQUALS)) {
       err << "expected '" << opt->name << "=<val>' "
           << "instead of '" << arg << "'" << err.endl();
@@ -423,16 +427,17 @@ bool parse(int argc, char **argv, Target &target) {
       return false;
     }
 
-    i = std::min(i + numArgs, argc - 1);
+    i = std::min(i + numArgs, expanded.argc - 1);
 
     options.printDebug(*opt, arg, val);
 
-    if (opt->fun && !opt->fun(target, opt->name, val, &argv[firstArg + 1]))
+    if (opt->fun &&
+        !opt->fun(target, opt->name, val, &expanded.argv[firstArg + 1]))
       return false;
 
     if (hasFlag(opt->parseMode, ParseMode::FORWARD)) {
       for (int j = firstArg; j <= i; ++j)
-        target.userArgs.push_back(argv[j]);
+        target.userArgs.push_back(expanded.argv[j]);
     }
   }
 
