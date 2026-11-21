@@ -64,7 +64,7 @@ endif
 
 SRCS= \
  main.cpp \
- passthrough-compiler-options/options.cpp \
+ upstream-compiler-option-tables/options.cpp \
  tools/tools.cpp \
  tools/json.cpp \
  tools/plist.cpp \

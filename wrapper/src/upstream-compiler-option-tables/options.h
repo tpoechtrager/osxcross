@@ -19,8 +19,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.      *
  ***********************************************************************/
 
-#ifndef OSXCROSS_WRAPPER_PASSTHROUGH_COMPILER_OPTIONS_H
-#define OSXCROSS_WRAPPER_PASSTHROUGH_COMPILER_OPTIONS_H
+#ifndef OSXCROSS_WRAPPER_UPSTREAM_COMPILER_OPTION_TABLES_OPTIONS_H
+#define OSXCROSS_WRAPPER_UPSTREAM_COMPILER_OPTION_TABLES_OPTIONS_H
 
 #include <vector>
 
@@ -46,4 +46,4 @@ extern const std::vector<Parser::Option> PassthroughCompilerOptions;
 
 } // namespace commandopts
 
-#endif // OSXCROSS_WRAPPER_PASSTHROUGH_COMPILER_OPTIONS_H
+#endif // OSXCROSS_WRAPPER_UPSTREAM_COMPILER_OPTION_TABLES_OPTIONS_H

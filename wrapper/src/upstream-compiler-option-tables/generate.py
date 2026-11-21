@@ -284,7 +284,7 @@ def main():
         "// Both compilers get all entries; the sections only show where an\n"
         "// option comes from.\n"
         "\n"
-        "#include \"passthrough-compiler-options/options.h\"\n"
+        "#include \"upstream-compiler-option-tables/options.h\"\n"
         "\n"
         "namespace commandopts {\n"
         "\n"

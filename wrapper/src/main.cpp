@@ -37,7 +37,7 @@
 #include "tools/response-file.h"
 #include "target.h"
 #include "programs/programs.h"
-#include "passthrough-compiler-options/options.h"
+#include "upstream-compiler-option-tables/options.h"
 
 using namespace tools;
 using namespace target;
@@ -63,7 +63,7 @@ void warnExtension(const char *extension) {
 
 namespace commandopts {
 
-// Declared in passthrough-compiler-options/options.h
+// Declared in upstream-compiler-option-tables/options.h
 using ::commandopts::OptFun;
 using ::commandopts::Parser;
 using ::commandopts::PassthroughCompilerOptions;
@@ -284,7 +284,7 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
 }
 
 // The wrapper's own options. parse() adds the options of the compiler that
-// take a value (passthrough-compiler-options/options.cpp), so that their
+// take a value (upstream-compiler-option-tables/options.cpp), so that their
 // values are not taken as options.
 Parser options = {{
   {"-mmacos-version-min", versionMin, ValueMode::EQUALS},
@@ -369,7 +369,7 @@ bool parse(int argc, char **argv, Target &target) {
   target.useResponseFile = expanded.fileExpanded;
 
   // The compiler's options with a value, so that "-c" in "-o -c" is
-  // taken as the file name (passthrough-compiler-options/options.cpp)
+  // taken as the file name (upstream-compiler-option-tables/options.cpp)
   options.add(PassthroughCompilerOptions);
 
   target.userArgs.reserve(expanded.argc);

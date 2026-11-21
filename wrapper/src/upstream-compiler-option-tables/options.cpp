@@ -53,7 +53,7 @@
 // Both compilers get all entries; the sections only show where an
 // option comes from.
 
-#include "passthrough-compiler-options/options.h"
+#include "upstream-compiler-option-tables/options.h"
 
 namespace commandopts {
 

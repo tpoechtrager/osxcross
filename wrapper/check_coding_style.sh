@@ -19,9 +19,9 @@
 pushd "${0%/*}/src" &>/dev/null
 
 CLANG_TIDY=${CLANG_TIDY:-clang-tidy}
-SOURCES=(*.cpp passthrough-compiler-options/*.cpp tools/*.cpp programs/*.cpp
+SOURCES=(*.cpp upstream-compiler-option-tables/*.cpp tools/*.cpp programs/*.cpp
          programs/*/*.cpp)
-FILES=("${SOURCES[@]}" *.h passthrough-compiler-options/*.h tools/*.h
+FILES=("${SOURCES[@]}" *.h upstream-compiler-option-tables/*.h tools/*.h
        programs/*.h programs/*/*.h)
 status=0
 
