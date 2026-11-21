@@ -381,6 +381,10 @@ struct Target {
   std::string intrinsicPathOption; // -foc-intrinsic-path=
   StringVector wrapperArgs;        // built by setup(); [0] is compilerArgv0
   StringVector userArgs;           // the user's arguments, after wrapperArgs
+  bool useResponseFile;            // a response file (@<file>) of the user
+                                   // was replaced with its arguments, so
+                                   // the compiler gets its arguments in one
+                                   // as well
 };
 
 } // namespace target

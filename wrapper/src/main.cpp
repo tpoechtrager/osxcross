@@ -34,6 +34,7 @@
 
 #include "tools/tools.h"
 #include "tools/process.h"
+#include "tools/response-file.h"
 #include "target.h"
 #include "programs/programs.h"
 #include "passthrough-compiler-options/options.h"
@@ -355,6 +356,14 @@ Parser options = {{
 }, getDebugLevel() > 0};
 
 bool parse(int argc, char **argv, Target &target) {
+  // Options in response files (@<file>) apply as well.
+  const responsefile::Syntax syntax = target.isClang()
+                                          ? responsefile::Syntax::LLVM
+                                          : responsefile::Syntax::GCC;
+
+  if (!responsefile::expand(argc, argv, syntax, target.useResponseFile))
+    return false;
+
   // The compiler's options with a value, so that "-c" in "-o -c" is
   // taken as the file name (passthrough-compiler-options/options.cpp)
   options.add(PassthroughCompilerOptions);
@@ -695,7 +704,10 @@ int main(int argc, char **argv) {
     compilerArgs.insert(compilerArgs.end(), target.userArgs.begin(),
                         target.userArgs.end());
 
-    process::execProgram(target.compilerPath, compilerArgs);
+    if (target.useResponseFile)
+      responsefile::execProgram(target.compilerPath, compilerArgs);
+    else
+      process::execProgram(target.compilerPath, compilerArgs);
 
     if (!debug)
       printCommand();

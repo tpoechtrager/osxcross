@@ -319,6 +319,55 @@ bool getFileContent(const std::string &file, std::string &content) {
   return true;
 }
 
+bool getFileContent(int fd, std::string &content) {
+  char buffer[4096];
+  content.clear();
+
+  for (;;) {
+    const ssize_t n = read(fd, buffer, sizeof(buffer));
+
+    if (n > 0)
+      content.append(buffer, static_cast<size_t>(n));
+    else if (n == 0)
+      return true;
+    else if (errno != EINTR)
+      return false;
+  }
+}
+
+bool writeFileContent(int fd, const std::string &content) {
+  size_t written = 0;
+
+  while (written < content.size()) {
+    const ssize_t n =
+        write(fd, content.data() + written, content.size() - written);
+
+    if (n < 0 && errno == EINTR)
+      continue;
+
+    if (n < 0)
+      return false;
+
+    if (n == 0) {
+      errno = EIO;
+      return false;
+    }
+
+    written += static_cast<size_t>(n);
+  }
+
+  return true;
+}
+
+std::string getTempDir() {
+  const char *dir = getenv("TMPDIR");
+
+  if (dir && *dir && dirExists(dir) && !access(dir, W_OK | X_OK))
+    return dir;
+
+  return "/tmp";
+}
+
 bool fileExists(const std::string &file) {
   struct stat st;
   return !stat(file.c_str(), &st);

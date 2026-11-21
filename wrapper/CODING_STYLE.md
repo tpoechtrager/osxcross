@@ -31,8 +31,8 @@ More rules:
   `tools`, the code in `programs/` in `program`, and a subdirectory such
   as `programs/xcode/` in `program::xcode`. Each file in `tools/` except
   `tools.h` and `tools.cpp` has a namespace of its own, named after the
-  file: `tools/json.h` is `tools::json`, `tools/process.h` is
-  `tools::process`.
+  file without hyphens: `tools/json.h` is `tools::json`,
+  `tools/response-file.h` is `tools::responsefile`.
 - **Members have no marker** (no `m_` prefix, no `_` suffix).
 - **"unknown" enumerators** carry the name of their enum, so that the
   unscoped enums do not clash in a namespace.

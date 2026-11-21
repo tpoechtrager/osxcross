@@ -69,6 +69,7 @@ SRCS= \
  tools/json.cpp \
  tools/plist.cpp \
  tools/process.cpp \
+ tools/response-file.cpp \
  target.cpp \
  programs/programs.cpp \
  programs/argument-parser.cpp \

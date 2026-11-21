@@ -163,7 +163,8 @@ Target::Target()
       targetOS(getDefaultTarget()), primaryArch(getDefaultArch()),
       compiler(getDefaultCompilerIdentifier()),
       compilerName(getDefaultCompilerName()), skipIntrinsicHeaders(),
-      stdlib(Stdlib::UNSET), useGCCLibs(), language(), linking(true) {
+      stdlib(Stdlib::UNSET), useGCCLibs(), language(), linking(true),
+      useResponseFile() {
   execDir = getExecutableDir();
 
   if (execDir.empty()) {

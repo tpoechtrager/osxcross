@@ -172,6 +172,15 @@ constexpr char PathDiv = '/';
 
 // Reads the whole file into content; false if it cannot be opened.
 bool getFileContent(const std::string &file, std::string &content);
+// Reads everything from fd into content; false on a read error, which can
+// leave part of the data in content.
+bool getFileContent(int fd, std::string &content);
+// Writes all of content to fd; false on a write error, with errno set.
+bool writeFileContent(int fd, const std::string &content);
+
+// The directory for temporary files: TMPDIR if it is a writable directory,
+// otherwise /tmp.
+std::string getTempDir();
 
 bool fileExists(const std::string &file);
 bool dirExists(const std::string &dir);

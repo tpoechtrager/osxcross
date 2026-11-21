@@ -2,6 +2,16 @@
 
 All notable changes to OSXCross, newest first.
 
+## v3.1.3
+
+### Added
+
+- wrapper: Response files (`@file`) given to the compiler are now read, so options such as `-arch`,  
+  `-isysroot` and `-mmacosx-version-min` in them take effect. The compiler then gets all arguments  
+  in one temporary response file. GCC response files that GCC 14 and GCC 15 read differently, and  
+  UTF-16 files and FIFOs for Clang, are passed on unread with a warning. Response files with  
+  Windows quoting (`--rsp-quoting=windows`, `--driver-mode=cl`) are rejected.
+
 ## v3.1.2
 
 ### Added

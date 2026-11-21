@@ -22,6 +22,7 @@
 #ifndef OSXCROSS_WRAPPER_TOOLS_PROCESS_H
 #define OSXCROSS_WRAPPER_TOOLS_PROCESS_H
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -37,6 +38,32 @@ int execProgram(const std::string &path,
 // Same, with argv[1] to argv[argc - 1] as arguments; the program sees path
 // as argv[0].
 int execProgram(const std::string &path, int argc, char **argv);
+
+// Called by execProgramWithCallbacks() before it starts the program. Can
+// change args, for example to pass them in a file. Returns false after
+// printing an error if the program cannot be started; it then cleans up
+// itself, and cleanup() is not called.
+typedef std::function<bool(std::vector<std::string> &args)> PrepareFunction;
+
+// Called by execProgramWithCallbacks() after the program ended or failed to
+// start.
+typedef std::function<void()> CleanupFunction;
+
+// Like execProgram() above, but runs path as a child process, so that
+// prepare() and cleanup() can run before and after it. Both may be empty.
+// After cleanup(), the wrapper exits with the exit status of the program,
+// or ends itself with the signal that ended the program. Only returns if
+// the program could not be started, after printing an error, and then
+// returns 1.
+//
+// While the program runs, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGPIPE and
+// SIGUSR2 are passed on to it, the signals that GCC and Clang delete their
+// temporary files for. If one of them arrives after the program ended, it
+// ends the wrapper after cleanup().
+int execProgramWithCallbacks(const std::string &path,
+                             std::vector<std::string> args,
+                             const PrepareFunction &prepare = nullptr,
+                             const CleanupFunction &cleanup = nullptr);
 
 // Debug output: the original command line (argv) and the one passed to
 // execProgram() (args).
