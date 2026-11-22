@@ -28,10 +28,13 @@
 
 namespace commandopts {
 
-// The options of Clang and GCC that take a value in the following
-// argument(s). The wrapper does nothing with them; it only needs them to
-// skip their values while parsing (see options.cpp).
+// The options that take a value in the following argument(s): of both
+// compilers, of Clang only and of GCC only. The wrapper does nothing with
+// them; it only needs them to skip their values while parsing (see
+// options.cpp).
 extern const std::vector<Parser::Option> PassthroughCompilerOptions;
+extern const std::vector<Parser::Option> PassthroughClangOptions;
+extern const std::vector<Parser::Option> PassthroughGCCOptions;
 
 } // namespace commandopts
 

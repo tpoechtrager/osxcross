@@ -70,6 +70,8 @@ using ::commandopts::Parser;
 using ::commandopts::ValueMode;
 using ::commandopts::ParseMode;
 using ::commandopts::PassthroughCompilerOptions;
+using ::commandopts::PassthroughClangOptions;
+using ::commandopts::PassthroughGCCOptions;
 
 bool versionMin(const ParsedOption &opt) {
   opt.target.deploymentTarget = parseOSVersion(opt.val);
@@ -373,6 +375,8 @@ bool parse(int argc, char **argv, Target &target) {
   // The compiler's options with a value, so that "-c" in "-o -c" is
   // taken as the file name (upstream-compiler-option-tables/options.cpp)
   options.add(PassthroughCompilerOptions);
+  options.add(target.isClang() ? PassthroughClangOptions
+                               : PassthroughGCCOptions);
 
   target.userArgs.reserve(expanded.argc);
 
