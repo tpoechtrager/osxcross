@@ -550,16 +550,12 @@ bool Target::isGCH() {
 }
 
 
-bool Target::isClang() const {
-  return (compiler == Compiler::CLANG || compiler == Compiler::CLANGXX);
-}
+bool Target::isClang() const { return tools::isClang(compiler); }
 
-bool Target::isGCC() const {
-  return (compiler == Compiler::GCC || compiler == Compiler::GXX);
-}
+bool Target::isGCC() const { return tools::isGCC(compiler); }
 
 bool Target::isKnownCompiler() const {
-  return compiler != Compiler::UNKNOWN_COMPILER;
+  return tools::isKnownCompiler(compiler);
 }
 
 

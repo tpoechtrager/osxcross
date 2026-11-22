@@ -57,9 +57,6 @@
 
 namespace commandopts {
 
-using tools::ParseMode;
-using tools::ValueMode;
-
 const std::vector<Parser::Option> PassthroughCompilerOptions = {
   // Clang and GCC
   {"--assert", nullptr, ValueMode::SEPARATE, ParseMode::FORWARD},

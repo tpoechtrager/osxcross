@@ -24,20 +24,9 @@
 
 #include <vector>
 
-#include "tools/tools.h"
-
-namespace target {
-struct Target;
-} // namespace target
+#include "commandopts.h"
 
 namespace commandopts {
-
-// Called for an option of the wrapper (see main.cpp) with its name, its
-// value and the arguments after it.
-typedef bool (*OptFun)(target::Target &, const char *opt, const char *val,
-                       char **args);
-
-typedef tools::OptParser<OptFun> Parser;
 
 // The options of Clang and GCC that take a value in the following
 // argument(s). The wrapper does nothing with them; it only needs them to

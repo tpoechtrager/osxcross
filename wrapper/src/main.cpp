@@ -35,6 +35,7 @@
 #include "tools/tools.h"
 #include "tools/process.h"
 #include "tools/response-file.h"
+#include "commandopts.h"
 #include "target.h"
 #include "programs/programs.h"
 #include "upstream-compiler-option-tables/options.h"
@@ -63,65 +64,68 @@ void warnExtension(const char *extension) {
 
 namespace commandopts {
 
-// Declared in upstream-compiler-option-tables/options.h
-using ::commandopts::OptFun;
+// Declared in commandopts.h and upstream-compiler-option-tables/options.h
+using ::commandopts::ParsedOption;
 using ::commandopts::Parser;
+using ::commandopts::ValueMode;
+using ::commandopts::ParseMode;
 using ::commandopts::PassthroughCompilerOptions;
 
-bool versionMin(Target &target, const char *, const char *val, char **) {
-  target.deploymentTarget = parseOSVersion(val);
+bool versionMin(const ParsedOption &opt) {
+  opt.target.deploymentTarget = parseOSVersion(opt.val);
 
-  if (!target.deploymentTarget.matchesString(val))
-    warn << "'-mmacosx-version-min=' (" << target.deploymentTarget.str()
-         << " != " << val << ")" << warn.endl();
+  if (!opt.target.deploymentTarget.matchesString(opt.val))
+    warn << "'-mmacosx-version-min=' (" << opt.target.deploymentTarget.str()
+         << " != " << opt.val << ")" << warn.endl();
 
   return true;
 }
 
-bool arch(Target &target, const char *opt, const char *val, char **) {
+bool arch(const ParsedOption &opt) {
   Arch arch;
 
-  if (!strcmp(opt, "-arch")) {
-    arch = parseArch(val);
+  if (!strcmp(opt.name, "-arch")) {
+    arch = parseArch(opt.val);
 
     if (arch == Arch::UNKNOWN_ARCH)
-      warn << "'-arch': unknown architecture '" << val << "'"
+      warn << "'-arch': unknown architecture '" << opt.val << "'"
            << warn.endl();
 
     const char *name = getArchName(arch);
 
-    if (strcmp(val, name))
-      warn << "'-arch': '" << val << "' != '" << name << "'" << warn.endl();
+    if (strcmp(opt.val, name))
+      warn << "'-arch': '" << opt.val << "' != '" << name << "'"
+           << warn.endl();
   } else {
-    if (!strcmp(opt, "-m16") || !strcmp(opt, "-mx32")) {
-      err << "'" << opt << "' is not supported" << err.endl();
+    if (!strcmp(opt.name, "-m16") || !strcmp(opt.name, "-mx32")) {
+      err << "'" << opt.name << "' is not supported" << err.endl();
       return false;
-    } else if (!strcmp(opt, "-m32")) {
+    } else if (!strcmp(opt.name, "-m32")) {
       arch = Arch::I386;
-    } else if (!strcmp(opt, "-m64")) {
+    } else if (!strcmp(opt.name, "-m64")) {
       arch = Arch::X86_64;
     } else {
       __builtin_unreachable();
     }
   }
 
-  if (target.isClang())
-    target.addArch(arch);
+  if (opt.target.isClang())
+    opt.target.addArch(arch);
   else
-    target.primaryArch = arch;
+    opt.target.primaryArch = arch;
 
   return true;
 }
 
-bool stdlib(Target &target, const char *, const char *val, char **) {
-  if (target.isGCC())
+bool stdlib(const ParsedOption &opt) {
+  if (opt.target.isGCC())
     warnExtension("'-stdlib='");
 
   size_t i = 0;
 
   for (auto stdlibName : StdlibNames) {
-    if (!strcmp(val, stdlibName)) {
-      target.stdlib = static_cast<Stdlib>(i);
+    if (!strcmp(opt.val, stdlibName)) {
+      opt.target.stdlib = static_cast<Stdlib>(i);
       break;
     }
     ++i;
@@ -146,52 +150,51 @@ bool stdlib(Target &target, const char *, const char *val, char **) {
   return true;
 }
 
-bool language(Target &target, const char *, const char *val, char **) {
-  target.language = val;
+bool language(const ParsedOption &opt) {
+  opt.target.language = opt.val;
   return true;
 }
 
-bool useGCCLibstdcxx(Target &target, const char *, const char *, char **) {
-  target.stdlib = Stdlib::LIBSTDCXX;
-  target.useGCCLibs = true;
+bool useGCCLibstdcxx(const ParsedOption &opt) {
+  opt.target.stdlib = Stdlib::LIBSTDCXX;
+  opt.target.useGCCLibs = true;
   return true;
 }
 
-bool compilerPath(Target &target, const char *, const char *path, char **) {
-  target.compilerPath = path;
+bool compilerPath(const ParsedOption &opt) {
+  opt.target.compilerPath = opt.val;
   return true;
 }
 
-bool intrinsicPath(Target &target, const char *, const char *path, char **) {
-  target.intrinsicPathOption = path;
+bool intrinsicPath(const ParsedOption &opt) {
+  opt.target.intrinsicPathOption = opt.val;
   return true;
 }
 
-bool isysroot(Target &target, const char *, const char *path, char **) {
-  target.commandLineIsysroot = path;
+bool isysroot(const ParsedOption &opt) {
+  opt.target.commandLineIsysroot = opt.val;
   return true;
 }
 
-bool sysroot(Target &target, const char *, const char *path, char **) {
-  target.commandLineSysroot = path;
+bool sysroot(const ParsedOption &opt) {
+  opt.target.commandLineSysroot = opt.val;
   return true;
 }
 
-bool skipIntrinsicHeaders(Target &target, const char *, const char *,
-                          char **) {
-  target.skipIntrinsicHeaders = true;
+bool skipIntrinsicHeaders(const ParsedOption &opt) {
+  opt.target.skipIntrinsicHeaders = true;
   return true;
 }
 
-bool noLinking(Target &target, const char *, const char *, char **) {
-  target.linking = false;
+bool noLinking(const ParsedOption &opt) {
+  opt.target.linking = false;
   return true;
 }
 
 // -Xarch_<arch> <arg> changes <arg> for <arch> only. The wrapper applies the
 // SDK, the C++ library and its header setup to all architectures, so the
 // options that change them cannot be given per architecture.
-bool xarch(Target &, const char *opt, const char *archName, char **args) {
+bool xarch(const ParsedOption &opt) {
   static const char *const Prefixes[] = {
     "-stdlib=", "--stdlib", "-isysroot", "--sysroot", "-foc-compiler-path=",
     "-foc-intrinsic-path=", "-foc-run-prog="
@@ -201,7 +204,7 @@ bool xarch(Target &, const char *opt, const char *archName, char **args) {
     "-foc-use-gcc-libstdc++"
   };
 
-  const char *arg = *args; // nullptr if -Xarch_<arch> is the last argument
+  const char *arg = *opt.args; // nullptr if -Xarch_<arch> is the last one
   const char *rejected = nullptr;
 
   if (!arg)
@@ -220,31 +223,30 @@ bool xarch(Target &, const char *opt, const char *archName, char **args) {
   if (!rejected)
     return true;
 
-  err << "'" << opt << archName << " " << arg << "' is not supported"
+  err << "'" << opt.name << opt.val << " " << arg << "' is not supported"
       << err.endl();
   note << "osxcross applies '" << std::string(rejected, strcspn(rejected, "="))
        << "' to all architectures (a known limitation)" << note.endl();
   return false;
 }
 
-bool runProg(Target &target, const char *, const char *progName,
-             char **progArgs) {
-  auto *prog = program::getProg(progName);
+bool runProg(const ParsedOption &opt) {
+  auto *prog = program::getProg(opt.val);
 
   if (!prog)
     exit(EXIT_FAILURE);
 
   std::vector<char *> args;
-  args.push_back(const_cast<char *>(progName));
+  args.push_back(const_cast<char *>(opt.val));
 
-  while (*progArgs)
-    args.push_back(*progArgs++);
+  for (char **progArgs = opt.args; *progArgs; ++progArgs)
+    args.push_back(*progArgs);
   args.push_back(nullptr);
 
-  (*prog)(args.size() - 1, args.data(), target);
+  (*prog)(args.size() - 1, args.data(), opt.target);
 }
 
-bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
+bool checkIncludePath(const ParsedOption &opt) {
 #ifndef __APPLE__
   constexpr const char *dangerousIncludePaths[] = { "/usr/include",
                                                     "/usr/local/include" };
@@ -255,13 +257,14 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
   if (NoIncludePathWarnings)
     return true;
 
+  const char *path = opt.val;
   char *resolved = realpath(path, nullptr);
   const char *resolvedPath = resolved ? resolved : path;
 
   for (const char *dangerousPath : dangerousIncludePaths) {
     if (!strncmp(resolvedPath, dangerousPath, strlen(dangerousPath))) {
-      warn << "possibly dangerous include path specified: '" << opt << " "
-           << path << "'";
+      warn << "possibly dangerous include path specified: '" << opt.name
+           << " " << path << "'";
 
       if (strcmp(path, resolvedPath))
         warn << " (" << resolvedPath << ")";
@@ -277,7 +280,6 @@ bool checkIncludePath(Target &, const char *opt, const char *path, char **) {
   free(resolved);
 #else
   (void)opt;
-  (void)path;
 #endif
 
   return true;
@@ -388,14 +390,14 @@ bool parse(int argc, char **argv, Target &target) {
     }
 
     const char *suffix = nullptr;
-    const Parser::Option *opt = options.parse(arg, &suffix);
+    const Parser::Option *entry = options.parse(arg, &suffix);
 
-    if (!opt) {
+    if (!entry) {
       target.userArgs.push_back(arg);
       continue;
     }
 
-    const ValueMode mode = opt->valueMode;
+    const ValueMode mode = entry->valueMode;
     const int firstArg = i;
     const char *val = nullptr;
     int numArgs = 0; // following arguments that belong to the option
@@ -410,10 +412,10 @@ bool parse(int argc, char **argv, Target &target) {
     } else if (*suffix) {
       val = suffix;
     } else if (hasFlag(mode, ValueMode::SEPARATE)) {
-      numArgs = opt->numArgs;
+      numArgs = entry->numArgs;
       val = expanded.argv[i + 1]; // nullptr after the last argument
     } else if (hasFlag(mode, ValueMode::EQUALS)) {
-      err << "expected '" << opt->name << "=<val>' "
+      err << "expected '" << entry->name << "=<val>' "
           << "instead of '" << arg << "'" << err.endl();
       return false;
     } else if (hasFlag(mode, ValueMode::JOINED)) {
@@ -421,21 +423,21 @@ bool parse(int argc, char **argv, Target &target) {
     }
 
     // Only for the wrapper's own options; the compiler reports the others.
-    if (opt->fun && (!val || !*val) && mode != ValueMode::NONE &&
+    if (entry->fun && (!val || !*val) && mode != ValueMode::NONE &&
         !hasFlag(mode, ValueMode::JOINED_AND_SEPARATE)) {
-      err << "missing argument for '" << opt->name << "'" << err.endl();
+      err << "missing argument for '" << entry->name << "'" << err.endl();
       return false;
     }
 
     i = std::min(i + numArgs, expanded.argc - 1);
 
-    options.printDebug(*opt, arg, val);
+    options.printDebug(*entry, arg, val);
 
-    if (opt->fun &&
-        !opt->fun(target, opt->name, val, &expanded.argv[firstArg + 1]))
+    if (entry->fun &&
+        !entry->fun({target, entry->name, val, &expanded.argv[firstArg + 1]}))
       return false;
 
-    if (hasFlag(opt->parseMode, ParseMode::FORWARD)) {
+    if (hasFlag(entry->parseMode, ParseMode::FORWARD)) {
       for (int j = firstArg; j <= i; ++j)
         target.userArgs.push_back(expanded.argv[j]);
     }
