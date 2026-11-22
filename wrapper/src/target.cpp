@@ -118,7 +118,10 @@ static OSVersion getMacOSVersion(const std::string &darwinTarget) {
 
     // ...
 
-    return OSVersion(11 + (major - 20), major < 23 ? minor - 1 : minor);
+    // Darwin 22 and 22.0, as in a program name such as
+    // x86_64-apple-darwin22-clang, are macOS 13.0 as well.
+    return OSVersion(11 + (major - 20),
+                     major < 23 && minor > 0 ? minor - 1 : minor);
   }
 
   // MacOS 10 (Darwin 4 => 10.0, ..., Darwin 19 => 10.15)

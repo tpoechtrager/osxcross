@@ -22,6 +22,12 @@ All notable changes to OSXCross, newest first.
 
     These limitations can be addressed if they turn out to affect real builds.
 
+### Fixed
+
+- wrapper: Darwin versions 20 to 22 without a minor version, such as `darwin22` in  
+  `x86_64-apple-darwin22-clang`, were parsed wrong. The wrapper then looked for `MacOSX13.-1.sdk`  
+  and stopped with "cannot find macOS SDK".
+
 ## v3.1.2
 
 ### Added
