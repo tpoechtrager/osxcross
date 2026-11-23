@@ -93,16 +93,13 @@ constexpr const char *getOSXCrossVersion() {
 #endif
 }
 
-#ifdef OSXCROSS_DEFAULT_DEPLOYMENT_TARGET
-inline OSVersion getDefaultDeploymentTarget() {
-  if (!strcmp(OSXCROSS_DEFAULT_DEPLOYMENT_TARGET, "default"))
-    return OSVersion();
+#ifndef OSXCROSS_DEFAULT_DEPLOYMENT_TARGET
+#error "OSXCROSS_DEFAULT_DEPLOYMENT_TARGET is not defined"
+#endif
 
+inline OSVersion getDefaultDeploymentTarget() {
   return parseOSVersion(OSXCROSS_DEFAULT_DEPLOYMENT_TARGET);
 }
-#else
-constexpr OSVersion getDefaultDeploymentTarget() { return OSVersion(); }
-#endif
 
 // Build flavor
 
