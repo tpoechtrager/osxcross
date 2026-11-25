@@ -90,7 +90,7 @@ binaries, package discovery, and complete examples.
 
 #### Prerequisites
 
-1. [Generate the SDK](README.SDK.md) and place the resulting archive in the `tarballs/` directory.
+1. [Generate the SDK](README.SDK.md) or use the [OSXCross Open SDK](README.SDK.md#osxcross-open-sdk), and place the archive in the `tarballs/` directory.
 
 2. Install the OSXCross build dependencies:
 
@@ -131,11 +131,14 @@ building the ARM64 Darwin GCC fork or vanilla GCC.
 
 ---
 
-### Packaging the SDK
+### SDK
 
-SDKs can be extracted either from the full Xcode or from the Xcode Command Line Tools.  
-See [README.SDK.md](README.SDK.md) for step-by-step instructions  
-on macOS and Linux.
+OSXCross supports two types of SDKs:
+
+- [Apple's proprietary SDK](README.SDK.md#packaging-apples-sdk) (**recommended**): extracted from Xcode or the Xcode Command Line Tools.
+- The [OSXCross Open SDK](README.SDK.md#osxcross-open-sdk): built from open source only. It is not a full replacement for Apple's SDKs.
+
+**See [README.SDK.md](README.SDK.md) for instructions on getting an SDK.**
 
 ---
 

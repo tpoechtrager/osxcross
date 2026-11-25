@@ -287,7 +287,7 @@ function guess_sdk_version()
 
   while IFS= read -r -d '' sdk; do
     file=$(basename "$sdk")
-    if [[ $file =~ ^MacOSX[0-9]+(\.[0-9]+)*u?(\.sdk)?\.tar\.(xz|gz|bz2)$ ]]; then
+    if [[ $file =~ ^MacOSX[0-9]+(\.[0-9]+)*u?(\.sdk|-open(-core)?-sdk(-[0-9A-Za-z.]+)*)?\.tar\.(xz|gz|bz2)$ ]]; then
       sdks+=("$sdk")
     fi
   done < <(find -L "$TARBALL_DIR" -type f -name 'MacOSX*' -print0)
@@ -335,6 +335,13 @@ function set_and_verify_sdk_path()
 
   if [ -z "$SDK" ] ; then
     echo "Error: Can't find SDK for macOS $SDK_VERSION in '$TARBALL_DIR'." 1>&2
+    exit 1
+  fi
+
+  if [ $(echo "$SDK" | wc -l | tr -d ' ') -gt 1 ]; then
+    echo "Error: Found more than one SDK archive for macOS $SDK_VERSION in '$TARBALL_DIR':" 1>&2
+    echo "$SDK" 1>&2
+    echo "Please remove all but one." 1>&2
     exit 1
   fi
 }
