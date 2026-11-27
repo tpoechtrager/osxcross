@@ -229,7 +229,9 @@ function download()
   if command -v curl &>/dev/null; then
     ## cURL ##
     # -f turns an HTTP error into a failed download, with nothing written.
-    local curl_opts="-f -L -C - "
+    # packages.macports.org answers directory listings with HTTP 501 unless
+    # the client accepts gzip or br, hence --compressed.
+    local curl_opts="-f -L -C - --compressed "
     if [ -z "$VERBOSE" ]; then
       curl_opts+="-s "
     fi
