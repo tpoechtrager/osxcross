@@ -171,6 +171,14 @@ createDir "cache" $CACHE
 createDir "install" $INSTALL
 createDir "tmp" $TMP
 
+# In the order selectMirror() lists them, which is also the fallback order.
+MIRRORS=(
+  "https://packages.macports.org"
+  "http://www.mirrorservice.org/sites/packages.macports.org"
+  "https://nue.de.packages.macports.org/macports/packages"
+  "https://lil.fr.packages.macports.org"
+)
+
 selectMirror()
 {
   echo "available mirrors:"
@@ -195,13 +203,7 @@ selectMirror()
     fi
 
     case $mirrorNumber in
-      1) echo -n "https://packages.macports.org" > \
-          $SELECTEDMIRROR && OK=1 ;;
-      2) echo -n "http://www.mirrorservice.org/sites/packages.macports.org" > \
-          $SELECTEDMIRROR && OK=1 ;;
-      3) echo -n "https://nue.de.packages.macports.org/macports/packages" > \
-          $SELECTEDMIRROR && OK=1 ;;
-      4) echo -n "https://lil.fr.packages.macports.org" > \
+      [1-4]) echo -n "${MIRRORS[mirrorNumber - 1]}" > \
           $SELECTEDMIRROR && OK=1 ;;
       *) echo "please enter a number between 1 and 4..." 1>&2 ;;
     esac
@@ -221,16 +223,21 @@ function download()
     filename=$(basename $1)
   fi
 
+  # The HTTP status of a curl download to a file. wget leaves it empty.
+  HTTP_STATUS=""
+
   if command -v curl &>/dev/null; then
     ## cURL ##
-    local curl_opts="-L -C - "
+    # -f turns an HTTP error into a failed download, with nothing written.
+    local curl_opts="-f -L -C - "
     if [ -z "$VERBOSE" ]; then
       curl_opts+="-s "
     fi
-    if [ $filename != "-" ]; then
-      curl_opts+="-o $filename "
+    if [ $filename == "-" ]; then
+      curl $curl_opts $uri
+    else
+      HTTP_STATUS=$(curl $curl_opts -o $filename -w "%{http_code}" $uri)
     fi
-    curl $curl_opts $uri
   elif command -v wget &>/dev/null; then
     ## wget ##
     local wget_opts="-c -O $filename "
@@ -268,6 +275,48 @@ getFile()
     download $1 "$CACHE/$(basename $1)"
   fi
   #verbosePlaceHolder
+}
+
+# Downloads $1, a path below the mirror root, to the file $2.
+# When MIRROR fails, the other entries of MIRRORS are tried in order, and the
+# first one that works replaces MIRROR for the rest of the run. An explicit
+# OSXCROSS_MACPORTS_MIRROR is the only mirror tried.
+# A 404 means the mirror works but has no such path. That is routine for a
+# dependency name that keeps part of its version, such as libedit-20260512
+# from libedit-20260512-3.1_0, so it ends the search without a message.
+# Returns 1 on a 404 or once every mirror has failed.
+getMirrorFile()
+{
+  local path="$1"
+  local file="$2"
+  local mirrors=("$MIRROR")
+  local m
+
+  if [ -z "$OSXCROSS_MACPORTS_MIRROR" ]; then
+    for m in "${MIRRORS[@]}"; do
+      if [ "$m" != "$MIRROR" ]; then
+        mirrors+=("$m")
+      fi
+    done
+  fi
+
+  for m in "${mirrors[@]}"; do
+    if getFile "$m/$path" "$file"; then
+      if [ "$m" != "$MIRROR" ]; then
+        echo "using mirror $m for the rest of this run"
+        MIRROR="$m"
+      fi
+      return 0
+    fi
+    if [ "$HTTP_STATUS" == "404" ]; then
+      return 1
+    fi
+    errorMsg "failed to get $m/$path"
+    # Listings differ between mirrors, so the next one must not resume this.
+    rm -f "$file"
+  done
+
+  return 1
 }
 
 verifyFileIntegrity()
@@ -345,14 +394,19 @@ supportsRequestedArches() {
   return 0
 }
 
-getPkgUrl()
+# Sets PKGFILE to the file name of the best package for $1 below
+# "$MIRROR/$1/", or to "" when there is none.
+# Call it in the current shell, not in $(...), so that a mirror switch lasts
+# for the rest of the run.
+findPkgFile()
 {
   local pkgname="$1"
   local pkgversion
   local pkgs
   local pkg
+  local listing="$TMP/listing"
 
-  set +e
+  PKGFILE=""
 
   local pkg_info_url="https://ports.macports.org"
   pkg_info_url+="/api/v1/ports/$pkgname/?format=json"
@@ -360,18 +414,17 @@ getPkgUrl()
                grep -o -E '"version":"[^"]+"' | \
                cut -d'"' -f4)
 
-  pkgs=$(getFileStdout "$MIRROR/$pkgname/?C=M;O=A" | \
-         grep -o -E 'href="([^"#]+)"' | \
-         cut -d'"' -f2 | grep '.tbz2$' | uniq)
+  # download() resumes into an existing file, so drop a listing left by an
+  # earlier lookup.
+  rm -f "$listing"
 
-  local ec=$?
-
-  set -e
-
-  if [ $ec -ne 0 ]; then
+  if ! getMirrorFile "$pkgname/?C=M;O=A" "$listing"; then
     errorMsg "no package found"
     return
   fi
+
+  pkgs=$(grep -o -E 'href="([^"#]+)"' "$listing" | \
+         cut -d'"' -f2 | grep '.tbz2$' | uniq)
 
   verboseMsg " candidates for $pkgname:"
 
@@ -455,7 +508,7 @@ getPkgUrl()
     return
   fi
 
-  echo "$MIRROR/$pkgname/$pkg"
+  PKGFILE="$pkg"
 }
 
 pkgInstalled()
@@ -491,10 +544,10 @@ installPkg()
 
   echo "searching package $pkgname ..."
 
-  local pkgurl=$(getPkgUrl "$pkgname")
-  local pkgfile=$(echo "$pkgurl" | awk -F'/' '{print $NF}')
+  findPkgFile "$pkgname"
+  local pkgfile="$PKGFILE"
 
-  if [ -z "$pkgurl" ]; then
+  if [ -z "$pkgfile" ]; then
     local oldpkgname=$pkgname
     local tmp=$(echo "$pkgname" | awk -F'-'  '{print $NF}')
     [ -n "$tmp" ] && pkgname=${pkgname/-$tmp/}
@@ -511,10 +564,10 @@ installPkg()
   fi
 
   echo "getting $pkgfile ..."
-  getFile "$pkgurl"
+  getMirrorFile "$pkgname/$pkgfile" "$CACHE/$pkgfile"
 
   verboseMsg "getting $pkgname.rmd160 ..."
-  getFile "$pkgurl.rmd160"
+  getMirrorFile "$pkgname/$pkgfile.rmd160" "$CACHE/$pkgfile.rmd160"
 
   verifyFileIntegrity "$pkgfile"
 
@@ -585,7 +638,7 @@ updateSearchCache()
   pushd $CACHE &>/dev/null
 
   echo "generating index cache (this may take several minutes ...)"
-  getFile $MIRROR $CACHE/packages
+  getMirrorFile "" "$CACHE/packages"
 
   cat packages | grep -o -E 'href="([^"#]+)"' | cut -d'"' -f2 | \
     sed 's/.\{1\}$//' | uniq | $SORT > INDEXCACHE
