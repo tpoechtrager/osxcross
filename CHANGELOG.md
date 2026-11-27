@@ -6,24 +6,28 @@ All notable changes to OSXCross, newest first.
 
 ### Added
 
-- Support for [OSXCross Open SDKs](https://github.com/tpoechtrager/osxcross-open-sdk):  
-  macOS SDKs built from open source only, an alternative to Apple's proprietary SDKs.
+- Support for the [OSXCross Open SDK](https://github.com/tpoechtrager/osxcross-open-sdk):  
+  a macOS SDK built from open source only, an alternative to Apple's proprietary SDKs.
 
-  - Nothing in them comes from an SDK made by Apple. They are made from Apple's open source releases,  
-    LLVM's libc++ and a few other open source projects.
-  - They work with C, C++, Objective-C without `Foundation`, Swift without `Foundation`, GCC and Fortran  
-    for x86_64 and arm64, and have the libraries of `/usr/lib` and the frameworks `CoreFoundation`,  
-    `DiskArbitration`, `SystemConfiguration`, `Security` and `IOKit`.
-  - `build_gcc.sh` builds completely with them, including C++ and Fortran for x86_64 and arm64.
-  - They are not a full replacement for Apple's SDKs. They do not have `Foundation`, `AppKit` and the other  
-    frameworks that have no public source, so they cannot build code that imports them, such as GUI  
-    applications. Swift with `Foundation`, `XPC`, `FSEvents`, `LaunchServices` and the `IOKit` device  
-    families are missing as well. They are meant for C and C++ programs and libraries, for GCC, and for  
-    CI jobs that need no proprietary Apple SDK.
-  - `build.sh` finds their archives, `MacOSX<VER>-open-sdk-<hash>.tar.xz` and  
+  - Nothing in the Open SDK comes from an SDK made by Apple. It is made from Apple's open source  
+    releases, LLVM's libc++ and a few other open source projects.
+  - The Open SDK works with C, C++, Objective-C without `Foundation`, Swift without `Foundation`, GCC and  
+    Fortran for x86_64 and arm64. It has the libraries of `/usr/lib`, the frameworks `CoreFoundation`,  
+    `DiskArbitration`, `SystemConfiguration`, `Security`, `OpenGL` and `IOKit` with device families such as  
+    `storage`, `hid`, `graphics` and `usb`, as well as XPC and File System Events.
+  - The Open SDK has link stubs without headers for `Foundation`, `AppKit`, `Metal`, `WebKit` and other  
+    frameworks, so Rust crates such as `winit`, `wgpu` and `wry` link with it.
+  - `build_gcc.sh` builds completely with the Open SDK, including C++ and Fortran for x86_64 and arm64.
+  - The Open SDK is not a full replacement for Apple's SDKs. It does not have the headers of `Foundation`,  
+    `AppKit` and the other frameworks that have no public source, so C, C++ or Objective-C code that  
+    imports them, such as most GUI applications, does not build with it. Swift with `Foundation`, the  
+    headers of `LaunchServices` and some `IOKit` device families are missing as well. The Open SDK is  
+    meant for C and C++ programs and libraries, for GCC, for Rust, and for CI jobs that need no  
+    proprietary Apple SDK.
+  - `build.sh` finds the archives of the Open SDK, `MacOSX<VER>-open-sdk-<hash>.tar.xz` and  
     `MacOSX<VER>-open-core-sdk-<hash>.tar.xz`. If `tarballs/` has two archives for the selected  
     version (the full and the core SDK), the build stops and names them.
-  - The SDKs can be downloaded on the project page of [OSXCross Open SDK](https://github.com/tpoechtrager/osxcross-open-sdk).
+  - The Open SDK can be downloaded on its [project page](https://github.com/tpoechtrager/osxcross-open-sdk).
 
 ### Changed
 

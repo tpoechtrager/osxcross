@@ -5,7 +5,7 @@ OSXCross supports two types of SDKs:
 | SDK | Made from | Use it for |
 |---|---|---|
 | [Apple's proprietary SDK (**recommended**)](#packaging-apples-sdk) | Xcode or the Command Line Tools | General use. It has every framework and library of macOS. |
-| [OSXCross Open SDK](#osxcross-open-sdk) | Open source only | C, C++, GCC, and CI jobs that need no proprietary Apple SDK.<br>Not a full replacement. |
+| [OSXCross Open SDK](#osxcross-open-sdk) | Open source only | C, C++, GCC, Rust, and CI jobs that need no proprietary Apple SDK.<br>Not a full replacement. |
 
 ## Packaging Apple's SDK
 
@@ -83,20 +83,24 @@ The [OSXCross Open SDK](https://github.com/tpoechtrager/osxcross-open-sdk) is a 
 - Build GCC: `build_gcc.sh` builds completely with it, with C, C++ and Fortran for x86_64 and arm64.
 - The C library, POSIX, Mach, `pthreads`, `libdispatch` and blocks.
 - The libraries of `/usr/lib`: `zlib`, `bzip2`, `expat`, `libffi`, `libedit`, `libxml2`, `libxslt`, `sqlite3`,  
-  `libcurl`, `libarchive`, `libpcap`, `OpenPAM`, `ncurses`, `libiconv`, `libresolv`, `CommonCrypto`, `dns_sd`  
-  and the launchd API.
+  `liblzma`, `libcurl`, `libarchive`, `libpcap`, `OpenPAM`, `ncurses`, `libiconv`, `libresolv`, `CommonCrypto`,  
+  `dns_sd` and the launchd API.
 - `os_log`: the messages appear in the unified log of macOS.
-- The frameworks `CoreFoundation`, `DiskArbitration`, `SystemConfiguration`, `Security` and `IOKit`  
-  (without the device families).
+- The frameworks `CoreFoundation`, `DiskArbitration`, `SystemConfiguration`, `Security`, `OpenGL` and `IOKit`  
+  with device families such as `storage`, `hid`, `graphics` and `usb`, as well as XPC and File System Events.
+- Link stubs without headers for `Foundation`, `AppKit`, `Metal`, `QuartzCore`, `WebKit` and other frameworks.  
+  They are enough for languages that declare what they use themselves, such as Rust with the crates `winit`,  
+  `wgpu` and `wry`.
+- The sanitizer runtimes of compiler-rt, such as `asan`, `ubsan` and `tsan`, build with it.
 - Open source projects such as `zlib`, `curl`, `git`, `cmake`, `sqlite`, `bash`, `coreutils`, `fmt` and  
   `redis` were built with it.
 
 **What it cannot do**
 
 - It is not a full replacement for Apple's SDKs.
-- It has no `Foundation`, `AppKit` and none of the other frameworks without public source,  
-  so it cannot build programs that need them, such as GUI applications.
-- Swift with `Foundation`, `XPC`, `FSEvents`, `LaunchServices` and the `IOKit` device families are missing too.
+- It has no headers for `Foundation`, `AppKit` and the other frameworks without public source,  
+  so C, C++ and Objective-C code that imports them, such as most GUI applications, does not build.
+- Swift with `Foundation`, the headers of `LaunchServices` and some `IOKit` device families are missing too.
 
 **How to use it**
 
