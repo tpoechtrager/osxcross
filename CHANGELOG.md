@@ -25,6 +25,18 @@ All notable changes to OSXCross, newest first.
     version (the full and the core SDK), the build stops and names them.
   - The SDKs can be downloaded on the project page of [OSXCross Open SDK](https://github.com/tpoechtrager/osxcross-open-sdk).
 
+### Changed
+
+- `osxcross-macports`: When a mirror fails, the next one is tried. `OSXCROSS_MACPORTS_MIRROR=<mirror>`  
+  turns this off ([#488](https://github.com/tpoechtrager/osxcross/pull/488), Jack Greiner).
+
+### Fixed
+
+- `osxcross-macports`: With curl, installs from packages.macports.org failed with  
+  "no suitable version found" ([#488](https://github.com/tpoechtrager/osxcross/pull/488), Jack Greiner).
+- `osxcross-macports`: Now requires `rev`. Previously, packages were installed without their  
+  dependencies when `rev` was missing ([#488](https://github.com/tpoechtrager/osxcross/pull/488), Jack Greiner).
+
 ## v3.1.3
 
 ### Added
